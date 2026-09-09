@@ -453,6 +453,7 @@
                                         'parent_id' => $comment->parent_id,
                         
                                         'created_at_human' => $comment->created_at->diffForHumans(),
+                                        'showReplies' => true,
                         
                                         'user' => [
                                             'id' => $comment->user?->id,
@@ -490,6 +491,7 @@
                                     ],
                                 )->values(),
                         ) }},
+                        hasMoreComments: {{ $post->comments()->whereNull('parent_id')->count() > 3 ? 'true' : 'false' }},
                         loadingMore: false,
                     
                         isPostOwner() {
@@ -1111,21 +1113,34 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                         },
                     
                         loadMoreComments() {
+                            if (this.loadingMore || !this.hasMoreComments) return;
                             this.loadingMore = true;
-                    
+
                             fetch(
-                                    `{{ route('community.posts.comments', $post) }}?skip=${this.comments.length}`
+                                    `{{ route('community.posts.comments', $post) }}?skip=${this.comments.length}`, {
+                                        headers: {
+                                            'Accept': 'application/json',
+                                            'X-Requested-With': 'XMLHttpRequest'
+                                        }
+                                    }
                                 )
                                 .then(async response => {
                                     if (!response.ok) {
                                         throw new Error('Unable to load comments.');
                                     }
-                    
+
                                     return response.json();
                                 })
                                 .then(data => {
                                     if (data.success && Array.isArray(data.comments)) {
-                                        this.comments = this.comments.concat(data.comments);
+                                        const newComments = data.comments.map(c => ({
+                                            ...c,
+                                            showReplies: true
+                                        }));
+                                        this.comments = this.comments.concat(newComments);
+                                        this.hasMoreComments = Boolean(data.has_more);
+                                    } else {
+                                        this.hasMoreComments = false;
                                     }
                                 })
                                 .catch(error => {
@@ -1667,29 +1682,41 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                                                 </template>
                                             </div>
 
-                                            <div class="flex items-center gap-3 px-1 pt-1">
+                                            <div class="flex items-center gap-2.5 px-1 pt-1">
                                                 <button type="button"
                                                     @click="startReply(comment.id, comment.user.name)"
-                                                    class="text-[9px] font-bold text-slate-400 hover:text-amber-600 transition">Reply</button>
-                                                <span x-show="comment.replies && comment.replies.length"
-                                                    class="text-[9px] text-slate-300">•</span>
-                                                <span x-show="comment.replies && comment.replies.length"
-                                                    class="text-[9px] text-slate-400"
-                                                    x-text="comment.replies.length + (comment.replies.length === 1 ? ' reply' : ' replies')"></span>
+                                                    class="inline-flex items-center gap-1 text-[9px] font-bold text-slate-400 hover:text-amber-600 transition">
+                                                    <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a4 4 0 014 4v1m0 0l4-4m-4 4l-4-4" />
+                                                    </svg>
+                                                    <span>Reply</span>
+                                                </button>
+                                                <template x-if="comment.replies && comment.replies.length">
+                                                    <button type="button"
+                                                        @click="comment.showReplies = !comment.showReplies"
+                                                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 hover:bg-amber-100/80 text-[8.5px] font-bold text-amber-700 transition">
+                                                        <svg class="w-2.5 h-2.5 transition-transform duration-200"
+                                                            :class="comment.showReplies ? 'rotate-180' : ''"
+                                                            fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                                        </svg>
+                                                        <span x-text="comment.showReplies ? 'Hide replies' : (comment.replies.length + (comment.replies.length === 1 ? ' reply' : ' replies'))"></span>
+                                                    </button>
+                                                </template>
                                             </div>
                                         </div>
                                     </div>
 
                                     {{-- REPLIES --}}
                                     <template x-if="comment.replies && comment.replies.length">
-                                        <div class="ml-10 mt-2 pl-3 border-l-2 border-slate-100 space-y-2">
+                                        <div x-show="comment.showReplies !== false" x-transition class="ml-8 mt-2 pl-3 border-l-2 border-amber-200 space-y-2">
                                             <template x-for="reply in comment.replies" :key="reply.id">
                                                 <div class="flex items-start gap-2">
                                                     <img :src="reply.user.avatar" :alt="reply.user.name"
-                                                        class="w-6.5 h-6.5 w-7 h-7 rounded-full object-cover shrink-0 ring-2 ring-white">
+                                                        class="w-6 h-6 rounded-full object-cover shrink-0 ring-1 ring-slate-200">
                                                     <div class="min-w-0 flex-1">
                                                         <div
-                                                            class="relative rounded-2xl rounded-tl-md bg-white border border-slate-100 px-2.5 py-2">
+                                                            class="relative rounded-2xl rounded-tl-md bg-slate-50 border border-slate-100 px-2.5 py-2">
                                                             <div class="flex items-center gap-2 pr-6">
                                                                 <span
                                                                     class="text-[10px] font-bold text-slate-800 truncate"
@@ -1705,12 +1732,11 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                                                                 <div class="mt-1.5">
                                                                     <textarea x-ref="editReplyInput" x-model="editingCommentText" rows="2" maxlength="1000"
                                                                         @keydown.ctrl.enter="updateComment(reply)"
-                                                                        class="w-full bg-slate-50 border border-amber-200 rounded-xl px-2.5 py-2 text-[10px] focus:outline-none focus:ring-2 focus:ring-amber-100 resize-none"></textarea>
+                                                                        class="w-full bg-white border border-amber-200 rounded-xl px-2.5 py-2 text-[10px] focus:outline-none focus:ring-2 focus:ring-amber-100 resize-none"></textarea>
                                                                     <div class="flex items-center gap-2 mt-1.5">
                                                                         <button type="button"
                                                                             @click="updateComment(reply)"
-                                                                            :disabled="commentActionLoading || !editingCommentText
-                                                                                .trim()"
+                                                                            :disabled="commentActionLoading || !editingCommentText.trim()"
                                                                             class="px-2.5 py-1.5 rounded-lg bg-[#0b1329] text-white text-[8px] font-bold">Save</button>
                                                                         <button type="button"
                                                                             @click="cancelEditComment()"
@@ -1730,7 +1756,7 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                                                                 <div class="absolute top-1 right-1">
                                                                     <button type="button"
                                                                         @click.stop="openCommentMenuId = openCommentMenuId === Number(reply.id) ? null : Number(reply.id)"
-                                                                        class="w-5.5 h-5.5 w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition"
+                                                                        class="w-5.5 h-5.5 rounded-full flex items-center justify-center text-slate-400 hover:bg-white hover:text-slate-700 transition"
                                                                         aria-label="Reply options">
                                                                         <svg class="w-3 h-3" viewBox="0 0 24 24"
                                                                             fill="currentColor">
@@ -1808,14 +1834,18 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                         </div>
 
                         {{-- LOAD MORE --}}
-                        <div class="text-center mt-4" x-show="comments.length < commentsCount">
+                        <div class="text-center mt-4" x-show="hasMoreComments">
                             <button type="button" @click="loadMoreComments()" :disabled="loadingMore"
-                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 text-[9px] font-bold text-slate-500 hover:text-amber-600 hover:border-amber-200 transition disabled:opacity-50">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2"
+                                class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-50 hover:bg-amber-50 border border-slate-200 hover:border-amber-200 text-[10px] font-bold text-slate-600 hover:text-amber-700 transition disabled:opacity-50 shadow-xs">
+                                <svg x-show="!loadingMore" class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.2"
                                     viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                                 </svg>
-                                <span x-text="loadingMore ? 'Loading...' : 'See more comments'"></span>
+                                <svg x-show="loadingMore" class="w-3 h-3 animate-spin text-amber-600" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span x-text="loadingMore ? 'Loading comments...' : 'See more comments'"></span>
                             </button>
                         </div>
 

@@ -162,6 +162,7 @@
                             'content' => $comment->content,
                             'parent_id' => $comment->parent_id,
                             'created_at_human' => $comment->created_at->diffForHumans(),
+                            'showReplies' => true,
                             'user' => [
                                 'id' => $comment->user?->id,
                                 'name' => $comment->user?->name ?? 'User',
@@ -222,6 +223,7 @@
 
                     commentsCount: {{ $post->comments_count ?? $commentPayload->count() }},
                     comments: {{ Js::from($commentPayload) }},
+                    hasMoreComments: {{ $post->comments()->whereNull('parent_id')->count() > $commentPayload->count() ? 'true' : 'false' }},
                     loadingMore: false,
                     newCommentText: '',
 
@@ -593,6 +595,7 @@
                             if (parent) {
                                 parent.replies = parent.replies || [];
                                 parent.replies.push(data.comment);
+                                parent.showReplies = true;
                             }
 
                             this.commentsCount = Number(this.commentsCount) + 1;
@@ -748,7 +751,7 @@
                     },
 
                     loadMoreComments() {
-                        if (this.loadingMore) return;
+                        if (this.loadingMore || !this.hasMoreComments) return;
 
                         this.loadingMore = true;
 
@@ -764,7 +767,14 @@
                         })
                         .then(data => {
                             if (data.success && Array.isArray(data.comments)) {
-                                this.comments = this.comments.concat(data.comments);
+                                const newComments = data.comments.map(c => ({
+                                    ...c,
+                                    showReplies: true
+                                }));
+                                this.comments = this.comments.concat(newComments);
+                                this.hasMoreComments = Boolean(data.has_more);
+                            } else {
+                                this.hasMoreComments = false;
                             }
                         })
                         .catch(error => this.showToast(error.message, 'error'))
@@ -1132,96 +1142,117 @@
                                             </template>
                                         </div>
 
-                                        <div class="flex items-center gap-3 px-1 pt-1">
+                                        <div class="flex items-center gap-2.5 px-1 pt-1">
                                             <button type="button"
                                                 @click="startReply(comment)"
-                                                class="text-[9px] font-bold text-slate-400 hover:text-amber-600">
-                                                Reply
+                                                class="inline-flex items-center gap-1 text-[9px] font-bold text-slate-400 hover:text-amber-600 transition">
+                                                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a4 4 0 014 4v1m0 0l4-4m-4 4l-4-4" />
+                                                </svg>
+                                                <span>Reply</span>
                                             </button>
 
-                                            <span x-show="comment.replies?.length"
-                                                class="text-[9px] text-slate-400"
-                                                x-text="comment.replies.length + (comment.replies.length === 1 ? ' reply' : ' replies')"></span>
-                                        </div>
-
-                                        <div x-show="comment.replies?.length" x-cloak
-                                            class="ml-7 mt-2 pl-3 border-l-2 border-slate-100 space-y-2">
-
-                                            <template x-for="reply in comment.replies" :key="reply.id">
-                                                <div class="flex items-start gap-2">
-                                                    <img :src="reply.user.avatar"
-                                                        class="w-7 h-7 rounded-full object-cover shrink-0">
-
-                                                    <div class="flex-1 min-w-0">
-                                                        <div class="relative rounded-xl bg-white border border-slate-100 p-2.5">
-
-                                                            <div class="flex items-center gap-2 pr-6">
-                                                                <span class="text-[10px] font-bold text-slate-800"
-                                                                    x-text="reply.user.name"></span>
-                                                                <span class="text-[8px] text-slate-400"
-                                                                    x-text="reply.created_at_human"></span>
-                                                            </div>
-
-                                                            <template x-if="editingCommentId === Number(reply.id)">
-                                                                <div class="mt-1.5">
-                                                                    <textarea x-model="editingCommentText"
-                                                                        rows="2"
-                                                                        maxlength="1000"
-                                                                        class="w-full bg-slate-50 border border-amber-200 rounded-lg p-2 text-[10px] resize-none focus:outline-none"></textarea>
-
-                                                                    <div class="flex gap-2 mt-1.5">
-                                                                        <button type="button"
-                                                                            @click="updateComment(reply)"
-                                                                            class="px-2.5 py-1.5 rounded-lg bg-[#0b1329] text-white text-[8px] font-bold">
-                                                                            Save
-                                                                        </button>
-
-                                                                        <button type="button"
-                                                                            @click="cancelEditComment()"
-                                                                            class="px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-[8px] font-bold">
-                                                                            Cancel
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            </template>
-
-                                                            <template x-if="editingCommentId !== Number(reply.id)">
-                                                                <p class="mt-0.5 text-[10px] leading-relaxed text-slate-600 whitespace-pre-wrap break-words"
-                                                                    x-text="reply.content"></p>
-                                                            </template>
-
-                                                            <template x-if="isCommentOwner(reply) && editingCommentId !== Number(reply.id)">
-                                                                <div class="absolute right-1 top-1">
-                                                                    <button type="button"
-                                                                        @click.stop="openCommentMenuId = openCommentMenuId === Number(reply.id) ? null : Number(reply.id)"
-                                                                        class="w-6 h-6 rounded-full text-slate-400 hover:bg-slate-50">
-                                                                        •••
-                                                                    </button>
-
-                                                                    <div x-show="openCommentMenuId === Number(reply.id)"
-                                                                        x-cloak
-                                                                        @click.outside="openCommentMenuId = null"
-                                                                        class="absolute right-0 top-7 z-50 w-28 rounded-xl border border-slate-200 bg-white p-1 shadow-xl">
-
-                                                                        <button type="button"
-                                                                            @click="startEditComment(reply)"
-                                                                            class="w-full text-left px-2.5 py-2 rounded-lg text-[10px] font-semibold hover:bg-slate-50">
-                                                                            Edit
-                                                                        </button>
-
-                                                                        <button type="button"
-                                                                            @click="requestDeleteComment(reply, true, comment)"
-                                                                            class="w-full text-left px-2.5 py-2 rounded-lg text-[10px] font-semibold text-red-600 hover:bg-red-50">
-                                                                            Delete
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            </template>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                            <template x-if="comment.replies?.length">
+                                                <button type="button"
+                                                    @click="comment.showReplies = !comment.showReplies"
+                                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 hover:bg-amber-100/80 text-[8.5px] font-bold text-amber-700 transition">
+                                                    <svg class="w-2.5 h-2.5 transition-transform duration-200"
+                                                        :class="comment.showReplies ? 'rotate-180' : ''"
+                                                        fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                                    </svg>
+                                                    <span x-text="comment.showReplies ? 'Hide replies' : (comment.replies.length + (comment.replies.length === 1 ? ' reply' : ' replies'))"></span>
+                                                </button>
                                             </template>
                                         </div>
+
+                                        <template x-if="comment.replies?.length">
+                                            <div x-show="comment.showReplies !== false" x-transition
+                                                class="ml-8 mt-2 pl-3 border-l-2 border-amber-200 space-y-2">
+
+                                                <template x-for="reply in comment.replies" :key="reply.id">
+                                                    <div class="flex items-start gap-2">
+                                                        <img :src="reply.user.avatar"
+                                                            class="w-6 h-6 rounded-full object-cover shrink-0 ring-1 ring-slate-200">
+
+                                                        <div class="flex-1 min-w-0">
+                                                            <div class="relative rounded-2xl rounded-tl-md bg-slate-50 border border-slate-100 px-2.5 py-2">
+
+                                                                <div class="flex items-center gap-2 pr-6">
+                                                                    <span class="text-[10px] font-bold text-slate-800"
+                                                                        x-text="reply.user.name"></span>
+                                                                    <span
+                                                                        x-show="Number(reply.user.id) === Number(currentUserId)"
+                                                                        class="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[7px] font-bold text-amber-700">You</span>
+                                                                    <span class="text-[8px] text-slate-400 shrink-0"
+                                                                        x-text="reply.created_at_human"></span>
+                                                                </div>
+
+                                                                <template x-if="editingCommentId === Number(reply.id)">
+                                                                    <div class="mt-1.5">
+                                                                        <textarea x-model="editingCommentText"
+                                                                            rows="2"
+                                                                            maxlength="1000"
+                                                                            class="w-full bg-white border border-amber-200 rounded-xl px-2.5 py-2 text-[10px] focus:outline-none focus:ring-2 focus:ring-amber-100 resize-none"></textarea>
+
+                                                                        <div class="flex gap-2 mt-1.5">
+                                                                            <button type="button"
+                                                                                @click="updateComment(reply)"
+                                                                                class="px-2.5 py-1.5 rounded-lg bg-[#0b1329] text-white text-[8px] font-bold">
+                                                                                Save
+                                                                            </button>
+
+                                                                            <button type="button"
+                                                                                @click="cancelEditComment()"
+                                                                                class="px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-[8px] font-bold">
+                                                                                Cancel
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </template>
+
+                                                                <template x-if="editingCommentId !== Number(reply.id)">
+                                                                    <p class="mt-0.5 text-[10px] leading-relaxed text-slate-600 whitespace-pre-wrap break-words"
+                                                                        x-text="reply.content"></p>
+                                                                </template>
+
+                                                                <template x-if="isCommentOwner(reply) && editingCommentId !== Number(reply.id)">
+                                                                    <div class="absolute right-1 top-1">
+                                                                        <button type="button"
+                                                                            @click.stop="openCommentMenuId = openCommentMenuId === Number(reply.id) ? null : Number(reply.id)"
+                                                                            class="w-5.5 h-5.5 rounded-full flex items-center justify-center text-slate-400 hover:bg-white hover:text-slate-700 transition">
+                                                                            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                                                                                <circle cx="5" cy="12" r="1.6" />
+                                                                                <circle cx="12" cy="12" r="1.6" />
+                                                                                <circle cx="19" cy="12" r="1.6" />
+                                                                            </svg>
+                                                                        </button>
+
+                                                                        <div x-show="openCommentMenuId === Number(reply.id)"
+                                                                            x-cloak
+                                                                            @click.outside="openCommentMenuId = null"
+                                                                            class="absolute right-0 top-7 z-50 w-28 rounded-xl border border-slate-200 bg-white p-1 shadow-xl">
+
+                                                                            <button type="button"
+                                                                                @click="startEditComment(reply)"
+                                                                                class="w-full text-left px-2.5 py-2 rounded-lg text-[10px] font-semibold text-slate-600 hover:bg-slate-50">
+                                                                                Edit
+                                                                            </button>
+
+                                                                            <button type="button"
+                                                                                @click="requestDeleteComment(reply, true, comment)"
+                                                                                class="w-full text-left px-2.5 py-2 rounded-lg text-[10px] font-semibold text-red-600 hover:bg-red-50">
+                                                                                Delete
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </template>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
                                     </div>
                                 </div>
                             </div>
@@ -1256,12 +1287,20 @@
                         </button>
                     </div>
 
-                    <div x-show="comments.length < commentsCount" class="text-center">
+                    <div x-show="hasMoreComments" class="text-center pt-2">
                         <button type="button"
                             @click="loadMoreComments()"
                             :disabled="loadingMore"
-                            class="text-[10px] font-bold text-amber-600 hover:underline">
-                            <span x-text="loadingMore ? 'Loading...' : 'See more comments'"></span>
+                            class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-50 hover:bg-amber-50 border border-slate-200 hover:border-amber-200 text-[10px] font-bold text-slate-600 hover:text-amber-700 transition disabled:opacity-50 shadow-xs">
+                            <svg x-show="!loadingMore" class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" stroke-width="2.2"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                            <svg x-show="loadingMore" class="w-3 h-3 animate-spin text-amber-600" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span x-text="loadingMore ? 'Loading comments...' : 'See more comments'"></span>
                         </button>
                     </div>
                 </div>

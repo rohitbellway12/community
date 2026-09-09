@@ -74,19 +74,26 @@ class CommentController extends Controller
             }
         }
 
+        $user = $comment->user;
+        $profile = $user?->profile;
+        $avatar = $profile && $profile->avatar
+            ? (str_starts_with($profile->avatar, 'http') ? $profile->avatar : asset('storage/' . ltrim($profile->avatar, '/')))
+            : 'https://ui-avatars.com/api/?name=' . urlencode($user?->name ?? 'User') . '&background=0c1b33&color=fff';
+
         return response()->json([
             'success' => true,
             'comment' => [
                 'id' => $comment->id,
                 'content' => $comment->content,
+                'parent_id' => $comment->parent_id,
                 'user_id' => $comment->user_id,
                 'created_at_human' => $comment->created_at->diffForHumans(),
                 'user' => [
-                    'name' => $comment->user->name,
-                    'avatar' => $comment->user->profile && $comment->user->profile->avatar
-                        ? asset('storage/' . $comment->user->profile->avatar)
-                        : 'https://ui-avatars.com/api/?name=' . urlencode($comment->user->name) . '&background=0c1b33&color=fff'
-                ]
+                    'id' => $user?->id,
+                    'name' => $user?->name ?? 'User',
+                    'avatar' => $avatar,
+                ],
+                'replies' => [],
             ]
         ]);
     }

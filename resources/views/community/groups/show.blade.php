@@ -493,22 +493,35 @@
                             likesCount: {{ $post->likes_count ?? $post->likes->count() }},
                             liked: {{ auth()->check() && $post->likes()->where('user_id', auth()->id())->exists() ? 'true' : 'false' }},
                             copied: false,
-                            commentsCount: {{ $post->comments->count() }},
+                            commentsCount: {{ $post->comments()->whereNull('parent_id')->count() }},
                             showAllComments: false,
                             expandedContent: false,
                             expandedTags: false,
                             newCommentText: '',
-                            comments: {{ json_encode($post->comments->map(fn($c) => [
+                            comments: {{ Js::from($post->comments->whereNull('parent_id')->map(fn($c) => [
                                 'id' => $c->id,
                                 'content' => $c->content,
                                 'created_at_human' => $c->created_at->diffForHumans(),
+                                'showReplies' => true,
                                 'user' => [
                                     'name' => $c->user?->name ?? 'User',
                                     'avatar' => $c->user?->profile?->avatar
                                         ? asset('storage/' . $c->user->profile->avatar)
                                         : 'https://ui-avatars.com/api/?name=' . urlencode($c->user?->name ?? 'User') . '&background=0c1b33&color=fff'
-                                ]
-                            ])) }},
+                                ],
+                                'replies' => $c->replies->map(fn($r) => [
+                                    'id' => $r->id,
+                                    'content' => $r->content,
+                                    'created_at_human' => $r->created_at->diffForHumans(),
+                                    'user' => [
+                                        'name' => $r->user?->name ?? 'User',
+                                        'avatar' => $r->user?->profile?->avatar
+                                            ? asset('storage/' . $r->user->profile->avatar)
+                                            : 'https://ui-avatars.com/api/?name=' . urlencode($r->user?->name ?? 'User') . '&background=0c1b33&color=fff'
+                                    ]
+                                ])->values()
+                            ])->values()) }},
+                            hasMoreComments: {{ $post->comments()->whereNull('parent_id')->count() > 3 ? 'true' : 'false' }},
                             loadingMore: false,
 
                             toggleLike() {
@@ -582,11 +595,29 @@
                             },
 
                             loadMoreComments() {
+                                if (this.loadingMore || !this.hasMoreComments) return;
                                 this.loadingMore = true;
-                                fetch(`{{ route('community.posts.comments', $post) }}?skip=` + this.comments.length)
+                                fetch(`{{ route('community.posts.comments', $post) }}?skip=` + this.comments.length, {
+                                    headers: {
+                                        'Accept': 'application/json',
+                                        'X-Requested-With': 'XMLHttpRequest'
+                                    }
+                                })
                                     .then(res => res.json())
                                     .then(data => {
-                                        this.comments = this.comments.concat(data.comments);
+                                        if (data && data.success && Array.isArray(data.comments)) {
+                                            const newComments = data.comments.map(c => ({
+                                                ...c,
+                                                showReplies: true
+                                            }));
+                                            this.comments = this.comments.concat(newComments);
+                                            this.hasMoreComments = Boolean(data.has_more);
+                                        } else {
+                                            this.hasMoreComments = false;
+                                        }
+                                        this.loadingMore = false;
+                                    })
+                                    .catch(() => {
                                         this.loadingMore = false;
                                     });
                             }
@@ -741,21 +772,50 @@
 
                             <div class="space-y-2.5 pt-1">
                                 <template x-for="comment in comments" :key="comment.id">
-                                    <div class="flex items-start gap-2.5 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                                        <img :src="comment.user.avatar" class="w-7 h-7 rounded-full object-cover shrink-0">
-                                        <div class="min-w-0 flex-1">
-                                            <div class="flex items-center justify-between">
-                                                <span class="font-bold text-slate-900 text-xs" x-text="comment.user.name"></span>
-                                                <span class="text-[10px] text-slate-400" x-text="comment.created_at_human"></span>
+                                    <div class="space-y-2">
+                                        <div class="flex items-start gap-2.5 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                            <img :src="comment.user.avatar" class="w-7 h-7 rounded-full object-cover shrink-0">
+                                            <div class="min-w-0 flex-1">
+                                                <div class="flex items-center justify-between">
+                                                    <span class="font-bold text-slate-900 text-xs" x-text="comment.user.name"></span>
+                                                    <span class="text-[10px] text-slate-400" x-text="comment.created_at_human"></span>
+                                                </div>
+                                                <p class="text-xs text-slate-700 mt-0.5 leading-relaxed" x-text="comment.content"></p>
+                                                <template x-if="comment.replies && comment.replies.length">
+                                                    <div class="mt-1">
+                                                        <button type="button" @click="comment.showReplies = !comment.showReplies"
+                                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 hover:bg-amber-100/80 text-[9px] font-bold text-amber-700 transition">
+                                                            <span x-text="comment.showReplies ? 'Hide replies' : (comment.replies.length + (comment.replies.length === 1 ? ' reply' : ' replies'))"></span>
+                                                        </button>
+                                                    </div>
+                                                </template>
                                             </div>
-                                            <p class="text-xs text-slate-700 mt-0.5 leading-relaxed" x-text="comment.content"></p>
                                         </div>
+                                        <template x-if="comment.replies && comment.replies.length">
+                                            <div x-show="comment.showReplies !== false" class="ml-7 pl-3 border-l-2 border-amber-200 space-y-2">
+                                                <template x-for="reply in comment.replies" :key="reply.id">
+                                                    <div class="flex items-start gap-2 bg-slate-50/70 p-2 rounded-xl border border-slate-100">
+                                                        <img :src="reply.user.avatar" class="w-6 h-6 rounded-full object-cover shrink-0">
+                                                        <div class="min-w-0 flex-1">
+                                                            <div class="flex items-center justify-between">
+                                                                <span class="font-bold text-slate-800 text-[11px]" x-text="reply.user.name"></span>
+                                                                <span class="text-[9px] text-slate-400" x-text="reply.created_at_human"></span>
+                                                            </div>
+                                                            <p class="text-xs text-slate-600 mt-0.5 leading-relaxed" x-text="reply.content"></p>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
                                     </div>
                                 </template>
                             </div>
 
-                            <div class="text-center pt-1" x-show="comments.length < commentsCount">
-                                <button type="button" @click="loadMoreComments()" class="text-xs font-semibold text-amber-600 hover:underline cursor-pointer" x-text="loadingMore ? 'Loading...' : 'See more comments'"></button>
+                            <div class="text-center pt-1" x-show="hasMoreComments">
+                                <button type="button" @click="loadMoreComments()" :disabled="loadingMore"
+                                    class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-50 hover:bg-amber-50 border border-slate-200 text-xs font-semibold text-amber-600 hover:text-amber-700 transition disabled:opacity-50">
+                                    <span x-text="loadingMore ? 'Loading comments...' : 'See more comments'"></span>
+                                </button>
                             </div>
                         </div>
                     </div>

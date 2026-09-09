@@ -319,7 +319,17 @@ class GroupController extends Controller
                     'user.profile.country',
                     'group',
                     'likes',
-                    'comments.user.profile',
+                    'comments' => function ($query) {
+                        $query->whereNull('parent_id')
+                            ->latest()
+                            ->take(3)
+                            ->with([
+                                'user.profile',
+                                'replies' => function ($rq) {
+                                    $rq->oldest()->with('user.profile');
+                                },
+                            ]);
+                    },
                     'media',
                 ])
                 ->latest()

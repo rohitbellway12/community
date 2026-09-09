@@ -81,6 +81,17 @@ class UserProfileController extends Controller
                 'category',
                 'media',
                 'tags',
+                'comments' => function ($query) {
+                    $query->whereNull('parent_id')
+                        ->latest()
+                        ->take(3)
+                        ->with([
+                            'user.profile',
+                            'replies' => function ($rq) {
+                                $rq->oldest()->with('user.profile');
+                            },
+                        ]);
+                },
             ])
             ->withCount([
                 'likes',

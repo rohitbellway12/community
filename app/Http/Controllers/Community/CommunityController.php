@@ -471,28 +471,72 @@ class CommunityController extends Controller
             ],
         ]);
 
-        $skip = $validated['skip'] ?? 0;
+        $skip = (int) ($validated['skip'] ?? 0);
+        $take = 5;
+
+        // Total count of top-level comments
+        $totalTopLevel = $post->comments()
+            ->whereNull('parent_id')
+            ->count();
 
         $comments = $post->comments()
-            ->with('user')
+            ->whereNull('parent_id')
+            ->with([
+                'user.profile',
+                'replies' => function ($q) {
+                    $q->oldest()->with('user.profile');
+                },
+            ])
             ->latest()
             ->skip($skip)
-            ->take(5)
+            ->take($take)
             ->get()
-            ->map(fn ($comment) => [
-                'id' => $comment->id,
-                'content' => $comment->content,
-                'created_at_human' => $comment->created_at->diffForHumans(),
-                'user' => [
-                    'name' => $comment->user->name,
-                    'avatar' => $comment->user->avatar
-                        ?? 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&h=100&fit=crop&crop=faces',
-                ],
-            ]);
+            ->map(function ($comment) {
+                $user = $comment->user;
+                $profile = $user?->profile;
+                $avatar = $profile?->avatar
+                    ? (str_starts_with($profile->avatar, 'http') ? $profile->avatar : asset('storage/' . ltrim($profile->avatar, '/')))
+                    : 'https://ui-avatars.com/api/?name=' . urlencode($user?->name ?? 'User') . '&background=0c1b33&color=fff';
+
+                return [
+                    'id' => $comment->id,
+                    'content' => $comment->content,
+                    'parent_id' => $comment->parent_id,
+                    'created_at_human' => $comment->created_at->diffForHumans(),
+                    'user' => [
+                        'id' => $user?->id,
+                        'name' => $user?->name ?? 'User',
+                        'avatar' => $avatar,
+                    ],
+                    'replies' => $comment->replies->map(function ($reply) {
+                        $replyUser = $reply->user;
+                        $replyProfile = $replyUser?->profile;
+                        $replyAvatar = $replyProfile?->avatar
+                            ? (str_starts_with($replyProfile->avatar, 'http') ? $replyProfile->avatar : asset('storage/' . ltrim($replyProfile->avatar, '/')))
+                            : 'https://ui-avatars.com/api/?name=' . urlencode($replyUser?->name ?? 'User') . '&background=0c1b33&color=fff';
+
+                        return [
+                            'id' => $reply->id,
+                            'content' => $reply->content,
+                            'parent_id' => $reply->parent_id,
+                            'created_at_human' => $reply->created_at->diffForHumans(),
+                            'user' => [
+                                'id' => $replyUser?->id,
+                                'name' => $replyUser?->name ?? 'User',
+                                'avatar' => $replyAvatar,
+                            ],
+                        ];
+                    })->values(),
+                ];
+            });
+
+        $hasMore = ($skip + $comments->count()) < $totalTopLevel;
 
         return response()->json([
             'success' => true,
             'comments' => $comments,
+            'has_more' => $hasMore,
+            'total_top_level' => $totalTopLevel,
         ]);
     }
 

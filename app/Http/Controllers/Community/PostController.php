@@ -90,9 +90,15 @@ public function index(Request $request)
             },
             'comments' => function ($query) {
                 $query
+                    ->whereNull('parent_id')
                     ->latest()
-                    ->take(5)
-                    ->with('user.profile');
+                    ->take(3)
+                    ->with([
+                        'user.profile',
+                        'replies' => function ($replyQuery) {
+                            $replyQuery->oldest()->with('user.profile');
+                        },
+                    ]);
             },
         ])
         ->withCount([
@@ -536,11 +542,16 @@ public function store(Request $request)
             'media',
             'comments' => function ($query) {
                 $query
+                    ->whereNull('parent_id')
                     ->latest()
                     ->take(10)
-                    ->with('user.profile');
+                    ->with([
+                        'user.profile',
+                        'replies' => function ($replyQuery) {
+                            $replyQuery->oldest()->with('user.profile');
+                        },
+                    ]);
             },
-            'comments.replies.user.profile',
         ]);
 
         $post->loadCount([
