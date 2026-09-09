@@ -1544,6 +1544,7 @@
                                 class="mt-6 flex justify-end gap-2">
                                 @csrf
                                 @method('DELETE')
+                                <input type="hidden" name="redirect_to" value="{{ $post->group_id ? route('community.groups.show', $post->group_id) : route('community.index') }}">
 
                                 <button type="button"
                                     @click="postDeleteConfirm = false"

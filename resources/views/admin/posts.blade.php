@@ -1068,7 +1068,7 @@
                         >
 
                         <p class="mt-1.5 text-[10px] text-slate-400">
-                            JPG, JPEG, PNG, WEBP or MP4. Maximum 10MB per file.
+                            JPG, JPEG, PNG, WEBP or MP4. Maximum 100MB per file.
                         </p>
 
                     </div>

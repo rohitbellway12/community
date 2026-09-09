@@ -387,7 +387,7 @@ public function store(Request $request)
         'media.*' => [
             'file',
             'mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi',
-            'max:20480',
+            'max:102400',
         ],
 
         // TAGS
@@ -623,7 +623,7 @@ public function store(Request $request)
             'nullable',
             'file',
             'mimes:jpg,jpeg,png,webp,mp4',
-            'max:10240',
+            'max:102400',
         ],
 
         'tags' => ['nullable', 'array'],
@@ -685,15 +685,46 @@ public function store(Request $request)
      * Delete post.
      */
     public function destroy(Request $request, Post $post)
-{
-    Gate::authorize('delete', $post);
+    {
+        Gate::authorize('delete', $post);
 
-    $post->delete();
+        $groupId = $post->group_id;
+        $postId = $post->id;
 
-    return redirect()
-        ->back()
-        ->with('success', 'Discussion deleted successfully.');
-}
+        $post->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Discussion deleted successfully.',
+            ]);
+        }
+
+        if ($request->filled('redirect_to')) {
+            return redirect($request->input('redirect_to'))
+                ->with('success', 'Discussion deleted successfully.');
+        }
+
+        $previousUrl = url()->previous();
+        if (
+            str_contains($previousUrl, '/posts/' . $postId) ||
+            $previousUrl === route('community.posts.show', ['post' => $postId])
+        ) {
+            if ($groupId) {
+                return redirect()
+                    ->route('community.groups.show', $groupId)
+                    ->with('success', 'Discussion deleted successfully.');
+            }
+
+            return redirect()
+                ->route('community.index')
+                ->with('success', 'Discussion deleted successfully.');
+        }
+
+        return redirect()
+            ->back()
+            ->with('success', 'Discussion deleted successfully.');
+    }
 
     /**
      * Toggle saved post.
@@ -814,7 +845,7 @@ public function store(Request $request)
                 'nullable',
                 'file',
                 'mimes:jpg,jpeg,png,webp,mp4',
-                'max:10240',
+                'max:102400',
             ],
         ]);
 

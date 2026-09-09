@@ -669,7 +669,7 @@
                             <input type="file" name="media[]" @change="handleFiles($event)" multiple
                                 accept=".jpg,.jpeg,.png,.webp,.mp4" class="hidden">
                         </label>
-                        <span class="text-[10px] font-medium text-slate-400">Max 10MB per file</span>
+                        <span class="text-[10px] font-medium text-slate-400">Max 100MB per file</span>
                     </div>
 
                     <button type="submit"

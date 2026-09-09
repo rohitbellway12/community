@@ -1986,7 +1986,7 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                                                 <div class="flex items-center justify-between gap-3">
                                                     <div>
                                                         <div class="text-[11px] font-semibold text-slate-700">Add photos or videos</div>
-                                                        <div class="text-[10px] text-slate-400 mt-1">JPG, JPEG, PNG, WEBP or MP4 · max 10MB each · up to 10 files</div>
+                                                        <div class="text-[10px] text-slate-400 mt-1">JPG, JPEG, PNG, WEBP or MP4 · max 100MB each · up to 10 files</div>
                                                     </div>
                                                     <label class="shrink-0 inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-slate-200 text-[10px] font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-900 cursor-pointer transition">
                                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14" /></svg>
