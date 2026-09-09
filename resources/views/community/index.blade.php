@@ -1047,8 +1047,8 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                             this.deleteConfirmParentComment = parentComment;
                         },
                     
-                        cancelDeleteComment() {
-                            if (this.commentActionLoading) return;
+                        cancelDeleteComment(force = false) {
+                            if (this.commentActionLoading && !force) return;
                     
                             this.deleteConfirmComment = null;
                             this.deleteConfirmIsReply = false;
@@ -1100,7 +1100,7 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                                 }
                     
                                 this.commentsCount = Math.max(0, Number(this.commentsCount) - 1);
-                                this.cancelDeleteComment();
+                                this.cancelDeleteComment(true);
                                 this.showCommentToast(isReply ? 'Reply deleted successfully.' : 'Comment deleted successfully.');
                             } catch (error) {
                                 console.error('Delete comment error:', error);

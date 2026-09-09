@@ -680,8 +680,8 @@
                         this.deleteConfirmParentComment = parent;
                     },
 
-                    cancelDeleteComment() {
-                        if (this.commentActionLoading) return;
+                    cancelDeleteComment(force = false) {
+                        if (this.commentActionLoading && !force) return;
 
                         this.deleteConfirmComment = null;
                         this.deleteConfirmIsReply = false;
@@ -734,7 +734,7 @@
                             }
 
                             this.commentsCount = Math.max(0, Number(this.commentsCount) - 1);
-                            this.cancelDeleteComment();
+                            this.cancelDeleteComment(true);
 
                             this.showToast(
                                 this.deleteConfirmIsReply ? 'Reply deleted successfully.' : 'Comment deleted successfully.'
