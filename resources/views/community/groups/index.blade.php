@@ -8,6 +8,7 @@
     'topContributors' => collect(),
     'groups' => collect(),
     'users' => collect(),
+    'followers' => collect(),
 ])
 
 @php
@@ -40,7 +41,18 @@
         ->values()
         ->all();
 
-    $modalUsersList = collect($users ?? [])
+    /*
+    |--------------------------------------------------------------------------
+    | Only Followers For Group Members (Create & Edit Modals)
+    |--------------------------------------------------------------------------
+    */
+    $followersCollection = (!empty($followers) && count($followers) > 0)
+        ? $followers
+        : (auth()->check()
+            ? auth()->user()->followers()->with('profile:id,user_id,username,avatar')->select('users.id', 'users.name', 'users.email')->get()
+            : collect());
+
+    $modalUsersList = collect($followersCollection)
         ->map(function ($u) {
             return [
                 'id' => $u->id,
@@ -897,8 +909,7 @@
                                     </div>
                                 </template>
 
-                                <div x-show="filteredUsers.length === 0" class="text-center py-3 text-xs text-slate-400">
-                                    No users found
+                                <div x-show="filteredUsers.length === 0" class="text-center py-3 text-xs text-slate-400" x-text="usersList.length === 0 ? 'No followers found' : 'No users found'">
                                 </div>
                             </div>
 
@@ -1213,8 +1224,8 @@
                                 <div
                                     x-show="filteredEditUsers.length === 0"
                                     class="text-center py-3 text-xs text-slate-400"
+                                    x-text="usersList.length === 0 ? 'No followers found' : 'No users found'"
                                 >
-                                    No users found
                                 </div>
                             </div>
 

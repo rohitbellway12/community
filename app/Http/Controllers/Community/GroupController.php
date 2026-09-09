@@ -98,6 +98,21 @@ class GroupController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | Followers (Used by Create & Edit Group modals)
+        |--------------------------------------------------------------------------
+        */
+        $followers = $user->followers()
+            ->with('profile:id,user_id,username,avatar')
+            ->select([
+                'users.id',
+                'users.name',
+                'users.email',
+            ])
+            ->orderBy('users.name')
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
         | Community Sidebar Data
         |--------------------------------------------------------------------------
         */
@@ -123,6 +138,7 @@ class GroupController extends Controller
         return view('community.groups.index', [
             'groups' => $groups,
             'users' => $users,
+            'followers' => $followers,
             'user' => $user,
             'notificationsCount' => $notificationsCount,
             'topContributors' => $topContributors,
