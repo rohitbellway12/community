@@ -887,10 +887,9 @@
                 }
 
                 try {
+                    const markReadUrl = @js(route('community.notifications.read', ['id' => '__ID__']));
                     const response = await fetch(
-                        "{{ url('/community/notifications') }}/" +
-                        notificationId +
-                        "/read",
+                        markReadUrl.replace('__ID__', notificationId),
                         {
                             method: 'PATCH',
                             headers: {
@@ -1000,11 +999,10 @@
                             btn.disabled = true;
                         });
 
-                        const endpoint =
-                            "{{ url('/community/groups') }}/" +
-                            encodeURIComponent(groupSlug) +
-                            "/invitation/" +
-                            action;
+                        const acceptUrl = @js(route('community.groups.invitation.accept', ['group' => '__GROUP__']));
+                        const rejectUrl = @js(route('community.groups.invitation.reject', ['group' => '__GROUP__']));
+                        const endpoint = (action === 'accept' ? acceptUrl : rejectUrl)
+                            .replace('__GROUP__', encodeURIComponent(groupSlug));
 
                         try {
                             const response = await fetch(
@@ -1170,13 +1168,11 @@
                             btn.disabled = true;
                         });
 
-                        const endpoint =
-                            "{{ url('/community/groups') }}/" +
-                            encodeURIComponent(groupSlug) +
-                            "/requests/" +
-                            encodeURIComponent(requesterId) +
-                            "/" +
-                            action;
+                        const acceptReqUrl = @js(route('community.groups.requests.accept', ['group' => '__GROUP__', 'userToAccept' => '__USER__']));
+                        const rejectReqUrl = @js(route('community.groups.requests.reject', ['group' => '__GROUP__', 'userToReject' => '__USER__']));
+                        const endpoint = (action === 'accept' ? acceptReqUrl : rejectReqUrl)
+                            .replace('__GROUP__', encodeURIComponent(groupSlug))
+                            .replace('__USER__', encodeURIComponent(requesterId));
 
                         try {
                             const response = await fetch(

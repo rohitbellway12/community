@@ -955,7 +955,7 @@
 
                     {{-- PROFILE DROPDOWN --}}
                     <div
-                        class="relative hidden sm:block"
+                        class="relative flex items-center"
                         x-data="{ profileDropdownOpen: false }"
                     >
                         <button
@@ -965,7 +965,7 @@
                             class="relative flex items-center justify-center focus:outline-none group cursor-pointer"
                             aria-label="My profile"
                         >
-                            <div class="relative w-9 h-9 rounded-full bg-[#1e293b] ring-2 ring-amber-400 group-hover:ring-white transition shadow-xs flex items-center justify-center shrink-0">
+                            <div class="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#1e293b] ring-2 ring-amber-400 group-hover:ring-white transition shadow-xs flex items-center justify-center shrink-0">
                                 <img
                                     src="{{ $topbarAvatar }}"
                                     alt="{{ $userName }}"
@@ -975,7 +975,7 @@
 
                                 @if ($topbarIsoCode)
                                     <span
-                                        class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[1.5px] border-[#0b1329] shadow-xs overflow-hidden bg-white flex items-center justify-center shrink-0 z-10"
+                                        class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-[1.5px] border-[#0b1329] shadow-xs overflow-hidden bg-white flex items-center justify-center shrink-0 z-10"
                                         title="{{ $topbarCountry?->name ?? 'Country' }}"
                                     >
                                         <img
@@ -988,7 +988,7 @@
                                     </span>
                                 @elseif (!empty($topbarCountry?->flag) && (str_starts_with($topbarCountry->flag, 'http://') || str_starts_with($topbarCountry->flag, 'https://')))
                                     <span
-                                        class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[1.5px] border-[#0b1329] shadow-xs overflow-hidden bg-white flex items-center justify-center shrink-0 z-10"
+                                        class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-[1.5px] border-[#0b1329] shadow-xs overflow-hidden bg-white flex items-center justify-center shrink-0 z-10"
                                         title="{{ $topbarCountry?->name ?? 'Country' }}"
                                     >
                                         <img
@@ -1001,7 +1001,7 @@
                                     </span>
                                 @elseif (!empty($topbarCountry?->flag))
                                     <span
-                                        class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[1.5px] border-[#0b1329] shadow-xs overflow-hidden bg-white flex items-center justify-center text-[9px] shrink-0 leading-none z-10"
+                                        class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-[1.5px] border-[#0b1329] shadow-xs overflow-hidden bg-white flex items-center justify-center text-[8px] sm:text-[9px] shrink-0 leading-none z-10"
                                         title="{{ $topbarCountry?->name ?? 'Country' }}"
                                     >
                                         {{ $topbarCountry->flag }}
@@ -1083,9 +1083,9 @@
                     {{-- GUEST LOGIN --}}
                     <a
                         href="{{ route('login') }}"
-                        class="hidden sm:flex items-center justify-center px-4 h-9 rounded-lg bg-amber-400 text-slate-950 text-xs font-bold hover:bg-amber-500 transition"
+                        class="flex items-center justify-center px-3 sm:px-4 h-8 sm:h-9 rounded-lg bg-amber-400 text-slate-950 text-xs font-bold hover:bg-amber-500 transition whitespace-nowrap"
                     >
-                        Community Login
+                        Login
                     </a>
 
                 @endauth
@@ -1245,7 +1245,11 @@
                 <div class="pt-3 mt-3 border-t border-white/15 space-y-3">
 
                     {{-- User --}}
-                    <div class="flex items-center gap-3 px-3 py-2">
+                    <a
+                        href="{{ $topbarProfile?->username ? route('community.profile', $topbarProfile->username) : route('community.profile.me') }}"
+                        @click="mobileMenuOpen = false"
+                        class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/5 transition group"
+                    >
                         <div class="relative w-10 h-10 rounded-full bg-[#1e293b] ring-2 ring-amber-400 flex items-center justify-center shrink-0">
                             <img
                                 src="{{ $topbarAvatar }}"
@@ -1256,7 +1260,7 @@
 
                             @if ($topbarIsoCode)
                                 <span
-                                    class="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 rounded-full border-[1.5px] border-[#0b1329] shadow-xs overflow-hidden bg-white flex items-center justify-center shrink-0"
+                                    class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[1.5px] border-[#0b1329] shadow-xs overflow-hidden bg-white flex items-center justify-center shrink-0"
                                     title="{{ $topbarCountry->name }}"
                                 >
                                     <img
@@ -1269,7 +1273,7 @@
                                 </span>
                             @elseif (!empty($topbarCountry?->flag) && (str_starts_with($topbarCountry->flag, 'http://') || str_starts_with($topbarCountry->flag, 'https://')))
                                 <span
-                                    class="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 rounded-full border-[1.5px] border-[#0b1329] shadow-xs overflow-hidden bg-white flex items-center justify-center shrink-0"
+                                    class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[1.5px] border-[#0b1329] shadow-xs overflow-hidden bg-white flex items-center justify-center shrink-0"
                                     title="{{ $topbarCountry->name }}"
                                 >
                                     <img
@@ -1282,7 +1286,7 @@
                                 </span>
                             @elseif (!empty($topbarCountry?->flag))
                                 <span
-                                    class="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 rounded-full border-[1.5px] border-[#0b1329] shadow-xs overflow-hidden bg-white flex items-center justify-center text-[10px] shrink-0 leading-none"
+                                    class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[1.5px] border-[#0b1329] shadow-xs overflow-hidden bg-white flex items-center justify-center text-[10px] shrink-0 leading-none"
                                     title="{{ $topbarCountry->name }}"
                                 >
                                     {{ $topbarCountry->flag }}
@@ -1295,7 +1299,7 @@
                         </div>
 
                         <div class="min-w-0">
-                            <p class="text-sm font-semibold text-white truncate">
+                            <p class="text-sm font-semibold text-white group-hover:text-amber-400 transition truncate">
                                 {{ $authUser?->name ?? 'User' }}
                             </p>
 
@@ -1305,7 +1309,7 @@
                                 </p>
                             @endif
                         </div>
-                    </div>
+                    </a>
 
                     {{-- Admin Dashboard --}}
                     @if ($authUser?->role instanceof \App\Enums\UserRole)
@@ -1470,13 +1474,19 @@
                 href="{{ $topbarProfile?->username ? route('community.profile', $topbarProfile->username) : route('community.profile.me') }}"
                 class="flex flex-1 flex-col items-center justify-center gap-1 transition {{ request()->routeIs('community.profile*') ? 'text-[#0b1329] font-bold' : 'text-slate-400 hover:text-slate-600 font-medium' }}"
             >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
-                    />
-                </svg>
+                <div class="relative w-5 h-5 rounded-full flex items-center justify-center shrink-0 {{ request()->routeIs('community.profile*') ? 'ring-2 ring-[#0b1329] ring-offset-1' : 'ring-1 ring-slate-300' }}">
+                    <img
+                        src="{{ $topbarAvatar }}"
+                        alt="{{ $userName }}"
+                        class="w-full h-full rounded-full object-cover"
+                        onerror="this.onerror=null; this.src='{{ $defaultAvatar }}';"
+                    >
+                    @if ($topbarIsoCode)
+                        <span class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full overflow-hidden border border-white flex items-center justify-center bg-white shrink-0">
+                            <img src="https://flagcdn.com/w40/{{ $topbarIsoCode }}.png" alt="" class="w-full h-full object-cover rounded-full">
+                        </span>
+                    @endif
+                </div>
 
                 <span class="text-[10px] tracking-tight">
                     Profile

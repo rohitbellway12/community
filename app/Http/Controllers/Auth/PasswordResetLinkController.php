@@ -13,8 +13,13 @@ use Illuminate\View\View;
 class PasswordResetLinkController extends Controller
 {
     // Step ke mutabiq view render karein
-    public function create(Request $request): View
+    public function create(Request $request): View|RedirectResponse
     {
+        if ($request->has('reset')) {
+            session()->forget(['reset_email', 'otp_code', 'otp_verified', 'step']);
+            return redirect()->route('password.request');
+        }
+
         $step = session('step', 1);
 
         return view('auth.forgot-password', compact('step'));
@@ -42,7 +47,7 @@ class PasswordResetLinkController extends Controller
                 ->subject('Password Reset OTP Code');
         });
 
-        return back()->with('status', 'OTP has been sent to your email address.');
+        return redirect()->route('password.request')->with('status', 'OTP has been sent to your email address.');
     }
 
     // Step 2: OTP Verify Karein
@@ -55,10 +60,10 @@ class PasswordResetLinkController extends Controller
         if ($request->otp == session('otp_code')) {
             session(['otp_verified' => true, 'step' => 3]);
 
-            return back()->with('status', 'OTP verified successfully. Create your new password.');
+            return redirect()->route('password.request')->with('status', 'OTP verified successfully. Create your new password.');
         }
 
-        return back()->withErrors(['otp' => 'Invalid OTP entered.']);
+        return redirect()->route('password.request')->withErrors(['otp' => 'Invalid OTP entered.']);
     }
 
     // Step 3: Password Update Karein
@@ -66,9 +71,18 @@ class PasswordResetLinkController extends Controller
     {
         $request->validate([
             'password' => 'required|min:8|confirmed',
+        ], [
+            'password.confirmed' => 'New password and confirm password do not match.',
+            'password.min' => 'Password must be at least 8 characters.',
         ]);
 
-        $email = session('reset_email');
+        $email = $request->input('email') ?: session('reset_email');
+
+        if (!$email) {
+            return redirect()->route('password.request')
+                ->withErrors(['general' => 'Session expired. Please request OTP again.']);
+        }
+
         $user = User::where('email', $email)->first();
 
         if ($user) {
@@ -79,9 +93,10 @@ class PasswordResetLinkController extends Controller
             // Session clear karein
             session()->forget(['reset_email', 'otp_code', 'otp_verified', 'step']);
 
-            return redirect()->route('login')->with('status', 'Password updated successfully!');
+            return redirect()->route('login')->with('status', 'Password updated successfully! Please login with your new password.');
         }
 
-        return back()->withErrors(['email' => 'User not found.']);
+        return redirect()->route('password.request')
+            ->withErrors(['general' => 'User not found with this email.']);
     }
 }
