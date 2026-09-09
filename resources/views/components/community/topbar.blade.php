@@ -95,6 +95,8 @@
                         $title = 'New Comment';
                     } elseif (str_contains($type, 'like') || str_contains($dataType, 'like')) {
                         $title = 'Post Liked';
+                    } elseif (str_contains($type, 'follow') || str_contains($dataType, 'follow')) {
+                        $title = 'New Follower';
                     } else {
                         $title = 'Notification';
                     }
@@ -776,7 +778,7 @@
                                         >
                                             <div
                                                 class="w-9 h-9 rounded-full shrink-0 flex items-center justify-center"
-                                                :class="notification.read ? 'bg-slate-100 text-slate-400' : ((notification.data?.type || '').includes('like') || (notification.title || '').toLowerCase().includes('like') ? 'bg-rose-100 text-rose-500' : ((notification.data?.type || '').includes('reply') || (notification.title || '').toLowerCase().includes('reply') ? 'bg-purple-100 text-purple-600' : ((notification.data?.type || '').includes('comment') || (notification.title || '').toLowerCase().includes('comment') ? 'bg-blue-100 text-blue-600' : 'bg-amber-100 text-amber-600')))"
+                                                :class="notification.read ? 'bg-slate-100 text-slate-400' : ((notification.data?.type || '').includes('like') || (notification.title || '').toLowerCase().includes('like') ? 'bg-rose-100 text-rose-500' : ((notification.data?.type || '').includes('reply') || (notification.title || '').toLowerCase().includes('reply') ? 'bg-purple-100 text-purple-600' : ((notification.data?.type || '').includes('comment') || (notification.title || '').toLowerCase().includes('comment') ? 'bg-blue-100 text-blue-600' : ((notification.data?.type || '').includes('follow') || (notification.title || '').toLowerCase().includes('follow') ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'))))"
                                             >
                                                 <template x-if="(notification.data?.type || '').includes('like') || (notification.title || '').toLowerCase().includes('like')">
                                                     <svg class="w-4 h-4 text-rose-500" fill="currentColor" viewBox="0 0 24 24">
@@ -793,7 +795,12 @@
                                                         <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h8M8 14h5m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                                     </svg>
                                                 </template>
-                                                <template x-if="!((notification.data?.type || '').includes('like') || (notification.title || '').toLowerCase().includes('like')) && !((notification.data?.type || '').includes('reply') || (notification.title || '').toLowerCase().includes('reply')) && !((notification.data?.type || '').includes('comment') || (notification.title || '').toLowerCase().includes('comment'))">
+                                                <template x-if="!((notification.data?.type || '').includes('like') || (notification.title || '').toLowerCase().includes('like')) && !((notification.data?.type || '').includes('reply') || (notification.title || '').toLowerCase().includes('reply')) && !((notification.data?.type || '').includes('comment') || (notification.title || '').toLowerCase().includes('comment')) && ((notification.data?.type || '').includes('follow') || (notification.title || '').toLowerCase().includes('follow'))">
+                                                    <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                                                    </svg>
+                                                </template>
+                                                <template x-if="!((notification.data?.type || '').includes('like') || (notification.title || '').toLowerCase().includes('like')) && !((notification.data?.type || '').includes('reply') || (notification.title || '').toLowerCase().includes('reply')) && !((notification.data?.type || '').includes('comment') || (notification.title || '').toLowerCase().includes('comment')) && !((notification.data?.type || '').includes('follow') || (notification.title || '').toLowerCase().includes('follow'))">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                                         <path
                                                             stroke-linecap="round"

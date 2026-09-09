@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Community;
 use App\Http\Controllers\Controller;
 use App\Models\Follow;
 use App\Models\User;
+use App\Notifications\UserFollowedNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,6 +30,10 @@ class FollowController extends Controller
             'follower_id' => $authUser->id,
             'following_id' => $user->id,
         ]);
+
+        if ($follow->wasRecentlyCreated) {
+            $user->notify(new UserFollowedNotification($authUser));
+        }
 
         return $this->response(
             request: request(),
@@ -97,6 +102,8 @@ class FollowController extends Controller
             'follower_id' => $authUser->id,
             'following_id' => $user->id,
         ]);
+
+        $user->notify(new UserFollowedNotification($authUser));
 
         return $this->response(
             request: request(),
