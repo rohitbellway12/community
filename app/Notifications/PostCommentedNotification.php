@@ -24,14 +24,24 @@ class PostCommentedNotification extends Notification
 
     public function toArray(object $notifiable): array
     {
+        $group = $this->post->group;
+        $message = $group
+            ? "{$this->user->name} commented on your post in '{$group->name}'."
+            : "{$this->user->name} commented on your post.";
+
         return [
             'type' => 'post_commented',
-            'message' => "{$this->user->name} commented on your post.",
+            'title' => 'New Comment',
+            'message' => $message,
             'user_id' => $this->user->id,
             'user_name' => $this->user->name,
             'post_id' => $this->post->id,
             'post_title' => $this->post->title,
             'comment' => $this->comment,
+            'group_id' => $group?->id,
+            'group_name' => $group?->name,
+            'group_slug' => $group?->slug,
+            'url' => route('community.posts.show', $this->post),
         ];
     }
 }

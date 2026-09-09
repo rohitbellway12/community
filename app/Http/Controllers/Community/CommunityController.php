@@ -276,20 +276,40 @@ class CommunityController extends Controller
 
         if ($like) {
             $like->delete();
+            if ($post->likes_count > 0) {
+                $post->decrement('likes_count');
+            }
 
             $liked = false;
+
+            // Clean up unread like notification if unliked
+            if ($post->user) {
+                $post->user->unreadNotifications()
+                    ->where('type', PostLikedNotification::class)
+                    ->get()
+                    ->filter(function ($n) use ($user, $post) {
+                        $d = is_array($n->data) ? $n->data : [];
+                        return (int) ($d['user_id'] ?? 0) === (int) $user->id
+                            && (int) ($d['post_id'] ?? 0) === (int) $post->id;
+                    })
+                    ->each->delete();
+            }
         } else {
             $post->likes()->create([
                 'user_id' => $user->id,
             ]);
+            $post->increment('likes_count');
 
             $liked = true;
 
             // Don't notify yourself
-            if ($post->user_id !== $user->id) {
-                $post->user->notify(
-                    new PostLikedNotification($user, $post)
-                );
+            if ((int) $post->user_id !== (int) $user->id) {
+                $post->loadMissing(['user', 'group']);
+                if ($post->user) {
+                    $post->user->notify(
+                        new PostLikedNotification($user, $post)
+                    );
+                }
             }
         }
 

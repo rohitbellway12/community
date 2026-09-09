@@ -197,13 +197,11 @@
     <main class="notification-main mx-auto grid w-full max-w-[1520px] grid-cols-1 items-start gap-6 px-4 py-6 lg:grid-cols-[280px_minmax(0,1fr)_330px] xl:grid-cols-[300px_minmax(0,1fr)_360px] lg:px-6">
 
         {{-- LEFT SIDEBAR --}}
-        <aside class="hidden lg:block">
-            <x-community.sidebar
-                :top-contributors="$topContributors ?? collect()"
-                :categories="$categories ?? collect()"
-                :tags="$tags ?? collect()"
-            />
-        </aside>
+        <x-community.sidebar
+            :top-contributors="$topContributors ?? collect()"
+            :categories="$categories ?? collect()"
+            :tags="$tags ?? collect()"
+        />
 
         {{-- CENTER --}}
         <section class="min-w-0 space-y-5">
@@ -324,6 +322,11 @@
                             str_contains($dataType, 'group_join_request_rejected') ||
                             ($isGroupJoinRequest && $status === 'rejected');
 
+                        $requesterId = $data['user_id'] ?? null;
+                        $isGroupJoinRequestPending = $isGroupJoinRequest && ($status === 'pending' || !$status) && !$isLegacyGroupAccepted && !$isLegacyGroupRejected;
+                        $isGroupJoinRequestAccepted = $isGroupJoinRequest && ($status === 'accepted' || $status === 'active' || $isLegacyGroupAccepted);
+                        $isGroupJoinRequestRejected = $isGroupJoinRequest && ($status === 'rejected' || $isLegacyGroupRejected);
+
                         $notificationTitle = $data['title'] ?? null;
 
                         if (!$notificationTitle) {
@@ -335,13 +338,13 @@
                                 $notificationTitle = 'Group Join Request Accepted';
                             } elseif ($isLegacyGroupRejected) {
                                 $notificationTitle = 'Group Join Request Rejected';
-                            } elseif (str_contains($type, 'comment')) {
-                                $notificationTitle = 'New Comment';
-                            } elseif (str_contains($type, 'reply')) {
+                            } elseif (str_contains($type, 'reply') || str_contains($dataType, 'reply')) {
                                 $notificationTitle = 'New Reply';
-                            } elseif (str_contains($type, 'like')) {
+                            } elseif (str_contains($type, 'comment') || str_contains($dataType, 'comment')) {
+                                $notificationTitle = 'New Comment';
+                            } elseif (str_contains($type, 'like') || str_contains($dataType, 'like')) {
                                 $notificationTitle = 'Post Liked';
-                            } elseif (str_contains($type, 'follow')) {
+                            } elseif (str_contains($type, 'follow') || str_contains($dataType, 'follow')) {
                                 $notificationTitle = 'New Follower';
                             } else {
                                 $notificationTitle = 'Notification';
@@ -350,6 +353,12 @@
 
                         $groupName = $data['group_name'] ?? 'this group';
                         $groupSlug = $data['group_slug'] ?? null;
+                        if (!$groupSlug && !empty($data['url'])) {
+                            $groupSlug = basename(parse_url($data['url'], PHP_URL_PATH));
+                        }
+                        if (!$groupSlug && !empty($data['group_id'])) {
+                            $groupSlug = \App\Models\Group::find($data['group_id'])?->slug;
+                        }
                     @endphp
 
                     <article
@@ -370,28 +379,28 @@
                                             <path stroke-linecap="round" stroke-linejoin="round"
                                                   d="M10 19a2 2 0 004 0"/>
                                         </svg>
-                                    @elseif(str_contains($type, 'comment'))
+                                    @elseif(str_contains($type, 'reply') || str_contains($dataType, 'reply'))
+                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                  stroke-width="2"
+                                                  d="M9 17l-5-5 5-5m-5 5h10a6 6 0 016 6v1"/>
+                                        </svg>
+                                    @elseif(str_contains($type, 'comment') || str_contains($dataType, 'comment'))
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round"
                                                   d="M8 10h8M8 14h5m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                         </svg>
-                                    @elseif(str_contains($type, 'like'))
+                                    @elseif(str_contains($type, 'like') || str_contains($dataType, 'like'))
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round"
                                                   stroke-width="2"
                                                   d="M14 9V5a3 3 0 00-6 0v4M8 9H5a2 2 0 00-2 2v7a2 2 0 002 2h9.5a2 2 0 001.94-1.515L18.5 12A2 2 0 0016.56 9H14z"/>
                                         </svg>
-                                    @elseif(str_contains($type, 'follow'))
+                                    @elseif(str_contains($type, 'follow') || str_contains($dataType, 'follow'))
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round"
                                                   stroke-width="2"
                                                   d="M15 20a6 6 0 00-12 0m6-10a4 4 0 100-8 4 4 0 000 8zm6 3v6m3-3h-6"/>
-                                        </svg>
-                                    @elseif(str_contains($type, 'reply'))
-                                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                  stroke-width="2"
-                                                  d="M9 17l-5-5 5-5m-5 5h10a6 6 0 016 6v1"/>
                                         </svg>
                                     @else
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -551,18 +560,64 @@
                                             Invitation rejected
                                         </span>
 
+                                    @elseif($isGroupJoinRequestPending && $groupSlug && $requesterId)
+                                        <div class="group-request-actions flex w-full flex-wrap items-center gap-2 sm:w-auto sm:border-0 sm:ml-2 sm:mt-0 sm:p-0">
+                                            <button
+                                                type="button"
+                                                data-group-request="{{ $notification->id }}"
+                                                data-group-slug="{{ $groupSlug }}"
+                                                data-requester-id="{{ $requesterId }}"
+                                                data-group-action="accept"
+                                                class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+                                            >
+                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                                Accept
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                data-group-request="{{ $notification->id }}"
+                                                data-group-slug="{{ $groupSlug }}"
+                                                data-requester-id="{{ $requesterId }}"
+                                                data-group-action="reject"
+                                                class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+                                            >
+                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6L6 18"/>
+                                                </svg>
+                                                Reject
+                                            </button>
+                                        </div>
+
+                                    @elseif($isGroupJoinRequestAccepted)
+
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
+                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                            </svg>
+                                            Request accepted
+                                        </span>
+
+                                    @elseif($isGroupJoinRequestRejected)
+
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-rose-700">
+                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6L6 18"/>
+                                            </svg>
+                                            Request rejected
+                                        </span>
+
                                     @elseif($isGroupJoinRequest)
-                                        {{-- Keep older join-request notifications visible. --}}
-                                        @if(!$isLegacyGroupAccepted && !$isLegacyGroupRejected)
-                                            <span class="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
-                                                Pending
-                                            </span>
-                                        @endif
+                                        <span class="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+                                            Pending
+                                        </span>
                                     @endif
 
-                                    @if($url)
+                                    @if($url && !$isGroupInvitationPending && !$isGroupJoinRequestPending)
                                         <a
-                                            href="{{ $url }}"
+                                            href="{{ str_replace('/reaic/', '/community/', $url) }}"
                                             class="ml-auto inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold text-blue-600 transition hover:bg-blue-50 hover:text-blue-700"
                                         >
                                             View
@@ -616,84 +671,7 @@
         </aside>
     </main>
 
-    {{-- MOBILE BOTTOM NAVIGATION --}}
-    <div class="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-slate-200 bg-white px-4 py-2 shadow-lg lg:hidden">
 
-        <a
-            href="{{ route('community.index') }}"
-            class="flex flex-col items-center gap-1 text-slate-500"
-        >
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 011-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 011 1m-6 0h6"/>
-            </svg>
-            <span class="text-[10px] font-medium">Home</span>
-        </a>
-
-        <a
-            href="{{ route('community.notifications') }}"
-            class="flex flex-col items-center gap-1 font-bold text-[#0b1329]"
-        >
-            <div class="relative">
-                <svg class="h-5 w-5 text-amber-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                </svg>
-
-                @if($unreadCount > 0)
-                    <span class="absolute -right-2 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
-                        {{ $unreadCount > 99 ? '99+' : $unreadCount }}
-                    </span>
-                @endif
-            </div>
-
-            <span class="text-[10px]">Notifications</span>
-        </a>
-
-        <button
-            type="button"
-            @click.prevent="
-                @auth
-                    $dispatch('open-post-modal')
-                @else
-                    window.dispatchEvent(new CustomEvent('open-login-modal'))
-                @endauth
-            "
-            class="flex flex-col items-center justify-center -mt-5 focus:outline-none"
-        >
-            <div class="flex h-12 w-12 items-center justify-center rounded-full border-4 border-[#f3f4f6] bg-[#0b1329] text-white shadow-lg">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
-                </svg>
-            </div>
-            <span class="mt-1 text-[10px] font-medium text-slate-500">Create</span>
-        </button>
-
-        @auth
-            <a
-                href="{{ route('community.profile', $user?->profile?->username ?? $user?->id) }}"
-                class="flex flex-col items-center gap-1 text-slate-500"
-            >
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M20 21a8 8 0 00-16 0m8-10a4 4 0 100-8 4 4 0 000 8z"/>
-                </svg>
-                <span class="text-[10px] font-medium">Profile</span>
-            </a>
-        @else
-            <a
-                href="{{ route('login') }}"
-                class="flex flex-col items-center gap-1 text-slate-500"
-            >
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                          d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4m-4-4l4-4m0 0l-4-4m4 4H3"/>
-                </svg>
-                <span class="text-[10px] font-medium">Login</span>
-            </a>
-        @endauth
-
-    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -725,6 +703,10 @@
                 if (markAllButton) {
                     markAllButton.remove();
                 }
+
+                window.dispatchEvent(new CustomEvent('notification-count-changed', {
+                    detail: { count: 0 }
+                }));
             }
 
             function decrementUnreadCount() {
@@ -733,6 +715,10 @@
                 const count = Math.max(0, currentUnreadCount() - 1);
 
                 unreadCountElement.textContent = String(count);
+
+                window.dispatchEvent(new CustomEvent('notification-count-changed', {
+                    detail: { count: count }
+                }));
 
                 if (count === 0) {
                     removeUnreadUi();
@@ -841,6 +827,53 @@
                         messageElement.textContent =
                             'You rejected the invitation to join this group.';
                     }
+                }
+            }
+
+            function setGroupRequestResultUi(card, action) {
+                if (!card) return;
+
+                const actionsContainer =
+                    card.querySelector('.group-request-actions');
+
+                if (actionsContainer) {
+                    actionsContainer.remove();
+                }
+
+                const contentArea =
+                    card.querySelector('.min-w-0.flex-1');
+
+                if (!contentArea) return;
+
+                const resultRow = document.createElement('div');
+                resultRow.className =
+                    'mt-2 flex flex-wrap items-center gap-2';
+
+                if (action === 'accept') {
+                    resultRow.innerHTML = `
+                        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            Request accepted
+                        </span>
+                    `;
+                } else {
+                    resultRow.innerHTML = `
+                        <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-rose-700">
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6L6 18"/>
+                            </svg>
+                            Request rejected
+                        </span>
+                    `;
+                }
+
+                const firstTextBlock =
+                    contentArea.querySelector('.min-w-0');
+
+                if (firstTextBlock) {
+                    firstTextBlock.appendChild(resultRow);
                 }
             }
 
@@ -1091,6 +1124,115 @@
                                 error.message ||
                                 'Unable to process the group invitation.'
                             );
+                        }
+                    });
+
+                });
+
+            /*
+            |--------------------------------------------------------------------------
+            | ACCEPT / REJECT GROUP JOIN REQUEST
+            |--------------------------------------------------------------------------
+            */
+            document
+                .querySelectorAll('[data-group-request]')
+                .forEach(function (button) {
+
+                    button.addEventListener('click', async function (event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+
+                        const notificationId =
+                            button.getAttribute('data-group-request');
+
+                        const groupSlug =
+                            button.getAttribute('data-group-slug');
+
+                        const requesterId =
+                            button.getAttribute('data-requester-id');
+
+                        const action =
+                            button.getAttribute('data-group-action');
+
+                        if (!notificationId || !groupSlug || !requesterId || !action) {
+                            return;
+                        }
+
+                        const card =
+                            button.closest('.notification-card');
+
+                        const actionButtons =
+                            card?.querySelectorAll(
+                                '[data-group-request]'
+                            ) || [];
+
+                        actionButtons.forEach(function (btn) {
+                            btn.disabled = true;
+                        });
+
+                        const endpoint =
+                            "{{ url('/community/groups') }}/" +
+                            encodeURIComponent(groupSlug) +
+                            "/requests/" +
+                            encodeURIComponent(requesterId) +
+                            "/" +
+                            action;
+
+                        try {
+                            const response = await fetch(
+                                endpoint,
+                                {
+                                    method: 'POST',
+                                    headers: {
+                                        'Accept': 'application/json',
+                                        'Content-Type': 'application/json',
+                                        'X-CSRF-TOKEN': csrfToken,
+                                        'X-Requested-With': 'XMLHttpRequest'
+                                    },
+                                    body: JSON.stringify({})
+                                }
+                            );
+
+                            let result = {};
+
+                            try {
+                                result = await response.json();
+                            } catch (_) {
+                                result = {};
+                            }
+
+                            if (!response.ok || result.success === false) {
+                                throw new Error(
+                                    result.message ||
+                                    'Unable to process the group join request.'
+                                );
+                            }
+
+                            setGroupRequestResultUi(card, action);
+
+                            setNotificationReadUi(
+                                notificationId,
+                                card
+                            );
+
+                            const originallyUnread =
+                                card?.dataset?.originallyUnread === '1';
+
+                            if (originallyUnread) {
+                                decrementUnreadCount();
+                                card.dataset.originallyUnread = '0';
+                            }
+
+                        } catch (error) {
+                            console.error('Group join request error:', error);
+                            alert(
+                                error.message ||
+                                'Unable to process the group join request.'
+                            );
+
+                            actionButtons.forEach(function (btn) {
+                                btn.disabled = false;
+                            });
                         }
                     });
 

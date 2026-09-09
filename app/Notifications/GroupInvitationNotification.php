@@ -30,6 +30,7 @@ class GroupInvitationNotification extends Notification
             'title' => 'Group Invitation',
             'message' => "{$this->invitedBy->name} invited you to join {$this->group->name}.",
             'group_id' => $this->group->id,
+            'group_slug' => $this->group->slug,
             'group_name' => $this->group->name,
             'user_id' => $notifiable->id,
             'invited_by' => $this->invitedBy->id,

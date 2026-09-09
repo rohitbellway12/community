@@ -19,7 +19,35 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-<style>[x-cloak] { display: none !important; }</style>
+<style>
+[x-cloak] { display: none !important; }
+
+.community-post-card {
+    text-align: left !important;
+}
+
+.community-post-title {
+    text-align: left !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.community-post-title h1,
+.community-post-title h2,
+.community-post-title h3,
+.community-post-title a,
+.community-post-title span {
+    text-align: left !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+}
+
+.community-post-content,
+.community-post-content * {
+    text-align: left !important;
+}
+</style>
 </head>
 <body class="min-h-screen bg-[#f3f4f6] font-sans text-slate-800 antialiased selection:bg-amber-500 selection:text-white pb-20 lg:pb-0 flex flex-col">
 
@@ -161,7 +189,7 @@
             @endphp
 
             <div
-                class="bg-white p-5 lg:p-6 rounded-2xl shadow-sm border border-slate-200/70 space-y-4 min-w-0"
+                class="community-post-card bg-white p-5 lg:p-6 rounded-2xl shadow-sm border border-slate-200/70 space-y-4 min-w-0 text-left"
                 x-data="{
                     currentUserId: {{ auth()->check() ? auth()->id() : 'null' }},
                     postOwnerId: {{ (int) $post->user_id }},
@@ -755,10 +783,40 @@
                             class="w-10 h-10 rounded-full object-cover shrink-0">
 
                         <div class="min-w-0">
-                            <div class="font-bold text-slate-900 text-sm truncate">
+                            <div class="font-bold text-slate-900 text-sm truncate flex items-center gap-1.5">
                                 <a href="{{ $authorUrl }}" class="hover:underline">
                                     {{ $author?->name ?? 'User' }}
                                 </a>
+                                @if ($profile?->country)
+                                    @php
+                                        $isoCode = strtolower(trim($profile->country->iso_code ?: ''));
+                                        if (!$isoCode && !empty($profile->country->code) && strlen(trim($profile->country->code)) === 2) {
+                                            $isoCode = strtolower(trim($profile->country->code));
+                                        }
+                                    @endphp
+                                    @if ($isoCode)
+                                        <img
+                                            src="https://flagcdn.com/20x15/{{ $isoCode }}.png"
+                                            srcset="https://flagcdn.com/40x30/{{ $isoCode }}.png 2x"
+                                            width="20"
+                                            height="15"
+                                            alt="{{ $profile->country->name }}"
+                                            title="{{ $profile->country->name }}"
+                                            class="w-4.5 h-3.5 object-cover rounded-xs shadow-2xs inline-block shrink-0 align-middle"
+                                            loading="lazy"
+                                            onerror="this.style.display='none'"
+                                        >
+                                    @elseif (!empty($profile->country->flag) && (str_starts_with($profile->country->flag, 'http://') || str_starts_with($profile->country->flag, 'https://')))
+                                        <img
+                                            src="{{ $profile->country->flag }}"
+                                            alt="{{ $profile->country->name }}"
+                                            title="{{ $profile->country->name }}"
+                                            class="w-4.5 h-3.5 object-cover rounded-xs shadow-2xs inline-block shrink-0 align-middle"
+                                            loading="lazy"
+                                            onerror="this.style.display='none'"
+                                        >
+                                    @endif
+                                @endif
                             </div>
 
                             <div class="mt-0.5 flex items-center gap-1.5 text-[11px] text-slate-400">
@@ -840,35 +898,40 @@
                     </div>
                 </div>
 
-                {{-- TITLE --}}
-                <div>
-                    <h1 class="font-bold text-slate-900 text-base sm:text-lg leading-snug whitespace-pre-wrap break-words"
-                        :class="expandedTitle ? '' : 'line-clamp-2'">
-                        <span x-text="postTitle"></span>
-                    </h1>
+                {{-- TITLE & CONTENT --}}
+                <div class="space-y-1.5 text-left">
+                    <div class="community-post-title text-base sm:text-lg font-bold text-slate-900 leading-snug break-words text-left">
+                        <h1 :class="expandedTitle ? '' : 'line-clamp-2'" class="m-0 p-0 text-left break-words block font-bold text-slate-900 text-base sm:text-lg leading-snug">
+                            <span class="text-left block" x-text="postTitle"></span>
+                        </h1>
 
-                    @if($titleLength > 140)
-                        <button type="button"
-                            @click="expandedTitle = !expandedTitle"
-                            class="mt-1 text-[11px] font-bold text-amber-600 hover:underline">
-                            <span x-text="expandedTitle ? 'Show less' : 'Show more'"></span>
-                        </button>
-                    @endif
-                </div>
+                        @if($titleLength > 140)
+                            <button type="button"
+                                @click="expandedTitle = !expandedTitle"
+                                class="mt-1 text-[11px] font-bold text-amber-600 hover:underline text-left inline-block">
+                                <span x-text="expandedTitle ? 'Show less' : 'Show more'"></span>
+                            </button>
+                        @endif
+                    </div>
 
-                {{-- CONTENT --}}
-                <div>
-                    <p class="text-xs sm:text-sm text-slate-600 leading-relaxed whitespace-pre-wrap break-words"
-                        :class="expandedContent ? '' : 'line-clamp-5'"
-                        x-text="postContent"></p>
+                    <div class="community-post-content text-xs sm:text-sm text-slate-600 leading-relaxed break-words text-left">
+                        <p class="whitespace-pre-wrap break-words text-left"
+                            :class="expandedContent ? '' : 'line-clamp-5'"
+                            x-text="postContent"></p>
 
-                    @if($contentLength > 280)
-                        <button type="button"
-                            @click="expandedContent = !expandedContent"
-                            class="mt-1.5 text-[11px] font-bold text-amber-600 hover:underline">
-                            <span x-text="expandedContent ? 'Show less' : 'Show more'"></span>
-                        </button>
-                    @endif
+                        @if($contentLength > 280)
+                            <div class="mt-1.5 flex justify-start text-left">
+                                <button type="button"
+                                    @click="expandedContent = !expandedContent"
+                                    class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600 hover:text-amber-700 hover:underline text-left">
+                                    <span x-text="expandedContent ? 'Show less' : 'Show more'"></span>
+                                    <svg class="w-3 h-3 transition-transform" :class="expandedContent ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        @endif
+                    </div>
                 </div>
 
                 {{-- MEDIA --}}

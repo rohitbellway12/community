@@ -48,7 +48,7 @@ class UserProfileController extends Controller
         */
 
         if ($username === 'edit') {
-            if (! Auth::check()) {
+            if (!Auth::check()) {
                 return redirect()->route('login');
             }
 

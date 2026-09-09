@@ -91,37 +91,69 @@
         />
 
         {{-- CENTER FEED --}}
-        <section class="space-y-5 min-w-0">
+        <section class="space-y-5 min-w-0" x-data="{ activeTab: '{{ request('tab', 'posts') }}' }">
 
             {{-- GROUP HEADER CARD --}}
             <div class="bg-white p-5 lg:p-6 rounded-2xl shadow-sm border border-slate-200/70 space-y-4">
-                <div class="flex items-start justify-between gap-4">
+                <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                     <div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 bg-amber-50 text-amber-700 rounded-md">Group</span>
-                            <span class="text-xs text-slate-500">{{ $group->users_count }} Members</span>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 bg-amber-50 text-amber-700 rounded-md">
+                                Group
+                            </span>
+                            <span class="text-xs font-medium px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md capitalize">
+                                {{ $group->visibility ?? 'Public' }} Group
+                            </span>
+                            <span class="text-xs text-slate-500 font-semibold cursor-pointer hover:text-amber-600 transition" @click="activeTab = 'members'">
+                                {{ $members->count() }} Active {{ Str::plural('Member', $members->count()) }}
+                            </span>
                         </div>
-                        <h1 class="text-xl lg:text-2xl font-extrabold text-slate-900 tracking-tight mt-1">
+                        <h1 class="text-xl lg:text-2xl font-extrabold text-slate-900 tracking-tight mt-1.5">
                             {{ $group->name }}
                         </h1>
                     </div>
 
-                    {{-- MEMBERSHIP STATUS BADGE --}}
-                    <div>
-                        @if($isMember)
-                            <span class="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 border border-emerald-200/60">
-                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                Active Member
+                    {{-- MEMBERSHIP STATUS / ACTIONS --}}
+                    <div class="shrink-0">
+                        @if($user && (int) $group->owner_id === (int) $user->id)
+                            <span class="px-3 py-1.5 bg-amber-50 text-amber-800 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 border border-amber-200/80">
+                                👑 You are the Owner
                             </span>
-                        @elseif($membership)
+                        @elseif($isMember)
+                            <div class="flex items-center gap-2">
+                                <span class="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 border border-emerald-200/60">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                    Active Member
+                                </span>
+                                <form method="POST" action="{{ route('community.groups.leave', $group) }}" onsubmit="return confirm('Are you sure you want to leave this group?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="px-2.5 py-1 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg border border-rose-200 transition font-medium">
+                                        Leave
+                                    </button>
+                                </form>
+                            </div>
+                        @elseif($membership && ($membership->status ?? '') === 'pending')
                             <span class="px-3 py-1.5 bg-amber-50 text-amber-700 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 border border-amber-200/60">
                                 <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                                Membership Pending
+                                Membership Pending Approval
                             </span>
                         @else
-                            <span class="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 border border-slate-200">
-                                Not a Member
-                            </span>
+                            @auth
+                                <form method="POST" action="{{ route('community.groups.join', $group) }}">
+                                    @csrf
+                                    <button type="submit" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition shadow-sm inline-flex items-center gap-1.5">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                        </svg>
+                                        Join Group
+                                    </button>
+                                </form>
+                            @else
+                                <a href="{{ route('login') }}" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition shadow-sm">
+                                    Join Group
+                                </a>
+                            @endauth
                         @endif
                     </div>
                 </div>
@@ -129,9 +161,315 @@
                 <p class="text-xs lg:text-sm text-slate-600 leading-relaxed">
                     {{ $group->description ?? 'No description provided for this group yet.' }}
                 </p>
+
+                {{-- CREATOR / OWNER SECTION & AVATAR PREVIEW --}}
+                <div class="pt-3.5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    @if($owner)
+                        @php
+                            $ownerProfile = $owner->profile;
+                            $ownerAvatar = $ownerProfile?->avatar
+                                ? asset('storage/' . $ownerProfile->avatar)
+                                : 'https://ui-avatars.com/api/?name=' . urlencode($owner->name) . '&background=0c1b33&color=fff';
+                            $ownerUsername = $ownerProfile?->username ?? $owner->id;
+                        @endphp
+                        <div class="flex items-center gap-3">
+                            <a href="{{ route('community.profile', $ownerUsername) }}" class="flex items-center gap-2.5 group">
+                                <div class="relative">
+                                    <img src="{{ $ownerAvatar }}" alt="{{ $owner->name }}" class="w-9 h-9 rounded-full object-cover ring-2 ring-amber-400">
+                                    @if($ownerProfile?->country?->iso_code)
+                                        <img
+                                            src="https://flagcdn.com/20x15/{{ strtolower($ownerProfile->country->iso_code) }}.png"
+                                            class="absolute -bottom-0.5 -right-0.5 w-3.5 h-2.5 object-cover rounded-xs border border-white"
+                                            alt="{{ $ownerProfile->country->name ?? 'Country' }}"
+                                            title="{{ $ownerProfile->country->name ?? 'Country' }}"
+                                        >
+                                    @endif
+                                </div>
+                                <div>
+                                    <div class="text-xs font-bold text-slate-900 group-hover:text-amber-600 flex items-center gap-1.5 transition">
+                                        <span>{{ $owner->name }}</span>
+                                        <span class="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-md">
+                                            👑 Owner
+                                        </span>
+                                    </div>
+                                    <div class="text-[11px] text-slate-400 font-medium">
+                                        {{ '@' . ($ownerProfile?->username ?? 'user') }} • Created {{ $group->created_at->format('M d, Y') }}
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    @endif
+
+                    {{-- Quick Member Avatar Stack --}}
+                    <div
+                        class="flex items-center gap-2 cursor-pointer bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200/60 transition self-start sm:self-auto"
+                        @click="activeTab = 'members'"
+                        title="Click to view all members"
+                    >
+                        <div class="flex -space-x-2 overflow-hidden">
+                            @foreach($members->take(5) as $m)
+                                @php
+                                    $mAv = $m->profile?->avatar
+                                        ? asset('storage/' . $m->profile->avatar)
+                                        : 'https://ui-avatars.com/api/?name=' . urlencode($m->name) . '&background=0c1b33&color=fff';
+                                @endphp
+                                <img
+                                    class="inline-block h-6 w-6 rounded-full ring-2 ring-white object-cover"
+                                    src="{{ $mAv }}"
+                                    alt="{{ $m->name }}"
+                                    title="{{ $m->name }}"
+                                >
+                            @endforeach
+                        </div>
+                        <span class="text-xs font-bold text-slate-700 hover:text-amber-600 transition">
+                            {{ $members->count() }} {{ Str::plural('Member', $members->count()) }}
+                        </span>
+                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </div>
+                </div>
             </div>
 
-            {{-- POSTS FEED OR RESTRICTED NOTICE --}}
+            {{-- NAVIGATION TABS --}}
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-1.5 flex items-center gap-1.5">
+                <button
+                    type="button"
+                    @click="activeTab = 'posts'"
+                    class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer"
+                    :class="activeTab === 'posts' ? 'bg-[#0b1329] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                    </svg>
+                    <span>Discussions</span>
+                    @if($isMember)
+                        <span
+                            class="px-1.5 py-0.5 rounded-full text-[10px]"
+                            :class="activeTab === 'posts' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'"
+                        >
+                            {{ method_exists($posts, 'total') ? $posts->total() : $posts->count() }}
+                        </span>
+                    @endif
+                </button>
+
+                <button
+                    type="button"
+                    @click="activeTab = 'members'"
+                    class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer"
+                    :class="activeTab === 'members' ? 'bg-[#0b1329] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <span>Members</span>
+                    <span
+                        class="px-1.5 py-0.5 rounded-full text-[10px]"
+                        :class="activeTab === 'members' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'"
+                    >
+                        {{ $members->count() }}
+                    </span>
+                </button>
+
+                @if($user && (int) $group->owner_id === (int) $user->id && $pendingMembers->isNotEmpty())
+                    <button
+                        type="button"
+                        @click="activeTab = 'pending'"
+                        class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer"
+                        :class="activeTab === 'pending' ? 'bg-amber-500 text-white shadow-xs' : 'text-amber-700 bg-amber-50 hover:bg-amber-100'"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                        </svg>
+                        <span>Requests</span>
+                        <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-white text-amber-900 font-extrabold">
+                            {{ $pendingMembers->count() }}
+                        </span>
+                    </button>
+                @endif
+            </div>
+
+            {{-- TAB CONTENT: MEMBERS LIST --}}
+            <div x-show="activeTab === 'members'" x-cloak class="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-5 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">
+                            Group Members ({{ $members->count() }})
+                        </h2>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            All members who have joined '{{ $group->name }}'
+                        </p>
+                    </div>
+                    <span class="px-3 py-1 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold">
+                        {{ $members->count() }} Total
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    @forelse($members as $member)
+                        @php
+                            $mProfile = $member->profile;
+                            $mAvatar = $mProfile?->avatar
+                                ? asset('storage/' . $mProfile->avatar)
+                                : 'https://ui-avatars.com/api/?name=' . urlencode($member->name) . '&background=0c1b33&color=fff';
+                            $mUsername = $mProfile?->username ?? $member->id;
+                            $isGroupOwner = (int) $group->owner_id === (int) $member->id || $member->pivot->role === 'owner';
+                        @endphp
+
+                        <div class="flex items-center justify-between p-3.5 rounded-xl border {{ $isGroupOwner ? 'border-amber-200/80 bg-amber-50/20' : 'border-slate-100 bg-white' }} hover:border-slate-200 hover:shadow-2xs transition gap-3">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="relative shrink-0">
+                                    <img
+                                        src="{{ $mAvatar }}"
+                                        alt="{{ $member->name }}"
+                                        class="w-11 h-11 rounded-full object-cover ring-2 {{ $isGroupOwner ? 'ring-amber-400' : 'ring-slate-100' }}"
+                                    >
+                                    @if($mProfile?->country?->iso_code)
+                                        <img
+                                            src="https://flagcdn.com/20x15/{{ strtolower($mProfile->country->iso_code) }}.png"
+                                            class="absolute -bottom-0.5 -right-0.5 w-4 h-3 object-cover rounded-xs border border-white shadow-2xs"
+                                            alt="{{ $mProfile->country->name ?? 'Country' }}"
+                                            title="{{ $mProfile->country->name ?? 'Country' }}"
+                                        >
+                                    @endif
+                                </div>
+
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-1.5">
+                                        <a
+                                            href="{{ route('community.profile', $mUsername) }}"
+                                            class="font-bold text-xs text-slate-900 hover:text-amber-600 hover:underline truncate"
+                                        >
+                                            {{ $member->name }}
+                                        </a>
+                                    </div>
+
+                                    <div class="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                                        <span class="truncate max-w-[120px]">{{ '@' . ($mProfile?->username ?? 'user') }}</span>
+                                        <span>•</span>
+                                        <span class="shrink-0">{{ $member->pivot->created_at ? \Carbon\Carbon::parse($member->pivot->created_at)->diffForHumans() : 'Active' }}</span>
+                                    </div>
+
+                                    <div class="mt-1">
+                                        @if($isGroupOwner)
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-md">
+                                                👑 Owner
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-semibold rounded-md">
+                                                Member
+                                            </span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+
+                            <a
+                                href="{{ route('community.profile', $mUsername) }}"
+                                class="shrink-0 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-amber-600 hover:bg-slate-50 rounded-lg border border-slate-200 transition"
+                            >
+                                Profile
+                            </a>
+                        </div>
+                    @empty
+                        <div class="col-span-2 py-8 text-center text-xs text-slate-400">
+                            No active members found.
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+
+            {{-- TAB CONTENT: PENDING REQUESTS (OWNER ONLY) --}}
+            @if($user && (int) $group->owner_id === (int) $user->id)
+                <div x-show="activeTab === 'pending'" x-cloak class="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-900">
+                                Pending Join Requests ({{ $pendingMembers->count() }})
+                            </h2>
+                            <p class="text-xs text-slate-500 mt-0.5">
+                                Users waiting for your approval to join this group
+                            </p>
+                        </div>
+                        <span class="px-3 py-1 bg-amber-50 text-amber-800 rounded-xl text-xs font-bold">
+                            {{ $pendingMembers->count() }} Pending
+                        </span>
+                    </div>
+
+                    <div class="space-y-3">
+                        @forelse($pendingMembers as $pendingUser)
+                            @php
+                                $pProfile = $pendingUser->profile;
+                                $pAvatar = $pProfile?->avatar
+                                    ? asset('storage/' . $pProfile->avatar)
+                                    : 'https://ui-avatars.com/api/?name=' . urlencode($pendingUser->name) . '&background=0c1b33&color=fff';
+                                $pUsername = $pProfile?->username ?? $pendingUser->id;
+                            @endphp
+
+                            <div class="flex items-center justify-between p-3.5 rounded-xl border border-amber-200/60 bg-amber-50/20 gap-3">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <div class="relative shrink-0">
+                                        <img
+                                            src="{{ $pAvatar }}"
+                                            alt="{{ $pendingUser->name }}"
+                                            class="w-11 h-11 rounded-full object-cover ring-2 ring-amber-300"
+                                        >
+                                        @if($pProfile?->country?->iso_code)
+                                            <img
+                                                src="https://flagcdn.com/20x15/{{ strtolower($pProfile->country->iso_code) }}.png"
+                                                class="absolute -bottom-0.5 -right-0.5 w-4 h-3 object-cover rounded-xs border border-white"
+                                                alt="{{ $pProfile->country->name ?? 'Country' }}"
+                                            >
+                                        @endif
+                                    </div>
+
+                                    <div class="min-w-0">
+                                        <a
+                                            href="{{ route('community.profile', $pUsername) }}"
+                                            class="font-bold text-xs text-slate-900 hover:text-amber-600 hover:underline truncate block"
+                                        >
+                                            {{ $pendingUser->name }}
+                                        </a>
+
+                                        <div class="text-[11px] text-slate-400 mt-0.5">
+                                            {{ '@' . ($pProfile?->username ?? 'user') }} • Requested {{ $pendingUser->pivot->created_at ? \Carbon\Carbon::parse($pendingUser->pivot->created_at)->diffForHumans() : 'Recently' }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <form method="POST" action="{{ route('community.groups.requests.accept', [$group, $pendingUser]) }}">
+                                        @csrf
+                                        <button
+                                            type="submit"
+                                            class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-xs"
+                                        >
+                                            Accept
+                                        </button>
+                                    </form>
+
+                                    <form method="POST" action="{{ route('community.groups.requests.reject', [$group, $pendingUser]) }}">
+                                        @csrf
+                                        <button
+                                            type="submit"
+                                            class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition shadow-xs"
+                                        >
+                                            Reject
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="py-8 text-center text-xs text-slate-400">
+                                No pending join requests for this group.
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+            @endif
+
+            {{-- TAB CONTENT: DISCUSSIONS / POSTS --}}
+            <div x-show="activeTab === 'posts'" x-cloak class="space-y-5">
             @if($isMember)
                 @forelse($posts as $post)
                     @php
@@ -273,8 +611,14 @@
                                             @if($profile?->country && $profile->country->iso_code)
                                                 <img 
                                                     src="https://flagcdn.com/20x15/{{ strtolower($profile->country->iso_code) }}.png" 
-                                                    class="w-4 h-3 object-cover rounded-xs shadow-2xs inline-block shrink-0 align-middle" 
+                                                    srcset="https://flagcdn.com/40x30/{{ strtolower($profile->country->iso_code) }}.png 2x"
+                                                    width="20"
+                                                    height="15"
+                                                    class="w-4.5 h-3.5 object-cover rounded-xs shadow-2xs inline-block shrink-0 align-middle" 
                                                     alt="{{ $profile->country->name }}"
+                                                    title="{{ $profile->country->name }}"
+                                                    loading="lazy"
+                                                    onerror="this.style.display='none'"
                                                 >
                                             @endif
                                         @else
@@ -438,6 +782,8 @@
                     </p>
                 </div>
             @endif
+
+            </div>{{-- End activeTab === 'posts' --}}
 
         </section>
 

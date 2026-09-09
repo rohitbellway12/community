@@ -23,7 +23,18 @@ class NotificationController extends Controller
     {
         $user = $request->user();
 
+        if (!$user) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'notifications' => [],
+                    'unread_count' => 0,
+                ],
+            ]);
+        }
+
         $notifications = $user->notifications()
+            ->orderByRaw('read_at IS NULL DESC')
             ->latest()
             ->take(10)
             ->get()
@@ -32,13 +43,44 @@ class NotificationController extends Controller
                     ? $notification->data
                     : [];
 
+                if (empty($data['group_slug'])) {
+                    if (!empty($data['url'])) {
+                        $data['group_slug'] = basename(parse_url($data['url'], PHP_URL_PATH));
+                    } elseif (!empty($data['group_id'])) {
+                        $data['group_slug'] = \App\Models\Group::find($data['group_id'])?->slug;
+                    }
+                }
+
+                if (!empty($data['url']) && str_contains($data['url'], '/reaic/')) {
+                    $data['url'] = str_replace('/reaic/', '/community/', $data['url']);
+                }
+
+                $title = $data['title'] ?? null;
+                $type = strtolower((string) ($notification->type ?? ''));
+                $dataType = strtolower((string) ($data['type'] ?? ''));
+
+                if (!$title) {
+                    if ($dataType === 'group_invitation' || str_contains($type, 'groupinvitation')) {
+                        $title = 'Group Invitation';
+                    } elseif ($dataType === 'group_join_requested' || str_contains($type, 'joinrequest')) {
+                        $title = 'Group Join Request';
+                    } elseif (str_contains($type, 'reply') || str_contains($dataType, 'reply')) {
+                        $title = 'New Reply';
+                    } elseif (str_contains($type, 'comment') || str_contains($dataType, 'comment')) {
+                        $title = 'New Comment';
+                    } elseif (str_contains($type, 'like') || str_contains($dataType, 'like')) {
+                        $title = 'Post Liked';
+                    } else {
+                        $title = 'Notification';
+                    }
+                }
+
                 return [
                     'id' => $notification->id,
 
                     'type' => $notification->type,
 
-                    'title' => $data['title']
-                        ?? 'Notification',
+                    'title' => $title,
 
                     'message' => $data['message']
                         ?? 'You have a new notification.',
@@ -77,8 +119,12 @@ class NotificationController extends Controller
      * Shows ALL notifications for the authenticated user,
      * both read and unread.
      */
-    public function page(Request $request): View
+    public function page(Request $request): View|JsonResponse
     {
+        if ($request->expectsJson() || $request->ajax()) {
+            return $this->index($request);
+        }
+
         $user = $request->user();
 
         /*

@@ -9,7 +9,8 @@ use App\Models\Group;
 use App\Models\User;
 use App\Notifications\GroupInvitationNotification;
 use App\Notifications\GroupJoinRequestNotification;
-use App\Notifications\GroupJoinRequestResultNotification;
+use App\Notifications\GroupJoinRequestAccepted;
+use App\Notifications\GroupJoinRequestRejected;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -257,10 +258,12 @@ class GroupController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Group Stats
+        | Group Stats & Owner
         |--------------------------------------------------------------------------
         */
         $group->loadCount('users');
+
+        $owner = User::with(['profile.country'])->find($group->owner_id);
 
         /*
         |--------------------------------------------------------------------------
@@ -278,6 +281,31 @@ class GroupController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | Group Members (Active)
+        |--------------------------------------------------------------------------
+        */
+        $members = $group->users()
+            ->withPivot(['role', 'status', 'created_at'])
+            ->with(['profile.country'])
+            ->wherePivot('status', 'active')
+            ->orderByRaw("CASE WHEN group_user.role = 'owner' THEN 0 ELSE 1 END")
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pending Join Requests (Visible to Owner)
+        |--------------------------------------------------------------------------
+        */
+        $pendingMembers = ($user && (int) $group->owner_id === (int) $user->id)
+            ? $group->users()
+                ->withPivot(['role', 'status', 'created_at'])
+                ->with(['profile.country'])
+                ->wherePivot('status', 'pending')
+                ->get()
+            : collect();
+
+        /*
+        |--------------------------------------------------------------------------
         | Group Posts
         |--------------------------------------------------------------------------
         |
@@ -288,10 +316,10 @@ class GroupController extends Controller
             ? $group->posts()
                 ->with([
                     'user',
-                    'user.profile',
+                    'user.profile.country',
                     'group',
                     'likes',
-                    'comments',
+                    'comments.user.profile',
                     'media',
                 ])
                 ->latest()
@@ -324,6 +352,9 @@ class GroupController extends Controller
 
         return view('community.groups.show', [
             'group' => $group,
+            'owner' => $owner,
+            'members' => $members,
+            'pendingMembers' => $pendingMembers,
             'isMember' => $isMember,
             'membership' => $membership,
             'posts' => $posts,
@@ -335,26 +366,11 @@ class GroupController extends Controller
         ]);
     }
 
-    /**
-     * Send a join request to a group.
-     *
-     * This is different from a group invitation:
-     *
-     * User clicks Join Group
-     *      -> pending membership
-     *      -> owner receives notification
-     *      -> owner accepts/rejects
-     */
     public function join(Request $request, Group $group)
     {
         $user = $request->user();
         $userId = $user->id;
 
-        /*
-        |--------------------------------------------------------------------------
-        | Owner Cannot Request Own Group
-        |--------------------------------------------------------------------------
-        */
         if ((int) $group->owner_id === (int) $userId) {
             return back()->with(
                 'error',
@@ -449,20 +465,10 @@ class GroupController extends Controller
      */
     public function members(Group $group)
     {
-        $members = $group->users()
-            ->withPivot([
-                'role',
-                'status',
-            ])
-            ->paginate(20);
-
-        return view(
-            'community.groups.members',
-            compact(
-                'group',
-                'members'
-            )
-        );
+        return redirect()->route('community.groups.show', [
+            'group' => $group->slug,
+            'tab' => 'members',
+        ]);
     }
 
     /**
@@ -672,15 +678,23 @@ class GroupController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | Update Owner's Notification
+        |--------------------------------------------------------------------------
+        */
+        $this->updateJoinRequestNotification(
+            $user,
+            $group,
+            $userToAccept,
+            'accepted'
+        );
+
+        /*
+        |--------------------------------------------------------------------------
         | Notify Requester
         |--------------------------------------------------------------------------
         */
         $userToAccept->notify(
-            new GroupJoinRequestResultNotification(
-                $group,
-                'accepted',
-                "Your request to join {$group->name} was accepted."
-            )
+            new GroupJoinRequestAccepted($group)
         );
 
         return $this->requestResponse(
@@ -750,15 +764,23 @@ class GroupController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | Update Owner's Notification
+        |--------------------------------------------------------------------------
+        */
+        $this->updateJoinRequestNotification(
+            $user,
+            $group,
+            $userToReject,
+            'rejected'
+        );
+
+        /*
+        |--------------------------------------------------------------------------
         | Notify Requester
         |--------------------------------------------------------------------------
         */
         $userToReject->notify(
-            new GroupJoinRequestResultNotification(
-                $group,
-                'rejected',
-                "Your request to join {$group->name} was rejected."
-            )
+            new GroupJoinRequestRejected($group)
         );
 
         return $this->requestResponse(
@@ -992,6 +1014,35 @@ class GroupController extends Controller
             'data' => $data,
             'read_at' => now(),
         ]);
+    }
+
+    /**
+     * Update the owner's join-request notification after accept/reject.
+     */
+    private function updateJoinRequestNotification(
+        User $owner,
+        Group $group,
+        User $requester,
+        string $status
+    ): void {
+        $notifications = $owner->notifications()
+            ->get()
+            ->filter(function ($n) use ($group, $requester) {
+                $data = is_array($n->data) ? $n->data : [];
+                return ($data['type'] ?? null) === 'group_join_requested'
+                    && (int) ($data['group_id'] ?? 0) === (int) $group->id
+                    && (int) ($data['user_id'] ?? 0) === (int) $requester->id;
+            });
+
+        foreach ($notifications as $notification) {
+            $data = is_array($notification->data) ? $notification->data : [];
+            $data['status'] = $status;
+
+            $notification->update([
+                'data' => $data,
+                'read_at' => now(),
+            ]);
+        }
     }
 
     /**

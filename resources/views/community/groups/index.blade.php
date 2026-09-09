@@ -676,7 +676,7 @@
         @php
             $modalUsersList = auth()
                 ->user()
-                ->following()
+                ->followers()
                 ->with('profile:id,user_id,username,avatar')
                 ->select('users.id', 'users.name', 'users.email')
                 ->get()
@@ -963,7 +963,7 @@
         @php
             $editUsersListModal = auth()
                 ->user()
-                ->following()
+                ->followers()
                 ->with('profile:id,user_id,username,avatar')
                 ->select('users.id', 'users.name', 'users.email')
                 ->get()

@@ -1213,28 +1213,36 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                                     </div>
 
                                     {{-- COUNTRY FLAG --}}
-@if ($profile?->country?->flag)
-    @php
-        $countryFlag = $profile->country->flag;
-
-        if (
-            str_starts_with($countryFlag, 'http://') ||
-            str_starts_with($countryFlag, 'https://')
-        ) {
-            $countryFlagUrl = $countryFlag;
-        } else {
-            $countryFlagUrl = asset('storage/' . ltrim($countryFlag, '/'));
-        }
-    @endphp
-
-    <img
-        src="{{ $countryFlagUrl }}"
-        alt="{{ $profile->country->name }}"
-        title="{{ $profile->country->name }}"
-        class="w-5 h-4 object-cover rounded-sm shrink-0 inline-block"
-        loading="lazy"
-    >
-@endif
+                                    @if ($profile?->country)
+                                        @php
+                                            $isoCode = strtolower(trim($profile->country->iso_code ?: ''));
+                                            if (!$isoCode && !empty($profile->country->code) && strlen(trim($profile->country->code)) === 2) {
+                                                $isoCode = strtolower(trim($profile->country->code));
+                                            }
+                                        @endphp
+                                        @if ($isoCode)
+                                            <img
+                                                src="https://flagcdn.com/20x15/{{ $isoCode }}.png"
+                                                srcset="https://flagcdn.com/40x30/{{ $isoCode }}.png 2x"
+                                                width="20"
+                                                height="15"
+                                                alt="{{ $profile->country->name }}"
+                                                title="{{ $profile->country->name }}"
+                                                class="w-4.5 h-3.5 object-cover rounded-xs shadow-2xs inline-block shrink-0 align-middle"
+                                                loading="lazy"
+                                                onerror="this.style.display='none'"
+                                            >
+                                        @elseif (!empty($profile->country->flag) && (str_starts_with($profile->country->flag, 'http://') || str_starts_with($profile->country->flag, 'https://')))
+                                            <img
+                                                src="{{ $profile->country->flag }}"
+                                                alt="{{ $profile->country->name }}"
+                                                title="{{ $profile->country->name }}"
+                                                class="w-4.5 h-3.5 object-cover rounded-xs shadow-2xs inline-block shrink-0 align-middle"
+                                                loading="lazy"
+                                                onerror="this.style.display='none'"
+                                            >
+                                        @endif
+                                    @endif
 
                                     @auth
                                         @if ($author && !$isOwnPost)
@@ -2166,91 +2174,7 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
         <x-community.rightbar :user="$user" :trending-topics="$trendingTopics" />
 
     </main>
-    {{-- MOBILE BOTTOM NAVIGATION --}}
-    <div
-        class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 lg:hidden px-4 py-2 z-40 flex items-center justify-around shadow-lg">
 
-        <a href="{{ route('community.index') }}"
-            class="flex flex-col items-center gap-1 text-slate-500 hover:text-[#0b1329]">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 011-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 011 1m-6 0h6">
-                </path>
-            </svg>
-
-            <span class="text-[10px] font-medium">
-                Home
-            </span>
-        </a>
-
-        <a href="{{ route('community.index') }}" class="flex flex-col items-center gap-1 text-[#0b1329] font-bold">
-            <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" stroke-width="2.5"
-                viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                    d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z">
-                </path>
-            </svg>
-
-            <span class="text-[10px]">
-                Community
-            </span>
-        </a>
-
-        <button type="button"
-            @click.prevent="
-                @auth
-$dispatch('open-post-modal')
-                @else
-                    window.dispatchEvent(new CustomEvent('open-login-modal')) @endauth
-            "
-            class="flex flex-col items-center justify-center -mt-5 focus:outline-none">
-            <div
-                class="w-12 h-12 bg-[#0b1329] rounded-full flex items-center justify-center text-white shadow-lg border-4 border-[#f3f4f6] transition-transform hover:scale-105">
-
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
-                </svg>
-
-            </div>
-
-            <span class="text-[10px] font-medium text-slate-700 mt-0.5">
-                Create
-            </span>
-        </button>
-
-        <a href="{{ route('community.notifications') }}"
-            class="flex flex-col items-center gap-1 text-slate-500 hover:text-[#0b1329] relative">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9">
-                </path>
-            </svg>
-
-            @if ($notificationsCount > 0)
-                <span
-                    class="absolute -top-0.5 right-0.5 bg-red-500 text-white text-[9px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-bold">
-                    {{ $notificationsCount }}
-                </span>
-            @endif
-
-            <span class="text-[10px] font-medium">
-                Notifications
-            </span>
-        </a>
-
-        <a href="{{ route('community.profile.me') }}"
-            class="flex flex-col items-center gap-1 text-slate-500 hover:text-[#0b1329]">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-            </svg>
-
-            <span class="text-[10px] font-medium">
-                Profile
-            </span>
-        </a>
-
-    </div>
 
 
 

@@ -530,7 +530,7 @@ public function store(Request $request)
         $post->increment('views_count');
 
         $post->load([
-            'user.profile',
+            'user.profile.country',
             'category',
             'tags',
             'media',

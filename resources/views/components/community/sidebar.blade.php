@@ -8,7 +8,8 @@
     $joinedGroups = \App\Models\Group::query()
         ->where(function ($query) {
             $query->where('owner_id', auth()->id())->orWhereHas('users', function ($userQuery) {
-                $userQuery->where('users.id', auth()->id());
+                $userQuery->where('users.id', auth()->id())
+                    ->where('group_user.status', 'active');
             });
         })
         ->with(['users:id,name'])
@@ -117,7 +118,7 @@
                         </span>
 
                         {{-- View All Groups --}}
-                        <a href="{{ url('/community/groups') }}"
+                        <a href="{{ route('community.groups.index') }}"
                             class="text-[10px] font-bold text-amber-600 hover:text-amber-700 transition flex items-center gap-1">
                             View All Groups
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2"
@@ -283,7 +284,7 @@
                     {{-- Show View All only when there are more than 5 --}}
                     @if ($joinedGroups->count() > 5)
 
-                        <a href="{{ url('/community/groups') }}"
+                        <a href="{{ route('community.groups.index') }}"
                             class="mt-2 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-bold text-slate-600 hover:text-amber-600 transition">
 
                             <span>
@@ -381,23 +382,41 @@
         <div class="space-y-3.5">
             @forelse($topContributors ?? [] as $index => $contributor)
                 <div class="flex items-center justify-between text-[13px]">
-                    <div class="flex items-center gap-2.5 min-w-0">
+                    @php
+                        $cProfile = $contributor->profile;
+                        $cName = $contributor->name ?: 'User';
+                        $cDefault = 'https://ui-avatars.com/api/?name=' . urlencode($cName) . '&background=0c1b33&color=fff&size=100';
+                        $cAvatar = null;
+                        $cRaw = trim((string)($cProfile?->avatar ?? ''));
+                        if ($cRaw !== '' && $cRaw !== 'null' && $cRaw !== '0') {
+                            if (str_starts_with($cRaw, 'http://') || str_starts_with($cRaw, 'https://')) {
+                                $cAvatar = $cRaw;
+                            } elseif (str_starts_with($cRaw, 'storage/')) {
+                                $cAvatar = asset($cRaw);
+                            } else {
+                                $cAvatar = asset('storage/' . ltrim($cRaw, '/'));
+                            }
+                        }
+                        if (!$cAvatar) {
+                            $cAvatar = $cDefault;
+                        }
+                    @endphp
+
+                    <a href="{{ $cProfile?->username ? route('community.profile', $cProfile->username) : '#' }}"
+                        class="flex items-center gap-2.5 min-w-0 group hover:opacity-90 transition">
                         <span class="font-bold text-slate-400 text-xs w-3 shrink-0">
                             {{ $index + 1 }}
                         </span>
 
-                        @if ($contributor->profile?->avatar)
-                            <img src="{{ asset('storage/' . $contributor->profile->avatar) }}"
-                                alt="{{ $contributor->name }}" class="w-7 h-7 rounded-full object-cover shrink-0">
-                        @else
-                            <img src="https://ui-avatars.com/api/?name={{ urlencode($contributor->name) }}&background=e2e8f0&color=0f172a&size=100"
-                                alt="{{ $contributor->name }}" class="w-7 h-7 rounded-full object-cover shrink-0">
-                        @endif
+                        <img src="{{ $cAvatar }}"
+                            alt="{{ $cName }}"
+                            class="w-7 h-7 rounded-full object-cover shrink-0 bg-slate-100 ring-1 ring-slate-200 group-hover:ring-amber-400 transition"
+                            onerror="this.onerror=null; this.src='{{ $cDefault }}';">
 
-                        <span class="font-semibold text-slate-800 text-xs truncate">
-                            {{ $contributor->name }}
+                        <span class="font-semibold text-slate-800 text-xs truncate group-hover:text-amber-600 transition">
+                            {{ $cName }}
                         </span>
-                    </div>
+                    </a>
 
                     <span class="text-amber-500 font-bold text-xs flex items-center gap-0.5 shrink-0">
                         <svg class="w-3 h-3 fill-amber-400" viewBox="0 0 24 24">
@@ -497,15 +516,29 @@
                 <div class="p-6 overflow-y-auto custom-scrollbar flex-1 flex flex-col gap-4">
                     @php
                         $modalProfile = $user?->profile;
-                        $modalAvatar = $modalProfile?->avatar
-                            ? asset('storage/' . $modalProfile->avatar)
-                            : 'https://ui-avatars.com/api/?name=' . urlencode($user?->name ?? 'User') . '&background=0c1b33&color=fff';
+                        $mName = $user?->name ?: 'User';
+                        $mDefault = 'https://ui-avatars.com/api/?name=' . urlencode($mName) . '&background=0c1b33&color=fff&size=100';
+                        $modalAvatar = null;
+                        $mRaw = trim((string)($modalProfile?->avatar ?? ''));
+                        if ($mRaw !== '' && $mRaw !== 'null' && $mRaw !== '0') {
+                            if (str_starts_with($mRaw, 'http://') || str_starts_with($mRaw, 'https://')) {
+                                $modalAvatar = $mRaw;
+                            } elseif (str_starts_with($mRaw, 'storage/')) {
+                                $modalAvatar = asset($mRaw);
+                            } else {
+                                $modalAvatar = asset('storage/' . ltrim($mRaw, '/'));
+                            }
+                        }
+                        if (!$modalAvatar) {
+                            $modalAvatar = $mDefault;
+                        }
                     @endphp
 
                     <div class="flex items-start justify-between gap-3">
                         <div class="flex items-start gap-3">
-                            <img src="{{ $modalAvatar }}" alt="{{ $user?->name }}"
-                                class="w-12 h-12 rounded-full object-cover">
+                            <img src="{{ $modalAvatar }}" alt="{{ $mName }}"
+                                class="w-12 h-12 rounded-full object-cover bg-slate-100 ring-1 ring-slate-200"
+                                onerror="this.onerror=null; this.src='{{ $mDefault }}';">
 
                             <div>
                                 <div class="font-bold text-slate-900 text-sm">
@@ -654,21 +687,35 @@
     @php
         $editUsersList = auth()
             ->user()
-            ->following()
+            ->followers()
             ->with('profile:id,user_id,username,avatar')
             ->select('users.id', 'users.name', 'users.email')
             ->get()
             ->map(function ($user) {
+                $uProfile = $user->profile;
+                $uName = $user->name ?: 'User';
+                $uDefault = 'https://ui-avatars.com/api/?name=' . urlencode($uName) . '&background=0c1b33&color=fff&size=100';
+                $uAvatar = null;
+                $uRaw = trim((string)($uProfile?->avatar ?? ''));
+                if ($uRaw !== '' && $uRaw !== 'null' && $uRaw !== '0') {
+                    if (str_starts_with($uRaw, 'http://') || str_starts_with($uRaw, 'https://')) {
+                        $uAvatar = $uRaw;
+                    } elseif (str_starts_with($uRaw, 'storage/')) {
+                        $uAvatar = asset($uRaw);
+                    } else {
+                        $uAvatar = asset('storage/' . ltrim($uRaw, '/'));
+                    }
+                }
+                if (!$uAvatar) {
+                    $uAvatar = $uDefault;
+                }
+
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'username' => $user->profile?->username,
-                    'avatar' => $user->profile?->avatar
-                        ? asset('storage/' . $user->profile->avatar)
-                        : 'https://ui-avatars.com/api/?name=' .
-                            urlencode($user->name ?? 'User') .
-                            '&background=0c1b33&color=fff&size=100',
+                    'username' => $uProfile?->username,
+                    'avatar' => $uAvatar,
                 ];
             })
             ->values();
@@ -739,7 +786,8 @@
                                 :class="selectedMembers.includes(user.id) ? 'bg-amber-50 border border-amber-200' :
                                     'hover:bg-slate-100 border border-transparent'">
                                 <div class="flex items-center gap-2.5">
-                                    <img :src="user.avatar" class="w-7 h-7 rounded-full object-cover">
+                                    <img :src="user.avatar" class="w-7 h-7 rounded-full object-cover bg-slate-100 ring-1 ring-slate-200"
+                                        x-on:error="$event.target.src='https://ui-avatars.com/api/?name=' + encodeURIComponent(user.name) + '&background=0c1b33&color=fff&size=100'">
                                     <span class="text-xs font-semibold text-slate-800" x-text="user.name"></span>
                                 </div>
                                 <span class="text-xs font-bold px-2 py-0.5 rounded"
@@ -780,21 +828,35 @@
     @php
         $editUsersListForModal = auth()
             ->user()
-            ->following()
+            ->followers()
             ->with('profile:id,user_id,username,avatar')
             ->select('users.id', 'users.name', 'users.email')
             ->get()
             ->map(function ($user) {
+                $uProfile = $user->profile;
+                $uName = $user->name ?: 'User';
+                $uDefault = 'https://ui-avatars.com/api/?name=' . urlencode($uName) . '&background=0c1b33&color=fff&size=100';
+                $uAvatar = null;
+                $uRaw = trim((string)($uProfile?->avatar ?? ''));
+                if ($uRaw !== '' && $uRaw !== 'null' && $uRaw !== '0') {
+                    if (str_starts_with($uRaw, 'http://') || str_starts_with($uRaw, 'https://')) {
+                        $uAvatar = $uRaw;
+                    } elseif (str_starts_with($uRaw, 'storage/')) {
+                        $uAvatar = asset($uRaw);
+                    } else {
+                        $uAvatar = asset('storage/' . ltrim($uRaw, '/'));
+                    }
+                }
+                if (!$uAvatar) {
+                    $uAvatar = $uDefault;
+                }
+
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'username' => $user->profile?->username,
-                    'avatar' => $user->profile?->avatar
-                        ? asset('storage/' . $user->profile->avatar)
-                        : 'https://ui-avatars.com/api/?name=' .
-                            urlencode($user->name ?? 'User') .
-                            '&background=0c1b33&color=fff&size=100',
+                    'username' => $uProfile?->username,
+                    'avatar' => $uAvatar,
                 ];
             })
             ->values();
@@ -848,7 +910,7 @@
                 </button>
             </div>
 
-            <form :action="'{{ url('community/groups') }}/' + groupSlug" method="POST" enctype="multipart/form-data"
+            <form :action="'{{ route('community.groups.index') }}/' + groupSlug" method="POST" enctype="multipart/form-data"
                 class="space-y-4 pt-4 overflow-y-auto flex-1 pr-1">
                 @csrf
                 @method('PUT')
@@ -879,7 +941,8 @@
                                 :class="groupMembers.includes(user.id) ? 'bg-amber-50 border border-amber-200' :
                                     'hover:bg-slate-100 border border-transparent'">
                                 <div class="flex items-center gap-2.5">
-                                    <img :src="user.avatar" class="w-7 h-7 rounded-full object-cover">
+                                    <img :src="user.avatar" class="w-7 h-7 rounded-full object-cover bg-slate-100 ring-1 ring-slate-200"
+                                        x-on:error="$event.target.src='https://ui-avatars.com/api/?name=' + encodeURIComponent(user.name) + '&background=0c1b33&color=fff&size=100'">
                                     <span class="text-xs font-semibold text-slate-800" x-text="user.name"></span>
                                 </div>
                                 <span class="text-xs font-bold px-2 py-0.5 rounded"

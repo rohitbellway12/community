@@ -7,11 +7,114 @@
 
     $topbarProfile = $authUser?->profile;
 
-    $topbarAvatar = $topbarProfile?->avatar
-        ? asset('storage/' . $topbarProfile->avatar)
-        : 'https://ui-avatars.com/api/?name=' .
-            urlencode($authUser?->name ?? 'User') .
-            '&background=0c1b33&color=fff&size=100';
+    $userName = $authUser?->name ?: 'User';
+    $defaultAvatar = 'https://ui-avatars.com/api/?name=' .
+        urlencode($userName) .
+        '&background=0c1b33&color=fff&size=100';
+
+    $topbarAvatar = null;
+    $rawAvatar = trim((string) ($topbarProfile?->avatar ?? ''));
+    if ($rawAvatar !== '' && $rawAvatar !== 'null' && $rawAvatar !== '0') {
+        if (str_starts_with($rawAvatar, 'http://') || str_starts_with($rawAvatar, 'https://')) {
+            $topbarAvatar = $rawAvatar;
+        } elseif (str_starts_with($rawAvatar, 'storage/')) {
+            $topbarAvatar = asset($rawAvatar);
+        } else {
+            $topbarAvatar = asset('storage/' . ltrim($rawAvatar, '/'));
+        }
+    }
+    if (empty($topbarAvatar)) {
+        $topbarAvatar = $defaultAvatar;
+    }
+
+    $topbarCountry = $topbarProfile?->country;
+    if (!$topbarCountry && $topbarProfile?->country_id) {
+        $topbarCountry = \App\Models\Country::find($topbarProfile->country_id);
+    }
+
+    $topbarIsoCode = strtolower(trim($topbarCountry?->iso_code ?: ''));
+    if (!$topbarIsoCode && !empty($topbarCountry?->code)) {
+        $codeTrimmed = strtolower(trim($topbarCountry->code));
+        if (strlen($codeTrimmed) === 2) {
+            $topbarIsoCode = $codeTrimmed;
+        } else {
+            $alpha3ToAlpha2 = [
+                'bgd' => 'bd', 'ind' => 'in', 'npl' => 'np', 'kor' => 'kr', 'usa' => 'us',
+                'gbr' => 'gb', 'can' => 'ca', 'aus' => 'au', 'pak' => 'pk', 'lka' => 'lk',
+                'deu' => 'de', 'fra' => 'fr', 'jpn' => 'jp', 'chn' => 'cn', 'are' => 'ae',
+                'sau' => 'sa', 'sgp' => 'sg', 'mys' => 'my', 'tha' => 'th', 'vnm' => 'vn',
+                'idn' => 'id', 'phl' => 'ph', 'bra' => 'br', 'mex' => 'mx', 'esp' => 'es',
+                'ita' => 'it', 'rus' => 'ru', 'tur' => 'tr', 'zaf' => 'za', 'egy' => 'eg',
+                'nga' => 'ng', 'ken' => 'ke', 'nzl' => 'nz', 'irl' => 'ie', 'che' => 'ch',
+                'nld' => 'nl', 'swe' => 'se', 'nor' => 'no', 'dnk' => 'dk', 'fin' => 'fi',
+            ];
+            $topbarIsoCode = $alpha3ToAlpha2[$codeTrimmed] ?? '';
+        }
+    }
+
+    $initialNotifications = [];
+    $unreadNotificationsCount = 0;
+
+    if ($authUser) {
+        $unreadNotificationsCount = ((int) $notificationsCount > 0)
+            ? (int) $notificationsCount
+            : (int) $authUser->unreadNotifications()->count();
+
+        $initialNotifications = $authUser->notifications()
+            ->orderByRaw('read_at IS NULL DESC')
+            ->latest()
+            ->take(10)
+            ->get()
+            ->map(function ($notification) {
+                $data = is_array($notification->data) ? $notification->data : [];
+
+                if (empty($data['group_slug'])) {
+                    if (!empty($data['url'])) {
+                        $data['group_slug'] = basename(parse_url($data['url'], PHP_URL_PATH));
+                    } elseif (!empty($data['group_id'])) {
+                        $data['group_slug'] = \App\Models\Group::find($data['group_id'])?->slug;
+                    }
+                }
+
+                if (!empty($data['url']) && str_contains($data['url'], '/reaic/')) {
+                    $data['url'] = str_replace('/reaic/', '/community/', $data['url']);
+                }
+
+                $title = $data['title'] ?? null;
+                $type = strtolower((string) ($notification->type ?? ''));
+                $dataType = strtolower((string) ($data['type'] ?? ''));
+
+                if (!$title) {
+                    if ($dataType === 'group_invitation' || str_contains($type, 'groupinvitation')) {
+                        $title = 'Group Invitation';
+                    } elseif ($dataType === 'group_join_requested' || str_contains($type, 'joinrequest')) {
+                        $title = 'Group Join Request';
+                    } elseif (str_contains($type, 'reply') || str_contains($dataType, 'reply')) {
+                        $title = 'New Reply';
+                    } elseif (str_contains($type, 'comment') || str_contains($dataType, 'comment')) {
+                        $title = 'New Comment';
+                    } elseif (str_contains($type, 'like') || str_contains($dataType, 'like')) {
+                        $title = 'Post Liked';
+                    } else {
+                        $title = 'Notification';
+                    }
+                }
+
+                return [
+                    'id' => $notification->id,
+                    'type' => $notification->type,
+                    'title' => $title,
+                    'message' => $data['message'] ?? 'You have a new notification.',
+                    'created_at' => $notification->created_at ? $notification->created_at->diffForHumans() : null,
+                    'read' => $notification->read_at !== null,
+                    'read_at' => $notification->read_at,
+                    'data' => $data,
+                    'actionStatus' => null,
+                ];
+            })
+            ->values()
+            ->toArray();
+    }
 @endphp
 
 <header
@@ -219,14 +322,76 @@
                         x-data="{
                             notificationOpen: false,
                             notificationLoading: false,
-                            notifications: [],
-                            unreadCount: {{ (int) $notificationsCount }},
+                            notifications: {{ \Illuminate\Support\Js::from($initialNotifications) }},
+                            unreadCount: {{ (int) $unreadNotificationsCount }},
                             hoverTimer: null,
+                            pollingTimer: null,
+
+                            init() {
+                                this.broadcastCount();
+                                this.startPolling();
+
+                                window.addEventListener('focus', () => this.checkUnreadCount());
+                                document.addEventListener('visibilitychange', () => {
+                                    if (!document.hidden) {
+                                        this.checkUnreadCount();
+                                    }
+                                });
+
+                                window.addEventListener('refresh-notifications', () => {
+                                    this.checkUnreadCount();
+                                    if (this.notificationOpen) {
+                                        this.loadNotifications(false);
+                                    }
+                                });
+                            },
+
+                            broadcastCount() {
+                                window.dispatchEvent(new CustomEvent('notification-count-changed', {
+                                    detail: { count: this.unreadCount }
+                                }));
+                            },
+
+                            startPolling() {
+                                if (this.pollingTimer) clearInterval(this.pollingTimer);
+                                this.pollingTimer = setInterval(() => {
+                                    if (!document.hidden) {
+                                        this.checkUnreadCount();
+                                    }
+                                }, 20000);
+                            },
+
+                            async checkUnreadCount() {
+                                try {
+                                    const response = await fetch('{{ route('community.notifications.unread-count') }}', {
+                                        method: 'GET',
+                                        headers: {
+                                            'Accept': 'application/json',
+                                            'X-Requested-With': 'XMLHttpRequest'
+                                        }
+                                    });
+
+                                    if (!response.ok) return;
+
+                                    const result = await response.json();
+                                    if (result.success && typeof result.unread_count !== 'undefined') {
+                                        const oldCount = this.unreadCount;
+                                        this.unreadCount = result.unread_count;
+                                        this.broadcastCount();
+
+                                        if (this.notificationOpen && oldCount !== result.unread_count) {
+                                            this.loadNotifications(false);
+                                        }
+                                    }
+                                } catch (e) {
+                                    // background poll silent
+                                }
+                            },
 
                             openNotifications() {
                                 clearTimeout(this.hoverTimer);
                                 this.notificationOpen = true;
-                                this.loadNotifications();
+                                this.loadNotifications(false);
                             },
 
                             closeNotifications() {
@@ -242,16 +407,18 @@
                                 this.notificationOpen = !this.notificationOpen;
 
                                 if (this.notificationOpen) {
-                                    this.loadNotifications();
+                                    this.loadNotifications(false);
                                 }
                             },
 
-                            async loadNotifications() {
-                                this.notificationLoading = true;
+                            async loadNotifications(showLoading = true) {
+                                if (showLoading && this.notifications.length === 0) {
+                                    this.notificationLoading = true;
+                                }
 
                                 try {
                                     const response = await fetch(
-                                        '{{ route('community.notifications') }}',
+                                        '{{ route('community.notifications.data') }}',
                                         {
                                             method: 'GET',
                                             headers: {
@@ -275,7 +442,8 @@
                                             }));
 
                                         this.unreadCount =
-                                            result.data.unread_count || 0;
+                                            result.data.unread_count ?? 0;
+                                        this.broadcastCount();
                                     }
                                 } catch (error) {
                                     console.error('Notification error:', error);
@@ -289,11 +457,16 @@
                                     return;
                                 }
 
+                                notification.read = true;
+                                if (this.unreadCount > 0) {
+                                    this.unreadCount--;
+                                    this.broadcastCount();
+                                }
+
                                 try {
+                                    const markReadUrl = @js(route('community.notifications.read', ['id' => '__ID__']));
                                     const response = await fetch(
-                                        '{{ url('/community/notifications') }}/' +
-                                        notification.id +
-                                        '/read',
+                                        markReadUrl.replace('__ID__', notification.id),
                                         {
                                             method: 'PATCH',
                                             headers: {
@@ -305,14 +478,12 @@
                                         }
                                     );
 
-                                    if (!response.ok) {
-                                        return;
-                                    }
-
-                                    notification.read = true;
-
-                                    if (this.unreadCount > 0) {
-                                        this.unreadCount--;
+                                    if (response.ok) {
+                                        const result = await response.json();
+                                        if (result.success && result.data && typeof result.data.unread_count !== 'undefined') {
+                                            this.unreadCount = result.data.unread_count;
+                                            this.broadcastCount();
+                                        }
                                     }
                                 } catch (error) {
                                     console.error('Read notification error:', error);
@@ -323,22 +494,38 @@
                                 await this.markAsRead(notification);
 
                                 const data = notification.data || {};
+                                const type = (data.type || notification.type || '').toLowerCase();
 
-                                this.notificationOpen = false;
+                                // Do not redirect for group invitations or requests; user uses Accept/Reject buttons
+                                if (type.includes('group_invitation') || type.includes('groupinvitation') || type.includes('group_join') || type.includes('joinrequest')) {
+                                    return;
+                                }
 
                                 if (data.url) {
-                                    window.location.href = data.url;
+                                    const cleanUrl = data.url.replace('/reaic/', '/community/');
+                                    this.notificationOpen = false;
+                                    window.location.href = cleanUrl;
                                     return;
                                 }
 
                                 if (data.post_id) {
-                                    window.location.href =
-                                        '{{ url('/community/posts') }}/' +
-                                        data.post_id;
+                                    this.notificationOpen = false;
+                                    const postUrl = @js(route('community.posts.show', ['post' => '__POST_ID__']));
+                                    window.location.href = postUrl.replace('__POST_ID__', data.post_id);
+                                    return;
                                 }
                             },
 
                             async markAllAsRead() {
+                                this.notifications =
+                                    this.notifications.map(notification => ({
+                                        ...notification,
+                                        read: true
+                                    }));
+
+                                this.unreadCount = 0;
+                                this.broadcastCount();
+
                                 try {
                                     const response = await fetch(
                                         '{{ route('community.notifications.read-all') }}',
@@ -359,14 +546,9 @@
 
                                     const result = await response.json();
 
-                                    if (result.success) {
-                                        this.notifications =
-                                            this.notifications.map(notification => ({
-                                                ...notification,
-                                                read: true
-                                            }));
-
-                                        this.unreadCount = 0;
+                                    if (result.success && result.data && typeof result.data.unread_count !== 'undefined') {
+                                        this.unreadCount = result.data.unread_count;
+                                        this.broadcastCount();
                                     }
                                 } catch (error) {
                                     console.error('Mark all notification error:', error);
@@ -375,13 +557,19 @@
 
                             async handleGroupRequest(notification, action) {
                                 const data = notification.data || {};
+                                const groupSlug = data.group_slug || (data.url ? data.url.split('/').filter(Boolean).pop() : null);
+                                const userId = data.user_id;
 
-                                if (!data.group_slug || !data.user_id) {
+                                if (!groupSlug || !userId) {
+                                    alert('Group or user information not found.');
                                     return;
                                 }
 
-                                const endpoint =
-                                    `/community/groups/${data.group_slug}/requests/${data.user_id}/${action}`;
+                                const acceptUrl = @js(route('community.groups.requests.accept', ['group' => '__GROUP__', 'userToAccept' => '__USER__']));
+                                const rejectUrl = @js(route('community.groups.requests.reject', ['group' => '__GROUP__', 'userToReject' => '__USER__']));
+                                const endpoint = (action === 'accept' ? acceptUrl : rejectUrl)
+                                    .replace('__GROUP__', encodeURIComponent(groupSlug))
+                                    .replace('__USER__', encodeURIComponent(userId));
 
                                 try {
                                     const response = await fetch(endpoint, {
@@ -390,48 +578,93 @@
                                             'X-CSRF-TOKEN':
                                                 document.querySelector('meta[name=csrf-token]')?.getAttribute('content'),
                                             'Accept': 'application/json',
+                                            'Content-Type': 'application/json',
                                             'X-Requested-With': 'XMLHttpRequest'
                                         }
                                     });
 
-                                    if (!response.ok) {
-                                        alert('Something went wrong.');
+                                    const result = await response.json();
+
+                                    if (!response.ok || result.success === false) {
+                                        alert(result.message || 'Something went wrong.');
                                         return;
                                     }
 
                                     notification.actionStatus =
                                         action === 'accept' ? 'accepted' : 'rejected';
 
-                                    await fetch(
-                                        `{{ url('/community/notifications') }}/${notification.id}`,
-                                        {
-                                            method: 'DELETE',
-                                            headers: {
-                                                'X-CSRF-TOKEN':
-                                                    document.querySelector('meta[name=csrf-token]')?.getAttribute('content'),
-                                                'Accept': 'application/json',
-                                                'X-Requested-With': 'XMLHttpRequest'
-                                            }
-                                        }
-                                    );
+                                    if (notification.data) {
+                                        notification.data.status = notification.actionStatus;
+                                    }
 
-                                    setTimeout(() => {
-                                        this.notifications =
-                                            this.notifications.filter(
-                                                n => n.id !== notification.id
-                                            );
-
-                                        if (!notification.read && this.unreadCount > 0) {
+                                    if (!notification.read) {
+                                        notification.read = true;
+                                        if (this.unreadCount > 0) {
                                             this.unreadCount--;
+                                            this.broadcastCount();
                                         }
-                                    }, 1000);
+                                    }
 
                                 } catch (error) {
                                     console.error('Group request error:', error);
                                     alert('Something went wrong.');
                                 }
+                            },
+
+                            async handleGroupInvitation(notification, action) {
+                                const data = notification.data || {};
+                                const groupSlug = data.group_slug || (data.url ? data.url.split('/').filter(Boolean).pop() : null);
+
+                                if (!groupSlug) {
+                                    alert('Group information not found.');
+                                    return;
+                                }
+
+                                const acceptUrl = @js(route('community.groups.invitation.accept', ['group' => '__GROUP__']));
+                                const rejectUrl = @js(route('community.groups.invitation.reject', ['group' => '__GROUP__']));
+                                const endpoint = (action === 'accept' ? acceptUrl : rejectUrl)
+                                    .replace('__GROUP__', encodeURIComponent(groupSlug));
+
+                                try {
+                                    const response = await fetch(endpoint, {
+                                        method: 'POST',
+                                        headers: {
+                                            'X-CSRF-TOKEN':
+                                                document.querySelector('meta[name=csrf-token]')?.getAttribute('content'),
+                                            'Accept': 'application/json',
+                                            'Content-Type': 'application/json',
+                                            'X-Requested-With': 'XMLHttpRequest'
+                                        }
+                                    });
+
+                                    const result = await response.json();
+
+                                    if (!response.ok || result.success === false) {
+                                        alert(result.message || 'Something went wrong.');
+                                        return;
+                                    }
+
+                                    notification.actionStatus =
+                                        action === 'accept' ? 'accepted' : 'rejected';
+
+                                    if (notification.data) {
+                                        notification.data.status = notification.actionStatus;
+                                    }
+
+                                    if (!notification.read) {
+                                        notification.read = true;
+                                        if (this.unreadCount > 0) {
+                                            this.unreadCount--;
+                                            this.broadcastCount();
+                                        }
+                                    }
+                                } catch (error) {
+                                    console.error('Group invitation error:', error);
+                                    alert('Something went wrong.');
+                                }
                             }
                         }"
+                        @notification-count-changed.window="if ($event.detail.count !== unreadCount) unreadCount = $event.detail.count"
                         @click.outside="notificationOpen = false"
                         @mouseenter="openNotifications()"
                         @mouseleave="closeNotifications()"
@@ -463,7 +696,8 @@
                                 x-transition
                                 x-text="unreadCount > 99 ? '99+' : unreadCount"
                                 class="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 bg-amber-400 text-slate-950 font-bold text-[8px] rounded-full flex items-center justify-center border-2 border-[#0b1329]"
-                            ></span>
+                                style="{{ $unreadNotificationsCount > 0 ? '' : 'display: none;' }}"
+                            >{{ $unreadNotificationsCount > 99 ? '99+' : $unreadNotificationsCount }}</span>
                         </button>
 
                         {{-- Notification Dropdown --}}
@@ -497,17 +731,28 @@
                                     ></p>
                                 </div>
 
-                                <button
-                                    type="button"
-                                    x-show="unreadCount > 0"
-                                    @click.prevent.stop="markAllAsRead()"
-                                    class="text-[11px] font-semibold text-amber-500 hover:text-amber-600 transition"
-                                >
-                                    Mark all as read
-                                </button>
+                                <div class="flex items-center gap-3">
+                                    <button
+                                        type="button"
+                                        x-show="unreadCount > 0"
+                                        @click.prevent.stop="markAllAsRead()"
+                                        class="text-[11px] font-semibold text-amber-500 hover:text-amber-600 transition"
+                                    >
+                                        Mark all as read
+                                    </button>
+
+                                    @if (!request()->routeIs('community.notifications*'))
+                                        <a
+                                            href="{{ route('community.notifications') }}"
+                                            class="text-[11px] font-bold text-slate-700 hover:text-amber-600 transition"
+                                        >
+                                            View all
+                                        </a>
+                                    @endif
+                                </div>
                             </div>
 
-                            <div x-show="notificationLoading" class="px-5 py-10 text-center">
+                            <div x-show="notificationLoading && notifications.length === 0" class="px-5 py-10 text-center">
                                 <svg class="w-5 h-5 animate-spin mx-auto text-amber-500" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z" />
@@ -518,7 +763,7 @@
                                 </p>
                             </div>
 
-                            <div x-show="!notificationLoading" class="max-h-[420px] overflow-y-auto">
+                            <div x-show="!notificationLoading || notifications.length > 0" class="max-h-[420px] overflow-y-auto">
 
                                 <template x-for="notification in notifications" :key="notification.id">
                                     <div
@@ -531,21 +776,51 @@
                                         >
                                             <div
                                                 class="w-9 h-9 rounded-full shrink-0 flex items-center justify-center"
-                                                :class="notification.read ? 'bg-slate-100 text-slate-400' : 'bg-amber-100 text-amber-600'"
+                                                :class="notification.read ? 'bg-slate-100 text-slate-400' : ((notification.data?.type || '').includes('like') || (notification.title || '').toLowerCase().includes('like') ? 'bg-rose-100 text-rose-500' : ((notification.data?.type || '').includes('reply') || (notification.title || '').toLowerCase().includes('reply') ? 'bg-purple-100 text-purple-600' : ((notification.data?.type || '').includes('comment') || (notification.title || '').toLowerCase().includes('comment') ? 'bg-blue-100 text-blue-600' : 'bg-amber-100 text-amber-600')))"
                                             >
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                                    <path
-                                                        stroke-linecap="round"
-                                                        stroke-linejoin="round"
-                                                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 1 0-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"
-                                                    />
-                                                </svg>
+                                                <template x-if="(notification.data?.type || '').includes('like') || (notification.title || '').toLowerCase().includes('like')">
+                                                    <svg class="w-4 h-4 text-rose-500" fill="currentColor" viewBox="0 0 24 24">
+                                                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                                    </svg>
+                                                </template>
+                                                <template x-if="!((notification.data?.type || '').includes('like') || (notification.title || '').toLowerCase().includes('like')) && ((notification.data?.type || '').includes('reply') || (notification.title || '').toLowerCase().includes('reply'))">
+                                                    <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                                                    </svg>
+                                                </template>
+                                                <template x-if="!((notification.data?.type || '').includes('like') || (notification.title || '').toLowerCase().includes('like')) && !((notification.data?.type || '').includes('reply') || (notification.title || '').toLowerCase().includes('reply')) && ((notification.data?.type || '').includes('comment') || (notification.title || '').toLowerCase().includes('comment'))">
+                                                    <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h8M8 14h5m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                    </svg>
+                                                </template>
+                                                <template x-if="!((notification.data?.type || '').includes('like') || (notification.title || '').toLowerCase().includes('like')) && !((notification.data?.type || '').includes('reply') || (notification.title || '').toLowerCase().includes('reply')) && !((notification.data?.type || '').includes('comment') || (notification.title || '').toLowerCase().includes('comment'))">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 1 0-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"
+                                                        />
+                                                    </svg>
+                                                </template>
                                             </div>
 
                                             <div class="flex-1 min-w-0">
+                                                <div class="flex items-center gap-1.5 mb-0.5">
+                                                    <span
+                                                        class="text-xs font-bold text-slate-900 truncate"
+                                                        x-text="notification.title || 'Notification'"
+                                                    ></span>
+                                                    <span
+                                                        x-show="!notification.read"
+                                                        class="px-1.5 py-0.5 bg-amber-500 text-white font-bold text-[9px] rounded-full"
+                                                    >
+                                                        Unread
+                                                    </span>
+                                                </div>
+
                                                 <p
-                                                    class="text-slate-700 leading-snug"
-                                                    :class="notification.read ? 'font-medium' : 'font-semibold'"
+                                                    class="text-xs text-slate-700 leading-snug"
+                                                    :class="notification.read ? 'font-normal' : 'font-medium'"
                                                     x-text="notification.message || notification.data?.message"
                                                 ></p>
 
@@ -557,60 +832,79 @@
 
                                             <span
                                                 x-show="!notification.read"
-                                                class="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0"
+                                                class="w-2 h-2 rounded-full bg-amber-500 mt-2 shrink-0"
                                             ></span>
                                         </div>
 
                                         {{-- Group Join Request Actions --}}
                                         <template x-if="notification.data && notification.data.type === 'group_join_requested'">
                                             <div class="mt-2 ml-12">
-
-                                                <template x-if="notification.data.status === 'active'">
-                                                    <span class="inline-flex items-center px-2.5 py-0.5 bg-slate-100 text-slate-700 text-[10px] font-semibold rounded">
-                                                        Added
+                                                <template x-if="notification.data.status === 'accepted' || notification.data.status === 'active' || notification.actionStatus === 'accepted'">
+                                                    <span class="inline-flex items-center text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200 text-[10px] font-semibold">
+                                                        Accepted
                                                     </span>
                                                 </template>
 
-                                                <template x-if="notification.data.status !== 'active'">
-                                                    <div>
-                                                        <div
-                                                            class="flex items-center gap-2"
-                                                            x-show="!notification.actionStatus"
+                                                <template x-if="notification.data.status === 'rejected' || notification.actionStatus === 'rejected'">
+                                                    <span class="inline-flex items-center text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded border border-rose-200 text-[10px] font-semibold">
+                                                        Rejected
+                                                    </span>
+                                                </template>
+
+                                                <template x-if="(!notification.data.status || notification.data.status === 'pending') && !notification.actionStatus">
+                                                    <div class="flex items-center gap-2">
+                                                        <button
+                                                            type="button"
+                                                            @click.prevent.stop="handleGroupRequest(notification, 'accept')"
+                                                            class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-lg transition shadow-sm"
                                                         >
-                                                            <button
-                                                                type="button"
-                                                                @click.prevent.stop="handleGroupRequest(notification, 'accept')"
-                                                                class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-lg transition shadow-sm"
-                                                            >
-                                                                Accept
-                                                            </button>
+                                                            Accept
+                                                        </button>
 
-                                                            <button
-                                                                type="button"
-                                                                @click.prevent.stop="handleGroupRequest(notification, 'reject')"
-                                                                class="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-semibold rounded-lg transition shadow-sm"
-                                                            >
-                                                                Reject
-                                                            </button>
-                                                        </div>
-
-                                                        <div
-                                                            x-show="notification.actionStatus"
-                                                            x-cloak
-                                                            class="mt-1"
+                                                        <button
+                                                            type="button"
+                                                            @click.prevent.stop="handleGroupRequest(notification, 'reject')"
+                                                            class="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-semibold rounded-lg transition shadow-sm"
                                                         >
-                                                            <template x-if="notification.actionStatus === 'accepted'">
-                                                                <span class="inline-flex items-center text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[10px] font-semibold">
-                                                                    Accepted
-                                                                </span>
-                                                            </template>
+                                                            Reject
+                                                        </button>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
 
-                                                            <template x-if="notification.actionStatus === 'rejected'">
-                                                                <span class="inline-flex items-center text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 text-[10px] font-semibold">
-                                                                    Rejected
-                                                                </span>
-                                                            </template>
-                                                        </div>
+                                        {{-- Group Invitation Actions --}}
+                                        <template x-if="notification.data && notification.data.type === 'group_invitation'">
+                                            <div class="mt-2 ml-12">
+                                                <template x-if="notification.data.status === 'accepted' || notification.actionStatus === 'accepted'">
+                                                    <span class="inline-flex items-center text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200 text-[10px] font-semibold">
+                                                        Accepted
+                                                    </span>
+                                                </template>
+
+                                                <template x-if="notification.data.status === 'rejected' || notification.actionStatus === 'rejected'">
+                                                    <span class="inline-flex items-center text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded border border-rose-200 text-[10px] font-semibold">
+                                                        Rejected
+                                                    </span>
+                                                </template>
+
+                                                <template x-if="(!notification.data.status || notification.data.status === 'pending') && !notification.actionStatus">
+                                                    <div class="flex items-center gap-2">
+                                                        <button
+                                                            type="button"
+                                                            @click.prevent.stop="handleGroupInvitation(notification, 'accept')"
+                                                            class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-lg transition shadow-sm"
+                                                        >
+                                                            Accept
+                                                        </button>
+
+                                                        <button
+                                                            type="button"
+                                                            @click.prevent.stop="handleGroupInvitation(notification, 'reject')"
+                                                            class="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-semibold rounded-lg transition shadow-sm"
+                                                        >
+                                                            Reject
+                                                        </button>
                                                     </div>
                                                 </template>
                                             </div>
@@ -641,6 +935,21 @@
                                     </p>
                                 </div>
                             </div>
+
+                            @if (!request()->routeIs('community.notifications*'))
+                                {{-- Footer View All Button --}}
+                                <div class="p-3 bg-slate-50 border-t border-slate-100">
+                                    <a
+                                        href="{{ route('community.notifications') }}"
+                                        class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white hover:bg-slate-100 border border-slate-200/80 text-xs font-bold text-slate-800 hover:text-amber-600 shadow-xs transition"
+                                    >
+                                        <span>View all notifications</span>
+                                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                                        </svg>
+                                    </a>
+                                </div>
+                            @endif
                         </div>
                     </div>
 
@@ -653,30 +962,68 @@
                             @click="profileDropdownOpen = !profileDropdownOpen"
                             @click.outside="profileDropdownOpen = false"
                             type="button"
-                            class="relative flex items-center pl-1 focus:outline-none"
+                            class="relative flex items-center justify-center focus:outline-none group cursor-pointer"
                             aria-label="My profile"
                         >
-                            <img
-                                src="{{ $topbarAvatar }}"
-                                alt="{{ $authUser?->name ?? 'User' }}"
-                                class="w-9 h-9 rounded-full object-cover ring-2 ring-amber-400 hover:ring-white transition"
-                            >
+                            <div class="relative w-9 h-9 rounded-full bg-[#1e293b] ring-2 ring-amber-400 group-hover:ring-white transition shadow-xs flex items-center justify-center shrink-0">
+                                <img
+                                    src="{{ $topbarAvatar }}"
+                                    alt="{{ $userName }}"
+                                    class="w-full h-full rounded-full object-cover block"
+                                    onerror="this.onerror=null; this.src='{{ $defaultAvatar }}';"
+                                >
 
-                            <span
-                                class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[#0b1329]"
-                            ></span>
+                                @if ($topbarIsoCode)
+                                    <span
+                                        class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[1.5px] border-[#0b1329] shadow-xs overflow-hidden bg-white flex items-center justify-center shrink-0 z-10"
+                                        title="{{ $topbarCountry?->name ?? 'Country' }}"
+                                    >
+                                        <img
+                                            src="https://flagcdn.com/w40/{{ $topbarIsoCode }}.png"
+                                            alt="{{ $topbarCountry?->name ?? 'Country' }}"
+                                            class="w-full h-full object-cover rounded-full"
+                                            loading="lazy"
+                                            onerror="this.style.display='none'"
+                                        >
+                                    </span>
+                                @elseif (!empty($topbarCountry?->flag) && (str_starts_with($topbarCountry->flag, 'http://') || str_starts_with($topbarCountry->flag, 'https://')))
+                                    <span
+                                        class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[1.5px] border-[#0b1329] shadow-xs overflow-hidden bg-white flex items-center justify-center shrink-0 z-10"
+                                        title="{{ $topbarCountry?->name ?? 'Country' }}"
+                                    >
+                                        <img
+                                            src="{{ $topbarCountry->flag }}"
+                                            alt="{{ $topbarCountry?->name ?? 'Country' }}"
+                                            class="w-full h-full object-cover rounded-full"
+                                            loading="lazy"
+                                            onerror="this.style.display='none'"
+                                        >
+                                    </span>
+                                @elseif (!empty($topbarCountry?->flag))
+                                    <span
+                                        class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-[1.5px] border-[#0b1329] shadow-xs overflow-hidden bg-white flex items-center justify-center text-[9px] shrink-0 leading-none z-10"
+                                        title="{{ $topbarCountry?->name ?? 'Country' }}"
+                                    >
+                                        {{ $topbarCountry->flag }}
+                                    </span>
+                                @else
+                                    <span
+                                        class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[#0b1329] z-10"
+                                    ></span>
+                                @endif
+                            </div>
                         </button>
 
                         <div
                             x-show="profileDropdownOpen"
                             x-cloak
                             x-transition:enter="transition ease-out duration-150"
-                            x-transition:enter-start="opacity-0 scale-95 -translate-y-1"
+                            x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
                             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
                             x-transition:leave="transition ease-in duration-100"
                             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-                            x-transition:leave-end="opacity-0 scale-95 -translate-y-1"
-                            class="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-50 text-slate-700"
+                            x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
+                            class="absolute right-0 top-11 w-56 bg-white rounded-2xl shadow-2xl border border-slate-100 py-1.5 z-[9999] text-slate-700"
                             style="display: none;"
                         >
                             <div class="px-4 py-2 border-b border-slate-100">
@@ -692,7 +1039,7 @@
                             @if ($authUser?->role instanceof \App\Enums\UserRole)
                                 @if ($authUser->role->value === 'admin')
                                     <a
-                                        href="{{ url('/admin/dashboard') }}"
+                                        href="{{ route('admin.dashboard') }}"
                                         class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
                                     >
                                         <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -704,11 +1051,11 @@
                             @endif
 
                             <a
-                                href="{{ $topbarProfile?->username ? url('/community/profile/' . $topbarProfile->username) : '#' }}"
+                                href="{{ $topbarProfile?->username ? route('community.profile', $topbarProfile->username) : route('community.profile.me') }}"
                                 class="flex items-center px-4 py-2.5 text-xs font-semibold hover:bg-slate-50 transition text-slate-700"
                             >
                                 <svg class="w-4 h-4 mr-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                                 </svg>
                                 View Profile
                             </a>
@@ -899,16 +1246,52 @@
 
                     {{-- User --}}
                     <div class="flex items-center gap-3 px-3 py-2">
-                        <div class="relative shrink-0">
+                        <div class="relative w-10 h-10 rounded-full bg-[#1e293b] ring-2 ring-amber-400 flex items-center justify-center shrink-0">
                             <img
                                 src="{{ $topbarAvatar }}"
-                                alt="{{ $authUser?->name ?? 'User' }}"
-                                class="w-10 h-10 rounded-full object-cover ring-2 ring-amber-400"
+                                alt="{{ $userName }}"
+                                class="w-full h-full rounded-full object-cover block"
+                                onerror="this.onerror=null; this.src='{{ $defaultAvatar }}';"
                             >
 
-                            <span
-                                class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[#0b1329]"
-                            ></span>
+                            @if ($topbarIsoCode)
+                                <span
+                                    class="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 rounded-full border-[1.5px] border-[#0b1329] shadow-xs overflow-hidden bg-white flex items-center justify-center shrink-0"
+                                    title="{{ $topbarCountry->name }}"
+                                >
+                                    <img
+                                        src="https://flagcdn.com/w40/{{ $topbarIsoCode }}.png"
+                                        alt="{{ $topbarCountry->name }}"
+                                        class="w-full h-full object-cover rounded-full"
+                                        loading="lazy"
+                                        onerror="this.style.display='none'"
+                                    >
+                                </span>
+                            @elseif (!empty($topbarCountry?->flag) && (str_starts_with($topbarCountry->flag, 'http://') || str_starts_with($topbarCountry->flag, 'https://')))
+                                <span
+                                    class="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 rounded-full border-[1.5px] border-[#0b1329] shadow-xs overflow-hidden bg-white flex items-center justify-center shrink-0"
+                                    title="{{ $topbarCountry->name }}"
+                                >
+                                    <img
+                                        src="{{ $topbarCountry->flag }}"
+                                        alt="{{ $topbarCountry->name }}"
+                                        class="w-full h-full object-cover rounded-full"
+                                        loading="lazy"
+                                        onerror="this.style.display='none'"
+                                    >
+                                </span>
+                            @elseif (!empty($topbarCountry?->flag))
+                                <span
+                                    class="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 rounded-full border-[1.5px] border-[#0b1329] shadow-xs overflow-hidden bg-white flex items-center justify-center text-[10px] shrink-0 leading-none"
+                                    title="{{ $topbarCountry->name }}"
+                                >
+                                    {{ $topbarCountry->flag }}
+                                </span>
+                            @else
+                                <span
+                                    class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[#0b1329]"
+                                ></span>
+                            @endif
                         </div>
 
                         <div class="min-w-0">
@@ -928,7 +1311,7 @@
                     @if ($authUser?->role instanceof \App\Enums\UserRole)
                         @if ($authUser->role->value === 'admin')
                             <a
-                                href="{{ url('/admin/dashboard') }}"
+                                href="{{ route('admin.dashboard') }}"
                                 @click="mobileMenuOpen = false"
                                 class="flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-200 hover:bg-white/10 transition"
                             >
@@ -942,12 +1325,12 @@
 
                     {{-- View Profile --}}
                     <a
-                        href="{{ $topbarProfile?->username ? url('/community/profile/' . $topbarProfile->username) : '#' }}"
+                        href="{{ $topbarProfile?->username ? route('community.profile', $topbarProfile->username) : route('community.profile.me') }}"
                         @click="mobileMenuOpen = false"
                         class="flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-200 hover:bg-white/10 transition"
                     >
                         <svg class="w-4 h-4 mr-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                         </svg>
                         View Profile
                     </a>
@@ -990,204 +1373,7 @@
     {{-- MOBILE BOTTOM NAVIGATION --}}
     <div
         class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/80 lg:hidden px-3 pt-2 pb-3 z-40 flex items-center justify-between shadow-[0_-4px_20px_rgba(0,0,0,0.06)]"
-        x-data="{
-            mobileNotifOpen: false,
-            notifLoading: false,
-            notifications: [],
-            unreadCount: {{ (int) $notificationsCount }},
-
-            toggleMobileNotifs() {
-                @auth
-                    this.mobileNotifOpen = !this.mobileNotifOpen;
-
-                    if (this.mobileNotifOpen) {
-                        this.loadMobileNotifications();
-                    }
-                @else
-                    window.location.href = '{{ route('login') }}';
-                @endauth
-            },
-
-            async loadMobileNotifications() {
-                this.notifLoading = true;
-
-                try {
-                    const response = await fetch(
-                        '{{ route('community.notifications') }}',
-                        {
-                            method: 'GET',
-                            headers: {
-                                'Accept': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest'
-                            }
-                        }
-                    );
-
-                    if (!response.ok) {
-                        throw new Error('Failed to load notifications.');
-                    }
-
-                    const result = await response.json();
-
-                    if (result.success) {
-                        this.notifications =
-                            (result.data.notifications || []).map(n => ({
-                                ...n,
-                                actionStatus: null
-                            }));
-
-                        this.unreadCount =
-                            result.data.unread_count || 0;
-                    }
-                } catch (error) {
-                    console.error('Mobile notification error:', error);
-                } finally {
-                    this.notifLoading = false;
-                }
-            },
-
-            async markAsRead(notification) {
-                if (notification.read) {
-                    return;
-                }
-
-                try {
-                    await fetch(
-                        '{{ url('/community/notifications') }}/' +
-                        notification.id +
-                        '/read',
-                        {
-                            method: 'PATCH',
-                            headers: {
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN':
-                                    document.querySelector('meta[name=csrf-token]')?.getAttribute('content'),
-                                'X-Requested-With': 'XMLHttpRequest'
-                            }
-                        }
-                    );
-
-                    notification.read = true;
-
-                    if (this.unreadCount > 0) {
-                        this.unreadCount--;
-                    }
-                } catch (error) {
-                    console.error('Read notification error:', error);
-                }
-            },
-
-            async openNotification(notification) {
-                await this.markAsRead(notification);
-
-                const data = notification.data || {};
-
-                this.mobileNotifOpen = false;
-
-                if (data.url) {
-                    window.location.href = data.url;
-                    return;
-                }
-
-                if (data.post_id) {
-                    window.location.href =
-                        '{{ url('/community/posts') }}/' +
-                        data.post_id;
-                }
-            },
-
-            async markAllAsRead() {
-                try {
-                    const response = await fetch(
-                        '{{ route('community.notifications.read-all') }}',
-                        {
-                            method: 'PATCH',
-                            headers: {
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN':
-                                    document.querySelector('meta[name=csrf-token]')?.getAttribute('content'),
-                                'X-Requested-With': 'XMLHttpRequest'
-                            }
-                        }
-                    );
-
-                    const result = await response.json();
-
-                    if (result.success) {
-                        this.notifications =
-                            this.notifications.map(n => ({
-                                ...n,
-                                read: true
-                            }));
-
-                        this.unreadCount = 0;
-                    }
-                } catch (error) {
-                    console.error('Mark all mobile notifications error:', error);
-                }
-            },
-
-            async handleGroupRequest(notification, action) {
-                const data = notification.data || {};
-
-                if (!data.group_slug || !data.user_id) {
-                    return;
-                }
-
-                const endpoint =
-                    `/community/groups/${data.group_slug}/requests/${data.user_id}/${action}`;
-
-                try {
-                    const response = await fetch(endpoint, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN':
-                                document.querySelector('meta[name=csrf-token]')?.getAttribute('content'),
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    });
-
-                    if (!response.ok) {
-                        alert('Something went wrong.');
-                        return;
-                    }
-
-                    notification.actionStatus =
-                        action === 'accept' ? 'accepted' : 'rejected';
-
-                    await fetch(
-                        `{{ url('/community/notifications') }}/${notification.id}`,
-                        {
-                            method: 'DELETE',
-                            headers: {
-                                'X-CSRF-TOKEN':
-                                    document.querySelector('meta[name=csrf-token]')?.getAttribute('content'),
-                                'Accept': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest'
-                            }
-                        }
-                    );
-
-                    setTimeout(() => {
-                        this.notifications =
-                            this.notifications.filter(
-                                n => n.id !== notification.id
-                            );
-
-                        if (!notification.read && this.unreadCount > 0) {
-                            this.unreadCount--;
-                        }
-                    }, 1000);
-
-                } catch (error) {
-                    console.error('Mobile group request error:', error);
-                    alert('Something went wrong.');
-                }
-            }
-        }"
     >
-
         {{-- Groups --}}
         <a
             href="{{ route('community.groups.index') }}"
@@ -1242,13 +1428,15 @@
             </span>
         </div>
 
-        {{-- Notifications --}}
-        <div class="flex flex-1 flex-col items-center justify-center relative">
-
-            <button
-                type="button"
-                @click="toggleMobileNotifs()"
-                class="flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600 relative focus:outline-none w-full"
+        {{-- Notifications / Alerts (Direct Route) --}}
+        <a
+            href="{{ auth()->check() ? route('community.notifications') : route('login') }}"
+            class="flex flex-1 flex-col items-center justify-center gap-1 transition relative w-full {{ request()->routeIs('community.notifications*') ? 'text-[#0b1329] font-bold' : 'text-slate-400 hover:text-slate-600 font-medium' }}"
+        >
+            <div
+                class="relative"
+                x-data="{ count: {{ (int) $unreadNotificationsCount }} }"
+                @notification-count-changed.window="count = $event.detail.count"
             >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path
@@ -1260,191 +1448,33 @@
 
                 @auth
                     <span
-                        x-show="unreadCount > 0"
-                        x-text="unreadCount > 99 ? '99+' : unreadCount"
-                        class="absolute top-0 right-3 bg-amber-500 text-slate-950 text-[9px] min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center font-bold border border-white"
-                    ></span>
+                        x-show="count > 0"
+                        x-transition
+                        x-text="count > 99 ? '99+' : count"
+                        class="absolute -top-1.5 -right-2.5 bg-amber-500 text-slate-950 text-[9px] min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center font-bold border border-white"
+                        style="{{ $unreadNotificationsCount > 0 ? '' : 'display: none;' }}"
+                    >
+                        {{ $unreadNotificationsCount > 99 ? '99+' : $unreadNotificationsCount }}
+                    </span>
                 @endauth
+            </div>
 
-                <span class="text-[10px] font-medium tracking-tight">
-                    Alerts
-                </span>
-            </button>
-
-            {{-- Mobile Notification Popup --}}
-            @auth
-                <div
-                    x-show="mobileNotifOpen"
-                    x-cloak
-                    @click.outside="mobileNotifOpen = false"
-                    x-transition:enter="transition ease-out duration-200"
-                    x-transition:enter-start="opacity-0 translate-y-4 scale-95"
-                    x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-                    x-transition:leave="transition ease-in duration-150"
-                    x-transition:leave-start="opacity-100 translate-y-0 scale-100"
-                    x-transition:leave-end="opacity-0 translate-y-4 scale-95"
-                    class="absolute bottom-16 right-0 w-[calc(100vw-2rem)] max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-[9999]"
-                    style="display: none;"
-                >
-                    <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                        <div>
-                            <h3 class="text-xs font-bold text-slate-900">
-                                Notifications
-                            </h3>
-
-                            <p
-                                class="text-[10px] text-slate-400 mt-0.5"
-                                x-text="unreadCount > 0 ? unreadCount + ' unread' : 'All caught up'"
-                            ></p>
-                        </div>
-
-                        <button
-                            type="button"
-                            x-show="unreadCount > 0"
-                            @click="markAllAsRead()"
-                            class="text-[10px] font-semibold text-amber-600 hover:underline"
-                        >
-                            Mark all read
-                        </button>
-                    </div>
-
-                    <div x-show="notifLoading" class="p-6 text-center">
-                        <svg class="w-5 h-5 animate-spin mx-auto text-amber-500" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z" />
-                        </svg>
-
-                        <p class="text-[11px] text-slate-400 mt-2">
-                            Loading...
-                        </p>
-                    </div>
-
-                    <div x-show="!notifLoading" class="max-h-[350px] overflow-y-auto divide-y divide-slate-100">
-
-                        <template x-for="notification in notifications" :key="notification.id">
-
-                            <div
-                                class="w-full text-left px-4 py-3 flex flex-col gap-2 transition text-xs"
-                                :class="notification.read ? 'bg-white' : 'bg-amber-50/70'"
-                            >
-                                <div
-                                    class="flex items-start gap-2.5 cursor-pointer"
-                                    @click="openNotification(notification)"
-                                >
-                                    <div
-                                        class="w-7 h-7 rounded-full shrink-0 flex items-center justify-center mt-0.5"
-                                        :class="notification.read ? 'bg-slate-100 text-slate-400' : 'bg-amber-100 text-amber-600'"
-                                    >
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 1 0-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"
-                                            />
-                                        </svg>
-                                    </div>
-
-                                    <div class="flex-1 min-w-0">
-                                        <p
-                                            class="text-slate-700 leading-snug"
-                                            :class="notification.read ? 'font-medium' : 'font-semibold'"
-                                            x-text="notification.message || notification.data?.message"
-                                        ></p>
-
-                                        <p
-                                            class="text-[9px] text-slate-400 mt-1"
-                                            x-text="notification.created_at"
-                                        ></p>
-                                    </div>
-
-                                    <span
-                                        x-show="!notification.read"
-                                        class="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0"
-                                    ></span>
-                                </div>
-
-                                {{-- Mobile Group Request Actions --}}
-                                <template x-if="notification.data && notification.data.type === 'group_join_requested'">
-                                    <div class="mt-1 ml-9">
-
-                                        <template x-if="notification.data.status === 'active'">
-                                            <span class="inline-flex items-center px-2.5 py-0.5 bg-slate-100 text-slate-700 text-[10px] font-semibold rounded">
-                                                Added
-                                            </span>
-                                        </template>
-
-                                        <template x-if="notification.data.status !== 'active'">
-                                            <div>
-
-                                                <div
-                                                    class="flex items-center gap-2"
-                                                    x-show="!notification.actionStatus"
-                                                >
-                                                    <button
-                                                        type="button"
-                                                        @click.prevent.stop="handleGroupRequest(notification, 'accept')"
-                                                        class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-lg transition shadow-sm"
-                                                    >
-                                                        Accept
-                                                    </button>
-
-                                                    <button
-                                                        type="button"
-                                                        @click.prevent.stop="handleGroupRequest(notification, 'reject')"
-                                                        class="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-semibold rounded-lg transition shadow-sm"
-                                                    >
-                                                        Reject
-                                                    </button>
-                                                </div>
-
-                                                <div
-                                                    x-show="notification.actionStatus"
-                                                    x-cloak
-                                                    class="mt-1 text-[10px] font-semibold"
-                                                >
-                                                    <template x-if="notification.actionStatus === 'accepted'">
-                                                        <span class="inline-flex items-center text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                                                            Accepted
-                                                        </span>
-                                                    </template>
-
-                                                    <template x-if="notification.actionStatus === 'rejected'">
-                                                        <span class="inline-flex items-center text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
-                                                            Rejected
-                                                        </span>
-                                                    </template>
-                                                </div>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </template>
-                            </div>
-                        </template>
-
-                        <div
-                            x-show="!notifLoading && notifications.length === 0"
-                            class="p-6 text-center"
-                        >
-                            <p class="text-xs text-slate-500 font-medium">
-                                No notifications found.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            @endauth
-        </div>
+            <span class="text-[10px] tracking-tight">
+                Alerts
+            </span>
+        </a>
 
         {{-- Profile / Login --}}
         @auth
             <a
-                href="{{ $topbarProfile?->username ? url('/community/profile/' . $topbarProfile->username) : '#' }}"
-                class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600 font-medium"
+                href="{{ $topbarProfile?->username ? route('community.profile', $topbarProfile->username) : route('community.profile.me') }}"
+                class="flex flex-1 flex-col items-center justify-center gap-1 transition {{ request()->routeIs('community.profile*') ? 'text-[#0b1329] font-bold' : 'text-slate-400 hover:text-slate-600 font-medium' }}"
             >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7-7h14a7 7 0 00-7-7"
+                        d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
                     />
                 </svg>
 
