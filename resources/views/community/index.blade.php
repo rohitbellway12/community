@@ -542,7 +542,7 @@
                                 name: file.name,
                                 size: file.size,
                                 type: file.type || '',
-                                isVideo: (file.type || '').startsWith('video/'),
+                                isVideo: (file.type && file.type.startsWith('video/')) || /\.(mp4|mov|avi|webm|mkv|m4v)$/i.test(file.name),
                                 url: URL.createObjectURL(file)
                             }));
                         },
@@ -1405,8 +1405,10 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                                 @foreach ($post->media as $index => $mediaItem)
                                     <div x-show="mediaIndex === {{ $index }}" x-cloak class="w-full h-full flex items-center justify-center">
                                         @if (($mediaItem->type ?? '') === 'video' || str_starts_with($mediaItem->mime_type ?? '', 'video'))
-                                            <video src="{{ asset('storage/' . $mediaItem->file_path) }}"
-                                                class="w-full max-h-[550px] object-contain" controls preload="metadata"></video>
+                                            <video class="w-full max-h-[550px] object-contain" controls preload="metadata" playsinline>
+                                                <source src="{{ asset('storage/' . $mediaItem->file_path) }}" type="{{ $mediaItem->mime_type ?: 'video/mp4' }}">
+                                                Your browser does not support the video tag.
+                                            </video>
                                         @else
                                             <img src="{{ asset('storage/' . $mediaItem->file_path) }}"
                                                 alt="{{ $post->title }}" class="w-full max-h-[550px] object-contain">
@@ -1986,8 +1988,10 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                                                         @foreach ($post->media as $index => $mediaItem)
                                                             <div x-show="editExistingMediaIndex === {{ $index }}" x-cloak class="w-full flex items-center justify-center">
                                                                 @if (($mediaItem->type ?? '') === 'video' || str_starts_with($mediaItem->mime_type ?? '', 'video'))
-                                                                    <video src="{{ asset('storage/' . $mediaItem->file_path) }}"
-                                                                        class="w-full max-h-[320px] object-contain" controls preload="metadata"></video>
+                                                                    <video class="w-full max-h-[320px] object-contain" controls preload="metadata" playsinline>
+                                                                        <source src="{{ asset('storage/' . $mediaItem->file_path) }}" type="{{ $mediaItem->mime_type ?: 'video/mp4' }}">
+                                                                        Your browser does not support the video tag.
+                                                                    </video>
                                                                 @else
                                                                     <img src="{{ asset('storage/' . $mediaItem->file_path) }}"
                                                                         alt="{{ $post->title }}" class="w-full max-h-[320px] object-contain">

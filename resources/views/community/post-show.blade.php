@@ -310,7 +310,7 @@
 
                         this.newMediaPreviews = this.newMediaFiles.map(file => ({
                             url: URL.createObjectURL(file),
-                            type: file.type.startsWith('video/') ? 'video' : 'image',
+                            type: (file.type && file.type.startsWith('video/')) || /\.(mp4|mov|avi|webm|mkv|m4v)$/i.test(file.name) ? 'video' : 'image',
                             name: file.name
                         }));
 
@@ -952,9 +952,10 @@
                                 <div x-show="mediaIndex === {{ $index }}" x-cloak
                                     class="w-full h-full flex items-center justify-center overflow-hidden">
                                     @if(($mediaItem->type ?? '') === 'video' || str_starts_with($mediaItem->mime_type ?? '', 'video'))
-                                        <video src="{{ asset('storage/' . $mediaItem->file_path) }}"
-                                            class="w-full h-full object-contain"
-                                            controls preload="metadata"></video>
+                                        <video class="w-full h-full object-contain" controls preload="metadata" playsinline>
+                                            <source src="{{ asset('storage/' . $mediaItem->file_path) }}" type="{{ $mediaItem->mime_type ?: 'video/mp4' }}">
+                                            Your browser does not support the video tag.
+                                        </video>
                                     @else
                                         <img src="{{ asset('storage/' . $mediaItem->file_path) }}"
                                             alt="{{ $post->title }}"
@@ -1433,9 +1434,10 @@
                                                     <div x-show="mediaIndex === {{ $index }}" x-cloak
                                                         class="h-[240px] flex items-center justify-center">
                                                         @if(($mediaItem->type ?? '') === 'video' || str_starts_with($mediaItem->mime_type ?? '', 'video'))
-                                                            <video src="{{ asset('storage/' . $mediaItem->file_path) }}"
-                                                                class="w-full h-full object-contain"
-                                                                controls></video>
+                                                            <video class="w-full h-full object-contain" controls preload="metadata" playsinline>
+                                                                <source src="{{ asset('storage/' . $mediaItem->file_path) }}" type="{{ $mediaItem->mime_type ?: 'video/mp4' }}">
+                                                                Your browser does not support the video tag.
+                                                            </video>
                                                         @else
                                                             <img src="{{ asset('storage/' . $mediaItem->file_path) }}"
                                                                 class="w-full h-full object-contain">
@@ -1471,7 +1473,7 @@
                                                     Add photos or videos
                                                 </div>
                                                 <div class="text-[10px] text-slate-400 mt-1">
-                                                    JPG, PNG, GIF, WEBP, MP4, MOV, AVI · Max 20MB
+                                                    JPG, PNG, GIF, WEBP, MP4, MOV, AVI · Max 100MB
                                                 </div>
                                             </div>
 
@@ -1481,7 +1483,7 @@
                                                     x-ref="editMediaInput"
                                                     name="media[]"
                                                     multiple
-                                                    accept=".jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi"
+                                                    accept="image/*,video/*"
                                                     @change="handleEditFiles($event)"
                                                     class="hidden">
                                             </label>

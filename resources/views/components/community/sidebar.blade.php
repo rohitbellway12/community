@@ -443,52 +443,8 @@
         $userGroups = $joinedGroups;
     @endphp
     
-    <div x-data="{
-        openModal: false,
-        groupId: null,
-        visibility: 'public',
-        files: [],
-        previews: [],
-        selectedTags: [],
-
-        init() {
-            this.$watch('groupId', value => {
-                if (!value) {
-                    this.visibility = 'public';
-                }
-            });
-        },
-    
-        handleFiles(e) {
-            this.files = Array.from(e.target.files);
-            this.previews = [];
-    
-            this.files.forEach(file => {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    this.previews.push({
-                        url: event.target.result,
-                        type: file.type.startsWith('video') ? 'video' : 'image',
-                        name: file.name
-                    });
-                };
-                reader.readAsDataURL(file);
-            });
-        },
-    
-        removeFile(index) {
-            this.files.splice(index, 1);
-            this.previews.splice(index, 1);
-        },
-    
-        toggleTag(id) {
-            if (this.selectedTags.includes(id)) {
-                this.selectedTags = this.selectedTags.filter(tag => tag !== id);
-            } else {
-                this.selectedTags.push(id);
-            }
-        }
-    }" @open-post-modal.window="openModal = true; groupId = $event.detail?.groupId || null;"
+    <div x-data="createDiscussionModal({{ $errors->any() ? 'true' : 'false' }})"
+        @open-post-modal.window="openModal = true; groupId = $event.detail?.groupId || null;"
         x-show="openModal"
         class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/65 backdrop-blur-sm p-4 sm:p-0"
         x-transition.opacity style="display: none;" x-cloak>
@@ -514,6 +470,13 @@
                 @csrf
 
                 <div class="p-6 overflow-y-auto custom-scrollbar flex-1 flex flex-col gap-4">
+                    @if ($errors->any())
+                        <div class="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 font-semibold space-y-1">
+                            @foreach ($errors->all() as $error)
+                                <div>• {{ $error }}</div>
+                            @endforeach
+                        </div>
+                    @endif
                     @php
                         $modalProfile = $user?->profile;
                         $mName = $user?->name ?: 'User';
@@ -666,8 +629,8 @@
                                     d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z">
                                 </path>
                             </svg>
-                            <input type="file" name="media[]" @change="handleFiles($event)" multiple
-                                accept=".jpg,.jpeg,.png,.webp,.mp4" class="hidden">
+                            <input x-ref="createMediaInput" type="file" name="media[]" @change="handleFiles($event)" multiple
+                                accept="image/*,video/*" class="hidden">
                         </label>
                         <span class="text-[10px] font-medium text-slate-400">Max 100MB per file</span>
                     </div>
@@ -680,6 +643,78 @@
             </form>
         </div>
     </div>
+
+    <script>
+        function createDiscussionModal(hasErrors = false) {
+            return {
+                openModal: hasErrors,
+                groupId: null,
+                visibility: 'public',
+                files: [],
+                previews: [],
+                selectedTags: [],
+
+                init() {
+                    this.$watch('groupId', value => {
+                        if (!value) {
+                            this.visibility = 'public';
+                        }
+                    });
+                },
+
+                handleFiles(e) {
+                    const incoming = Array.from(e.target.files || []);
+                    if (!incoming.length) return;
+
+                    const MAX_SIZE = 100 * 1024 * 1024; // 100MB
+                    for (const file of incoming) {
+                        if (file.size > MAX_SIZE) {
+                            alert('"' + file.name + '" exceeds the 100MB maximum file limit.');
+                            return;
+                        }
+                    }
+
+                    // Revoke old blob URLs
+                    this.previews.forEach(p => {
+                        if (p.url && p.url.startsWith('blob:')) {
+                            URL.revokeObjectURL(p.url);
+                        }
+                    });
+
+                    this.files = incoming;
+                    this.previews = incoming.map(file => ({
+                        url: URL.createObjectURL(file),
+                        type: (file.type && file.type.startsWith('video/')) || /\.(mp4|mov|avi|webm|mkv|m4v)$/i.test(file.name) ? 'video' : 'image',
+                        name: file.name
+                    }));
+                },
+
+                removeFile(index) {
+                    const p = this.previews[index];
+                    if (p && p.url && p.url.startsWith('blob:')) {
+                        URL.revokeObjectURL(p.url);
+                    }
+                    this.files.splice(index, 1);
+                    this.previews.splice(index, 1);
+
+                    const input = this.$refs.createMediaInput;
+                    if (input && typeof DataTransfer !== 'undefined') {
+                        const dt = new DataTransfer();
+                        this.files.forEach(f => dt.items.add(f));
+                        input.files = dt.files;
+                    }
+                },
+
+                toggleTag(id) {
+                    if (this.selectedTags.includes(id)) {
+                        this.selectedTags = this.selectedTags.filter(tag => tag !== id);
+                    } else {
+                        this.selectedTags.push(id);
+                    }
+                }
+            };
+        }
+    </script>
 @endauth
 
 {{-- GLOBAL CREATE GROUP MODAL --}}

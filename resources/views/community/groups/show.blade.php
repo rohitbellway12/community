@@ -701,8 +701,11 @@
                             <div class="space-y-3 pt-1">
                                 @foreach($post->media as $mediaItem)
                                     <div class="w-full max-h-[550px] bg-slate-900 rounded-xl overflow-hidden border border-slate-200 flex items-center justify-center">
-                                        @if(str_starts_with($mediaItem->file_type ?? '', 'video'))
-                                            <video src="{{ asset('storage/' . $mediaItem->file_path) }}" class="w-full max-h-[550px] object-contain" controls preload="metadata"></video>
+                                        @if(($mediaItem->type ?? '') === 'video' || str_starts_with($mediaItem->mime_type ?? '', 'video') || str_starts_with($mediaItem->file_type ?? '', 'video'))
+                                            <video class="w-full max-h-[550px] object-contain" controls preload="metadata" playsinline>
+                                                <source src="{{ asset('storage/' . $mediaItem->file_path) }}" type="{{ $mediaItem->mime_type ?: 'video/mp4' }}">
+                                                Your browser does not support the video tag.
+                                            </video>
                                         @else
                                             <img src="{{ asset('storage/' . $mediaItem->file_path) }}" alt="{{ $post->title }}" class="w-full h-auto max-h-[550px] object-contain">
                                         @endif

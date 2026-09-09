@@ -373,6 +373,9 @@ public function index(Request $request)
      */
 public function store(Request $request)
 {
+    @ini_set('max_execution_time', 300);
+    @ini_set('memory_limit', '512M');
+
     $validated = $request->validate([
         'title' => 'required|string|max:255',
 
@@ -392,8 +395,22 @@ public function store(Request $request)
 
         'media.*' => [
             'file',
-            'mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi',
             'max:102400',
+            function ($attribute, $value, $fail) {
+                if (!$value instanceof \Illuminate\Http\UploadedFile) {
+                    return;
+                }
+                $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v', 'qt', '3gp', 'ogg'];
+                $ext = strtolower($value->getClientOriginalExtension());
+                $mime = strtolower($value->getMimeType() ?: '');
+
+                $isImage = str_starts_with($mime, 'image/') || in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+                $isVideo = str_starts_with($mime, 'video/') || in_array($ext, ['mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v', 'qt', '3gp', 'ogg']);
+
+                if (!$isImage && !$isVideo) {
+                    $fail("The {$attribute} must be an image (jpg, jpeg, png, webp, gif) or video (mp4, mov, avi, webm, mkv).");
+                }
+            },
         ],
 
         // TAGS
@@ -493,15 +510,11 @@ public function store(Request $request)
 
                 $filePath = $file->store('post-media', 'public');
 
-                $mimeType = $file->getMimeType();
+                $mimeType = $file->getMimeType() ?: '';
+                $ext = strtolower($file->getClientOriginalExtension());
 
-                $type = str_starts_with($mimeType, 'image/')
-                    ? 'image'
-                    : (
-                        str_starts_with($mimeType, 'video/')
-                            ? 'video'
-                            : 'file'
-                    );
+                $isVideo = str_starts_with($mimeType, 'video/') || in_array($ext, ['mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v', 'qt', '3gp', 'ogg']);
+                $type = $isVideo ? 'video' : 'image';
 
                 PostMedia::create([
                     'post_id' => $post->id,
@@ -623,6 +636,9 @@ public function store(Request $request)
 {
     Gate::authorize('update', $post);
 
+    @ini_set('max_execution_time', 300);
+    @ini_set('memory_limit', '512M');
+
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:255'],
         'category_id' => ['required', 'exists:categories,id'],
@@ -633,8 +649,22 @@ public function store(Request $request)
         'media.*' => [
             'nullable',
             'file',
-            'mimes:jpg,jpeg,png,webp,mp4',
             'max:102400',
+            function ($attribute, $value, $fail) {
+                if (!$value instanceof \Illuminate\Http\UploadedFile) {
+                    return;
+                }
+                $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v', 'qt', '3gp', 'ogg'];
+                $ext = strtolower($value->getClientOriginalExtension());
+                $mime = strtolower($value->getMimeType() ?: '');
+
+                $isImage = str_starts_with($mime, 'image/') || in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
+                $isVideo = str_starts_with($mime, 'video/') || in_array($ext, ['mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v', 'qt', '3gp', 'ogg']);
+
+                if (!$isImage && !$isVideo) {
+                    $fail("The {$attribute} must be an image (jpg, jpeg, png, webp, gif) or video (mp4, mov, avi, webm, mkv).");
+                }
+            },
         ],
 
         'tags' => ['nullable', 'array'],
@@ -663,15 +693,11 @@ public function store(Request $request)
 
                 $path = $file->store('post-media', 'public');
 
-                $mimeType = $file->getMimeType();
+                $mimeType = $file->getMimeType() ?: '';
+                $ext = strtolower($file->getClientOriginalExtension());
 
-                $type = str_starts_with($mimeType, 'image/')
-                    ? 'image'
-                    : (
-                        str_starts_with($mimeType, 'video/')
-                            ? 'video'
-                            : 'file'
-                    );
+                $isVideo = str_starts_with($mimeType, 'video/') || in_array($ext, ['mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v', 'qt', '3gp', 'ogg']);
+                $type = $isVideo ? 'video' : 'image';
 
                 $post->media()->create([
                     'type' => $type,
