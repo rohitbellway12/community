@@ -39,6 +39,9 @@ class GroupController extends Controller
             ->wherePivot('status', 'active')
             ->withCount('users')
             ->with([
+                'users' => function ($q) {
+                    $q->select(['users.id', 'users.name'])->withPivot(['role', 'status']);
+                },
                 'posts' => function ($query) {
                     $query
                         ->with([
@@ -84,6 +87,7 @@ class GroupController extends Controller
         */
         $users = User::query()
             ->where('id', '!=', $user->id)
+            ->with('profile:id,user_id,username,avatar')
             ->select([
                 'id',
                 'name',
@@ -523,15 +527,61 @@ class GroupController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Update
+        | Update Group Details
         |--------------------------------------------------------------------------
         */
+        $memberIds = $request->input('members', []);
+        unset($data['members']);
+
         $group->update($data);
 
-        return back()->with(
-            'success',
-            'Group updated successfully.'
-        );
+        /*
+        |--------------------------------------------------------------------------
+        | Add / Invite New Members
+        |--------------------------------------------------------------------------
+        */
+        if (is_array($memberIds) && !empty($memberIds)) {
+            $memberIds = collect($memberIds)
+                ->map(fn ($id) => (int) $id)
+                ->filter()
+                ->unique()
+                ->reject(fn ($id) => $id === (int) $user->id)
+                ->values();
+
+            foreach ($memberIds as $memberId) {
+                $invitedUser = User::find($memberId);
+
+                if (!$invitedUser) {
+                    continue;
+                }
+
+                $existingMembership = $group->users()
+                    ->where('user_id', $invitedUser->id)
+                    ->first();
+
+                if ($existingMembership) {
+                    continue;
+                }
+
+                $group->users()->syncWithoutDetaching([
+                    $invitedUser->id => [
+                        'role' => 'member',
+                        'status' => 'pending',
+                    ],
+                ]);
+
+                $invitedUser->notify(
+                    new GroupInvitationNotification($group, $user)
+                );
+            }
+        }
+
+        return redirect()
+            ->route('community.groups.index')
+            ->with(
+                'success',
+                'Group updated successfully.'
+            );
     }
 
     /**

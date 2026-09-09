@@ -22,7 +22,9 @@ class Group extends Model
     public function setNameAttribute($value)
     {
         $this->attributes['name'] = $value;
-        $this->attributes['slug'] = Str::slug($value) . '-' . uniqid();
+        if (empty($this->attributes['slug'])) {
+            $this->attributes['slug'] = Str::slug($value) . '-' . uniqid();
+        }
     }
 
     public function owner(): BelongsTo

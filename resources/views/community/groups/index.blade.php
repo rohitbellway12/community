@@ -20,7 +20,11 @@
     $groupData = collect($groups ?? [])
         ->map(function ($group) use ($user) {
             $isOwner = (bool) ($group->is_owner ?? (int) $group->user_id === (int) $user->id);
-            $isMember = $group->users->contains($user->id) ?? false;
+            $isMember = $group->users ? $group->users->contains('id', $user->id) : false;
+            $memberIds = array_values(array_unique(array_filter(array_merge(
+                [$group->owner_id],
+                $group->users ? $group->users->pluck('id')->all() : []
+            ))));
 
             return [
                 'id' => $group->id,
@@ -28,12 +32,29 @@
                 'name' => $group->name,
                 'description' => $group->description ?? '',
                 'members' => (int) ($group->users_count ?? 0),
+                'member_ids' => $memberIds,
                 'owner' => $isOwner,
                 'is_member' => $isMember,
             ];
         })
         ->values()
         ->all();
+
+    $modalUsersList = collect($users ?? [])
+        ->map(function ($u) {
+            return [
+                'id' => $u->id,
+                'name' => $u->name,
+                'email' => $u->email,
+                'username' => $u->profile?->username,
+                'avatar' => $u->profile?->avatar
+                    ? asset('storage/' . $u->profile->avatar)
+                    : 'https://ui-avatars.com/api/?name=' .
+                        urlencode($u->name ?? 'User') .
+                        '&background=0c1b33&color=fff&size=100',
+            ];
+        })
+        ->values();
 @endphp
 
 
@@ -507,7 +528,8 @@
                                                     id: {{ $group->id }},
                                                     slug: @js($group->slug),
                                                     name: @js($group->name),
-                                                    description: @js($group->description ?? '')
+                                                    description: @js($group->description ?? ''),
+                                                    member_ids: @js(array_values(array_unique(array_filter(array_merge([$group->owner_id], $group->users ? $group->users->pluck('id')->all() : [])))))
                                                 })
                                             "
                                             class="p-2
@@ -673,28 +695,7 @@
         CREATE GROUP MODAL
     ============================================================= --}}
     @auth
-        @php
-            $modalUsersList = auth()
-                ->user()
-                ->followers()
-                ->with('profile:id,user_id,username,avatar')
-                ->select('users.id', 'users.name', 'users.email')
-                ->get()
-                ->map(function ($user) {
-                    return [
-                        'id' => $user->id,
-                        'name' => $user->name,
-                        'email' => $user->email,
-                        'username' => $user->profile?->username,
-                        'avatar' => $user->profile?->avatar
-                            ? asset('storage/' . $user->profile->avatar)
-                            : 'https://ui-avatars.com/api/?name=' .
-                                urlencode($user->name ?? 'User') .
-                                '&background=0c1b33&color=fff&size=100',
-                    ];
-                })
-                ->values();
-        @endphp
+
 
         <div x-data="{
             searchMember: '',
@@ -960,26 +961,7 @@
         EDIT GROUP MODAL
     ============================================================= --}}
     @auth
-        @php
-            $editUsersListModal = auth()
-                ->user()
-                ->followers()
-                ->with('profile:id,user_id,username,avatar')
-                ->select('users.id', 'users.name', 'users.email')
-                ->get()
-                ->map(function ($user) {
-                    return [
-                        'id' => $user->id,
-                        'name' => $user->name,
-                        'email' => $user->email,
-                        'username' => $user->profile?->username,
-                        'avatar' => $user->profile?->avatar
-                            ? asset('storage/' . $user->profile->avatar)
-                            : 'https://ui-avatars.com/api/?name=' . urlencode($user->name ?? 'User') . '&background=0c1b33&color=fff&size=100',
-                    ];
-                })
-                ->values();
-        @endphp
+
 
         <div
             x-show="editModal"
@@ -1134,27 +1116,7 @@
 
                       
                         {{-- MANAGE MEMBERS SEARCH & SELECT LIST --}}
-                        <div
-                            x-data="{
-                                searchEditMember: '',
-                                usersList: @js($editUsersListModal),
-                                groupMembers: [],
-                                get filteredEditUsers() {
-                                    if (!this.searchEditMember) return this.usersList;
-                                    return this.usersList.filter(user =>
-                                        user.name.toLowerCase().includes(this.searchEditMember.toLowerCase()) ||
-                                        (user.email && user.email.toLowerCase().includes(this.searchEditMember.toLowerCase()))
-                                    );
-                                },
-                                toggleEditMember(userId) {
-                                    if (this.groupMembers.includes(userId)) {
-                                        this.groupMembers = this.groupMembers.filter(id => id !== userId);
-                                    } else {
-                                        this.groupMembers.push(userId);
-                                    }
-                                }
-                            }"
-                        >
+                        <div>
                             <label
                                 class="block
                                        text-xs
@@ -1186,7 +1148,7 @@
                             >
 
                             <div
-                                class="max-h-40
+                                class="max-h-48
                                        overflow-y-auto
                                        space-y-1.5
                                        bg-slate-50
@@ -1197,32 +1159,54 @@
                             >
                                 <template x-for="user in filteredEditUsers" :key="user.id">
                                     <div
-                                        @click="toggleEditMember(user.id)"
+                                        @click="!isExistingMember(user.id) && toggleEditMember(user.id)"
                                         class="flex
                                                items-center
                                                justify-between
                                                p-2
                                                rounded-lg
-                                               cursor-pointer
                                                transition"
-                                        :class="groupMembers.includes(user.id) ? 'bg-amber-50 border border-amber-200' : 'hover:bg-slate-100 border border-transparent'"
+                                        :class="{
+                                            'bg-slate-100/70 border border-slate-200/60 cursor-default opacity-85': isExistingMember(user.id),
+                                            'bg-amber-50 border border-amber-200 cursor-pointer': !isExistingMember(user.id) && isNewMemberSelected(user.id),
+                                            'hover:bg-slate-100 border border-transparent cursor-pointer': !isExistingMember(user.id) && !isNewMemberSelected(user.id)
+                                        }"
                                     >
                                         <div class="flex items-center gap-2.5 min-w-0">
                                             <img
                                                 :src="user.avatar"
                                                 class="w-7 h-7 rounded-full object-cover shrink-0"
                                             >
-                                            <span
-                                                class="text-xs font-semibold text-slate-800 truncate"
-                                                x-text="user.name"
-                                            ></span>
+                                            <div class="min-w-0 flex flex-col">
+                                                <span
+                                                    class="text-xs font-semibold text-slate-800 truncate"
+                                                    x-text="user.name"
+                                                ></span>
+                                                <span
+                                                    x-show="user.username"
+                                                    class="text-[10px] text-slate-400 truncate"
+                                                    x-text="'@' + user.username"
+                                                ></span>
+                                            </div>
                                         </div>
 
-                                        <span
-                                            class="text-xs font-bold px-2 py-0.5 rounded shrink-0 transition"
-                                            :class="groupMembers.includes(user.id) ? 'bg-amber-400 text-slate-950' : 'bg-slate-200 text-slate-600'"
-                                            x-text="groupMembers.includes(user.id) ? 'Added' : '+ Add'"
-                                        ></span>
+                                        {{-- Already added member: show Added badge, NO button, non-clickable --}}
+                                        <template x-if="isExistingMember(user.id)">
+                                            <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-md bg-slate-200 text-slate-600 shrink-0 select-none">
+                                                Added
+                                            </span>
+                                        </template>
+
+                                        {{-- Not yet in group: clickable Add / Selected button --}}
+                                        <template x-if="!isExistingMember(user.id)">
+                                            <button
+                                                type="button"
+                                                @click.stop="toggleEditMember(user.id)"
+                                                class="text-xs font-bold px-2.5 py-1 rounded-md shrink-0 transition cursor-pointer"
+                                                :class="isNewMemberSelected(user.id) ? 'bg-amber-400 text-slate-950 shadow-sm' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'"
+                                                x-text="isNewMemberSelected(user.id) ? 'Selected ✓' : '+ Add'"
+                                            ></button>
+                                        </template>
                                     </div>
                                 </template>
 
@@ -1234,8 +1218,8 @@
                                 </div>
                             </div>
 
-                            {{-- Hidden inputs for updating members array --}}
-                            <template x-for="userId in groupMembers" :key="userId">
+                            {{-- Hidden inputs for newly added members --}}
+                            <template x-for="userId in newMembersToAdd" :key="userId">
                                 <input type="hidden" name="members[]" :value="userId">
                             </template>
                         </div>
@@ -1457,7 +1441,43 @@
                     id: null,
                     slug: '',
                     name: '',
-                    description: ''
+                    description: '',
+                    member_ids: []
+                },
+
+                existingMembers: [],
+                newMembersToAdd: [],
+                searchEditMember: '',
+                usersList: @js($modalUsersList),
+
+                get filteredEditUsers() {
+                    if (!this.searchEditMember) return this.usersList;
+                    const query = this.searchEditMember.toLowerCase();
+                    return this.usersList.filter(user =>
+                        (user.name && user.name.toLowerCase().includes(query)) ||
+                        (user.email && user.email.toLowerCase().includes(query)) ||
+                        (user.username && user.username.toLowerCase().includes(query))
+                    );
+                },
+
+                isExistingMember(userId) {
+                    return this.existingMembers.includes(Number(userId));
+                },
+
+                isNewMemberSelected(userId) {
+                    return this.newMembersToAdd.includes(Number(userId));
+                },
+
+                toggleEditMember(userId) {
+                    const id = Number(userId);
+                    if (this.isExistingMember(id)) {
+                        return;
+                    }
+                    if (this.newMembersToAdd.includes(id)) {
+                        this.newMembersToAdd = this.newMembersToAdd.filter(i => i !== id);
+                    } else {
+                        this.newMembersToAdd.push(id);
+                    }
                 },
 
 
@@ -1482,10 +1502,10 @@
                         return '#';
                     }
 
-                    return '{{ url('/community/groups') }}/' +
-                        encodeURIComponent(
-                            this.editGroup.slug
-                        );
+                    return '{{ route('community.groups.update', ['group' => '__SLUG__']) }}'.replace(
+                        '__SLUG__',
+                        encodeURIComponent(this.editGroup.slug)
+                    );
                 },
 
 
@@ -1501,10 +1521,10 @@
                         return '#';
                     }
 
-                    return '{{ url('/community/groups') }}/' +
-                        encodeURIComponent(
-                            this.deleteTarget.slug
-                        );
+                    return '{{ route('community.groups.destroy', ['group' => '__SLUG__']) }}'.replace(
+                        '__SLUG__',
+                        encodeURIComponent(this.deleteTarget.slug)
+                    );
                 },
 
 
@@ -1517,17 +1537,16 @@
                 openEditGroup(group) {
 
                     this.editGroup = {
-
                         id: group.id,
-
                         slug: group.slug || '',
-
                         name: group.name || '',
-
-                        description: group.description || ''
-
+                        description: group.description || '',
+                        member_ids: group.member_ids || []
                     };
 
+                    this.existingMembers = (group.member_ids || []).map(id => Number(id));
+                    this.newMembersToAdd = [];
+                    this.searchEditMember = '';
                     this.editModal = true;
                 },
 
@@ -1541,13 +1560,9 @@
                 openDeleteGroup(group) {
 
                     this.deleteTarget = {
-
                         id: group.id,
-
                         slug: group.slug || '',
-
                         name: group.name || ''
-
                     };
 
                     this.deleteModal = true;
