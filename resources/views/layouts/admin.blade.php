@@ -9,6 +9,7 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
         [x-cloak] {
@@ -222,21 +223,29 @@
                 {{-- ====================================================
                      USER MANAGEMENT
                 ===================================================== --}}
-                <div x-data="{ open: true }">
+                @php
+                    $sidebarTotalUsers = \App\Models\User::count();
+                    $sidebarActiveUsers = \App\Models\User::where('status', 'active')->count();
+                    $sidebarBlockedUsers = \App\Models\User::where('status', 'blocked')->count();
+                    $isUserManagementActive = request()->routeIs('admin.users*') || request()->is('*admin/users*');
+                @endphp
+                <div x-data="{ open: {{ $isUserManagementActive ? 'true' : 'true' }} }">
 
                     <button
                         @click="open = !open"
                         type="button"
-                        class="w-full flex items-center justify-between
-                               px-3 py-1 text-xs font-semibold
-                               text-slate-400 uppercase tracking-wider
-                               hover:text-slate-200"
+                        class="w-full flex items-center justify-between px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors
+                               {{ $isUserManagementActive ? 'text-reiac-gold' : 'text-slate-400 hover:text-white' }}"
                     >
-
-                        <span>User Management</span>
+                        <span class="flex items-center space-x-2">
+                            <svg class="w-3.5 h-3.5 {{ $isUserManagementActive ? 'text-reiac-gold' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <span>User Management</span>
+                        </span>
 
                         <svg
-                            class="w-4 h-4 transform transition-transform"
+                            class="w-3.5 h-3.5 transform transition-transform duration-200"
                             :class="open ? 'rotate-90' : ''"
                             fill="none"
                             stroke="currentColor"
@@ -249,7 +258,6 @@
                                 d="M9 5l7 7-7 7"
                             />
                         </svg>
-
                     </button>
 
 
@@ -262,18 +270,14 @@
                         {{-- All Users --}}
                         <a
                             href="{{ Route::has('admin.users') ? route('admin.users') : '/admin/users' }}"
-                            class="flex items-center justify-between
-                                   px-3 py-2 rounded-lg text-sm
-                                   {{ (request()->routeIs('admin.users*') || request()->is('admin/users*'))
-                                        && !request()->has('status')
-                                        ? 'bg-reiac-slate text-reiac-gold font-semibold'
+                            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors group
+                                   {{ $isUserManagementActive && !request()->filled('status')
+                                        ? 'bg-reiac-slate text-reiac-gold font-bold shadow-xs'
                                         : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
                         >
-
                             <span class="flex items-center space-x-3">
-
                                 <svg
-                                    class="w-4 h-4"
+                                    class="w-4 h-4 shrink-0 {{ $isUserManagementActive && !request()->filled('status') ? 'text-reiac-gold' : 'text-slate-400 group-hover:text-white' }}"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -285,39 +289,60 @@
                                         d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
                                     />
                                 </svg>
-
                                 <span>All Users</span>
-
                             </span>
 
-                       
-
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-slate-300">
+                                {{ $sidebarTotalUsers }}
+                            </span>
                         </a>
 
 
                         {{-- Active Users --}}
                         <a
                             href="{{ route('admin.users', ['status' => 'active']) }}"
-                            class="flex items-center space-x-3 px-3 py-2
-                                   rounded-lg text-sm
-                                   {{ request('status') === 'active'
-                                        ? 'bg-reiac-slate text-reiac-gold font-semibold'
+                            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors group
+                                   {{ $isUserManagementActive && request('status') === 'active'
+                                        ? 'bg-reiac-slate text-reiac-gold font-bold shadow-xs'
                                         : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
                         >
-                            <span>Active Users</span>
+                            <span class="flex items-center space-x-3">
+                                <svg class="w-4 h-4 shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>Active Users</span>
+                            </span>
+
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                {{ $sidebarActiveUsers }}
+                            </span>
                         </a>
 
 
                         {{-- Blocked Users --}}
                         <a
                             href="{{ route('admin.users', ['status' => 'blocked']) }}"
-                            class="flex items-center space-x-3 px-3 py-2
-                                   rounded-lg text-sm
-                                   {{ request('status') === 'blocked'
-                                        ? 'bg-reiac-slate text-reiac-gold font-semibold'
+                            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors group
+                                   {{ $isUserManagementActive && request('status') === 'blocked'
+                                        ? 'bg-reiac-slate text-reiac-gold font-bold shadow-xs'
                                         : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
                         >
-                            <span>Blocked Users</span>
+                            <span class="flex items-center space-x-3">
+                                <svg class="w-4 h-4 shrink-0 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                </svg>
+                                <span>Blocked Users</span>
+                            </span>
+
+                            @if($sidebarBlockedUsers > 0)
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                                    {{ $sidebarBlockedUsers }}
+                                </span>
+                            @else
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/5 text-slate-400">
+                                    0
+                                </span>
+                            @endif
                         </a>
 
                     </div>
@@ -427,10 +452,10 @@
 
                         {{-- Tags --}}
                         <a
-                            href="{{ url('/admin/tags') }}"
+                            href="{{ route('tags.index') }}"
                             class="flex items-center space-x-3 px-3 py-2
                                    rounded-lg text-sm
-                                   {{ request()->is('admin/tags*')
+                                   {{ (request()->routeIs('tags*') || request()->is('*admin/tags*'))
                                         ? 'bg-reiac-slate text-reiac-gold font-semibold'
                                         : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
                         >
@@ -452,6 +477,65 @@
                             <span>Tags</span>
 
                         </a>
+
+                        {{-- Categories --}}
+                        <a
+                            href="{{ route('admin.categories.index') }}"
+                            class="flex items-center space-x-3 px-3 py-2
+                                   rounded-lg text-sm
+                                   {{ request()->routeIs('admin.categories*')
+                                        ? 'bg-reiac-slate text-reiac-gold font-semibold'
+                                        : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                            </svg>
+                            <span>Categories</span>
+                        </a>
+
+                        {{-- Groups --}}
+                        <a
+                            href="{{ route('admin.groups.index') }}"
+                            class="flex items-center space-x-3 px-3 py-2
+                                   rounded-lg text-sm
+                                   {{ request()->routeIs('admin.groups*')
+                                        ? 'bg-reiac-slate text-reiac-gold font-semibold'
+                                        : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            <span>Groups</span>
+                        </a>
+
+                        {{-- Reports --}}
+                        @php
+                            $sidebarPendingReports = \App\Models\Report::where('status', 'pending')->count();
+                        @endphp
+                        <a
+                            href="{{ route('admin.reports') }}"
+                            class="flex items-center justify-between px-3 py-2
+                                   rounded-lg text-sm
+                                   {{ request()->routeIs('admin.reports*')
+                                        ? 'bg-reiac-slate text-reiac-gold font-semibold'
+                                        : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
+                        >
+                            <span class="flex items-center space-x-3">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                <span>Reports</span>
+                            </span>
+                            @if($sidebarPendingReports > 0)
+                                <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-reiac-navy">
+                                    {{ $sidebarPendingReports }}
+                                </span>
+                            @endif
+                        </a>
+
 
                     </div>
 

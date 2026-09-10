@@ -105,7 +105,7 @@
     <div x-show="editModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm" x-cloak>
         <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6" @click.outside="editModal = false">
             <h3 class="text-sm font-bold text-slate-900 mb-4">Edit Country</h3>
-            <form :action="'/admin/countries/' + currentCountry.id" method="POST" class="space-y-4">
+            <form :action="'{{ route('admin.countries.index') }}/' + currentCountry.id" method="POST" class="space-y-4">
                 @csrf
                 @method('PUT')
                 <div>

@@ -1,9 +1,12 @@
 <?php namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Models\Post;
+use App\Models\Category;
 use App\Models\Comment;
+use App\Models\Group;
+use App\Models\Post;
+use App\Models\Report;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class AdminDashboardController extends Controller
@@ -14,11 +17,14 @@ class AdminDashboardController extends Controller
         $totalMembers = User::count();
         $totalPosts = Post::count();
         $totalComments = Comment::count();
+        $totalGroups = Group::count();
+        $totalCategories = Category::count();
+        $pendingReportsCount = Report::where('status', 'pending')->count();
         
-        // Active today (users logged in or created post/comment today, or fallback to users created today)
+        // Active today
         $activeToday = User::whereDate('updated_at', today())->count();
 
-        // 2. Recent Posts (Instead of Flagged Content)
+        // 2. Recent Posts
         $recentPosts = Post::with(['user.profile', 'category'])
             ->latest()
             ->take(5)
@@ -30,13 +36,20 @@ class AdminDashboardController extends Controller
             ->take(5)
             ->get();
 
+        // 4. Top Contributors
+        $topContributors = User::getTopContributors(5);
+
         return view('admin.dashboard', compact(
             'totalMembers',
             'totalPosts',
             'totalComments',
+            'totalGroups',
+            'totalCategories',
+            'pendingReportsCount',
             'activeToday',
             'recentPosts',
-            'newMembers'
+            'newMembers',
+            'topContributors'
         ));
     }
 }

@@ -104,32 +104,19 @@ class CommunityCommentController extends Controller
             today()
         )->count();
 
+        $activeCommentsCount = Comment::where('status', 'active')->orWhereNull('status')->count();
 
         try {
-
-            $reportedCommentsCount = Comment::where(
-                'status',
-                'reported'
-            )->count();
-
+            $reportedCommentsCount = Comment::where('status', 'reported')->count();
         } catch (\Throwable $e) {
-
             $reportedCommentsCount = 0;
         }
 
-
         try {
-
-            $hiddenCommentsCount = Comment::where(
-                'status',
-                'hidden'
-            )->count();
-
+            $hiddenCommentsCount = Comment::where('status', 'hidden')->count();
         } catch (\Throwable $e) {
-
             $hiddenCommentsCount = 0;
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -140,6 +127,7 @@ class CommunityCommentController extends Controller
             'comments',
             'totalCommentsCount',
             'todayCommentsCount',
+            'activeCommentsCount',
             'reportedCommentsCount',
             'hiddenCommentsCount'
         ));

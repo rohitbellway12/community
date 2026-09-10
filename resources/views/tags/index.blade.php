@@ -1132,7 +1132,7 @@ function tagManager() {
 
 
             this.editUrl =
-                '{{ url('/tags') }}/' +
+                '{{ route('tags.index') }}/' +
                 this.selectedTag.id;
 
 
@@ -1175,7 +1175,7 @@ function tagManager() {
 
 
             this.deleteUrl =
-                '{{ url('/tags') }}/' +
+                '{{ route('tags.index') }}/' +
                 this.deleteTag.id;
 
 

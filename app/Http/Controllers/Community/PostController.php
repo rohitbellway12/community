@@ -695,24 +695,24 @@ public function store(Request $request)
      */
     public function adminIndex(Request $request)
     {
-        $search = $request->string('search')->trim();
-        $status = $request->input('status');
+        $search     = $request->string('search')->trim();
+        $status     = $request->input('status');
+        $categoryId = $request->input('category_id');
 
         $posts = Post::query()
-            ->with(['user', 'category'])
+            ->with(['user.profile', 'category', 'media'])
             ->withCount(['comments', 'likes'])
             ->when($status, function ($query) use ($status) {
                 $query->where('status', $status);
+            })
+            ->when($categoryId, function ($query) use ($categoryId) {
+                $query->where('category_id', $categoryId);
             })
             ->when($search->isNotEmpty(), function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('title', 'like', "%{$search}%")
                         ->orWhereHas('user', function ($userQuery) use ($search) {
-                            $userQuery->where(
-                                'name',
-                                'like',
-                                "%{$search}%"
-                            );
+                            $userQuery->where('name', 'like', "%{$search}%");
                         });
                 });
             })
@@ -720,9 +720,24 @@ public function store(Request $request)
             ->paginate(15)
             ->withQueryString();
 
-        $categories = Category::all();
+        $categories = Category::orderBy('name')->get();
 
-        return view('admin.posts', compact('posts', 'categories'));
+        // Exact DB summary statistics
+        $totalPostsCount     = Post::count();
+        $publishedPostsCount = Post::where('status', 'published')->count();
+        $draftPostsCount     = Post::where('status', 'draft')->count();
+        $archivedPostsCount  = Post::where('status', 'archived')->count();
+        $solvedPostsCount    = Post::where('is_solved', true)->count();
+
+        return view('admin.posts', compact(
+            'posts', 
+            'categories',
+            'totalPostsCount',
+            'publishedPostsCount',
+            'draftPostsCount',
+            'archivedPostsCount',
+            'solvedPostsCount'
+        ));
     }
 
     /**
@@ -769,7 +784,7 @@ public function store(Request $request)
             'category_id' => ['required', 'exists:categories,id'],
             'content' => ['required', 'string'],
             'status' => ['required', 'string'],
-            'is_featured' => ['nullable', 'boolean'],
+            'is_solved' => ['nullable', 'boolean'],
             'media.*' => [
                 'nullable',
                 'file',
@@ -784,7 +799,7 @@ public function store(Request $request)
                 'category_id' => $validated['category_id'],
                 'content' => $validated['content'],
                 'status' => $validated['status'],
-                'is_featured' => $request->has('is_featured'),
+                'is_solved' => $request->has('is_solved'),
             ]);
 
             if ($request->hasFile('media')) {
@@ -802,6 +817,20 @@ public function store(Request $request)
                 ->route('admin.posts')
                 ->with('success', 'Post updated successfully.');
         });
+    }
+
+    /**
+     * Delete a post from the admin panel.
+     */
+    public function adminDestroy(Post $post)
+    {
+        $post->tags()->detach();
+        $post->delete();
+
+        return back()->with(
+            'success',
+            'Post deleted successfully.'
+        );
     }
 
     /**

@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminUserController;
+use App\Http\Controllers\Admin\AdminCategoryController;
+use App\Http\Controllers\Admin\AdminGroupController;
+use App\Http\Controllers\Admin\AdminReportController;
 use App\Http\Controllers\Admin\CountryController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\Community\CommunityController;
@@ -17,6 +20,10 @@ use App\Http\Controllers\TagController;
 Route::get('/', function () {
     return redirect()->route('community.index');
 });
+
+Route::get('/admin/{any?}', function ($any = null) {
+    return redirect('/community/admin' . ($any ? '/' . $any : '/dashboard'));
+})->where('any', '.*');
 
 Route::prefix('community')->group(function () {
     require __DIR__ . '/auth.php';
@@ -257,6 +264,11 @@ Route::prefix('community')->group(function () {
                 [PostController::class, 'updateStatus']
             )->name('posts.updateStatus');
 
+            Route::delete(
+                '/posts/{post}',
+                [PostController::class, 'adminDestroy']
+            )->name('posts.destroy');
+
             /*
             |--------------------------------------------------------------------------
             | Comments
@@ -292,11 +304,19 @@ Route::prefix('community')->group(function () {
     
             Route::resource('countries', CountryController::class);
 
+            // Categories
+            Route::resource('categories', AdminCategoryController::class);
+
+            // Groups Moderation
+            Route::get('/groups', [AdminGroupController::class, 'index'])->name('groups.index');
+            Route::delete('/groups/{group}', [AdminGroupController::class, 'destroy'])->name('groups.destroy');
+
             // Reports
-    
-            Route::get('/reports', function () {
-                return view('admin.reports');
-            })->name('reports');
+            Route::get('/reports', [AdminReportController::class, 'index'])->name('reports');
+            Route::patch('/reports/{report}/status', [AdminReportController::class, 'updateStatus'])->name('reports.updateStatus');
+            Route::delete('/reports/{report}/content', [AdminReportController::class, 'deleteContent'])->name('reports.deleteContent');
+            Route::post('/reports/{report}/ban-user', [AdminReportController::class, 'banUser'])->name('reports.banUser');
+            Route::delete('/reports/{report}', [AdminReportController::class, 'destroy'])->name('reports.destroy');
         });
 
     Route::middleware('auth')->group(function () {

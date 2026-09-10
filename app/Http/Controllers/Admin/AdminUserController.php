@@ -13,22 +13,59 @@ class AdminUserController extends Controller
     {
         $query = User::with(['profile.country', 'posts', 'comments']);
 
-        if ($request->filled('search')) {$search = trim($request->input('search'));$query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "\%{$search}%")
+        if ($request->filled('search')) {
+            $search = trim($request->input('search'));
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%")
                   ->orWhereHas('profile', function ($pq) use ($search) {
-                      $pq->where('username', 'like', "\%{$search}%");
+                      $pq->where('username', 'like', "%{$search}%");
                   });
             });
         }
 
-        if ($request->filled('status') &&$request->status !== 'all') {
+        if ($request->filled('status') && $request->status !== 'all') {
             $query->where('status', strtolower(trim($request->status)));
         }
 
-        $users = $query->latest()->paginate(10)->withQueryString();$countries = Country::all();
+        $users = $query->latest()->paginate(10)->withQueryString();
+        $countries = Country::all();
 
-        return view('admin.users', compact('users', 'countries'));
+        $stats = [
+            'total' => User::count(),
+            'active' => User::where('status', 'active')->count(),
+            'blocked' => User::where('status', 'blocked')->count(),
+        ];
+
+        return view('admin.users', compact('users', 'countries', 'stats'));
+    }
+
+    /**
+     * Toggle or update user status (active / blocked).
+     */
+    public function updateStatus(Request $request, User $user)
+    {
+        $current = is_object($user->status) ? $user->status->value : (string)$user->status;
+        $newStatus = $request->input('status');
+
+        if (!$newStatus) {
+            $newStatus = ($current === 'active') ? 'blocked' : 'active';
+        }
+
+        $user->update([
+            'status' => strtolower($newStatus),
+        ]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'status' => $newStatus,
+                'message' => "User status updated to {$newStatus}.",
+            ]);
+        }
+
+        $statusLabel = $newStatus === 'active' ? 'Activated' : 'Deactivated / Blocked';
+        return back()->with('success', "User '{$user->name}' is now {$statusLabel}.");
     }
 
     public function update(Request $request, User$user)
