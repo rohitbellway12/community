@@ -164,4 +164,84 @@ public function activeGroups(): BelongsToMany
 {
     return $this->groups()->wherePivot('status', 'active');
 }
+
+    /**
+     * Get top contributors based on activity points:
+     * (posts * 5) + (comments * 3) + (likes_received * 2) + (shares_received * 2)
+     */
+    public static function getTopContributors(int $limit = 5)
+    {
+        return static::query()
+            ->select([
+                'users.id',
+                'users.name',
+                'users.email',
+            ])
+            ->with([
+                'profile:id,user_id,username,avatar',
+            ])
+            ->withCount([
+                'posts' => function ($query) {
+                    $query->whereNull('deleted_at')
+                        ->where('status', 'published')
+                        ->where('visibility', 'public');
+                },
+                'comments' => function ($query) {
+                    $query->whereNull('deleted_at');
+                },
+            ])
+            ->selectRaw('
+                (
+                    COALESCE((
+                        SELECT COUNT(*)
+                        FROM posts
+                        WHERE posts.user_id = users.id
+                        AND posts.deleted_at IS NULL
+                        AND posts.status = "published"
+                        AND posts.visibility = "public"
+                    ), 0) * 5
+                    +
+                    COALESCE((
+                        SELECT COUNT(*)
+                        FROM comments
+                        WHERE comments.user_id = users.id
+                        AND comments.deleted_at IS NULL
+                    ), 0) * 3
+                    +
+                    COALESCE((
+                        SELECT COUNT(*)
+                        FROM likes
+                        INNER JOIN posts ON posts.id = likes.post_id
+                        WHERE posts.user_id = users.id
+                        AND posts.deleted_at IS NULL
+                        AND posts.status = "published"
+                        AND posts.visibility = "public"
+                    ), 0) * 2
+                    +
+                    COALESCE((
+                        SELECT COUNT(*)
+                        FROM shares
+                        INNER JOIN posts ON posts.id = shares.post_id
+                        WHERE posts.user_id = users.id
+                        AND posts.deleted_at IS NULL
+                        AND posts.status = "published"
+                        AND posts.visibility = "public"
+                    ), 0) * 2
+                ) AS contributor_points
+            ')
+            ->where(function ($query) {
+                $query->whereHas('posts', function ($q) {
+                    $q->whereNull('deleted_at')
+                        ->where('status', 'published')
+                        ->where('visibility', 'public');
+                })->orWhereHas('comments', function ($q) {
+                    $q->whereNull('deleted_at');
+                });
+            })
+            ->orderByDesc('contributor_points')
+            ->orderByDesc('posts_count')
+            ->orderByDesc('comments_count')
+            ->limit($limit)
+            ->get();
+    }
 }

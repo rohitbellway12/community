@@ -152,12 +152,7 @@ class NotificationController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $topContributors = User::query()
-            ->with('profile')
-            ->withCount('posts')
-            ->orderByDesc('posts_count')
-            ->take(5)
-            ->get();
+        $topContributors = User::getTopContributors(5);
 
         $trendingTopics = Category::query()
             ->withCount('posts')

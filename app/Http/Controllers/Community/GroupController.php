@@ -120,12 +120,7 @@ class GroupController extends Controller
             ? $user->unreadNotifications()->count()
             : 0;
 
-        $topContributors = User::query()
-            ->with('profile')
-            ->withCount('posts')
-            ->orderByDesc('posts_count')
-            ->limit(5)
-            ->get();
+        $topContributors = User::getTopContributors(5);
 
         /*
         |--------------------------------------------------------------------------
@@ -395,12 +390,7 @@ class GroupController extends Controller
         | Right Sidebar
         |--------------------------------------------------------------------------
         */
-        $topContributors = User::query()
-            ->with('profile')
-            ->withCount('posts')
-            ->orderByDesc('posts_count')
-            ->limit(5)
-            ->get();
+        $topContributors = User::getTopContributors(5);
 
         $categories = collect();
         $tags = collect();

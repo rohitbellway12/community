@@ -185,111 +185,7 @@ public function index(Request $request)
     |--------------------------------------------------------------------------
     */
 
-    $topContributors = User::query()
-        ->select([
-            'users.id',
-            'users.name',
-        ])
-        ->with([
-            'profile:id,user_id,username,avatar',
-        ])
-        ->withCount([
-            'posts' => function ($query) {
-                $query
-                    ->whereNull('deleted_at')
-                    ->where('status', 'published')
-                    ->where('visibility', 'public');
-            },
-            'comments' => function ($query) {
-                $query->whereNull('deleted_at');
-            },
-        ])
-        ->selectSub(function ($query) {
-            $query->from('posts')
-                ->whereColumn('posts.user_id', 'users.id')
-                ->whereNull('posts.deleted_at')
-                ->where('posts.status', 'published')
-                ->where('posts.visibility', 'public')
-                ->selectRaw('COUNT(*) * 5');
-        }, 'post_points')
-        ->selectSub(function ($query) {
-            $query->from('comments')
-                ->whereColumn('comments.user_id', 'users.id')
-                ->whereNull('comments.deleted_at')
-                ->selectRaw('COUNT(*) * 3');
-        }, 'comment_points')
-        ->selectSub(function ($query) {
-            $query->from('likes')
-                ->join('posts', 'posts.id', '=', 'likes.post_id')
-                ->whereColumn('posts.user_id', 'users.id')
-                ->whereNull('posts.deleted_at')
-                ->where('posts.status', 'published')
-                ->where('posts.visibility', 'public')
-                ->selectRaw('COUNT(*) * 2');
-        }, 'like_points')
-        ->selectSub(function ($query) {
-            $query->from('shares')
-                ->join('posts', 'posts.id', '=', 'shares.post_id')
-                ->whereColumn('posts.user_id', 'users.id')
-                ->whereNull('posts.deleted_at')
-                ->where('posts.status', 'published')
-                ->where('posts.visibility', 'public')
-                ->selectRaw('COUNT(*) * 2');
-        }, 'share_points')
-        ->selectRaw('
-            (
-                (
-                    SELECT COUNT(*)
-                    FROM posts
-                    WHERE posts.user_id = users.id
-                    AND posts.deleted_at IS NULL
-                    AND posts.status = "published"
-                    AND posts.visibility = "public"
-                ) * 5
-                +
-                (
-                    SELECT COUNT(*)
-                    FROM comments
-                    WHERE comments.user_id = users.id
-                    AND comments.deleted_at IS NULL
-                ) * 3
-                +
-                (
-                    SELECT COUNT(*)
-                    FROM likes
-                    INNER JOIN posts ON posts.id = likes.post_id
-                    WHERE posts.user_id = users.id
-                    AND posts.deleted_at IS NULL
-                    AND posts.status = "published"
-                    AND posts.visibility = "public"
-                ) * 2
-                +
-                (
-                    SELECT COUNT(*)
-                    FROM shares
-                    INNER JOIN posts ON posts.id = shares.post_id
-                    WHERE posts.user_id = users.id
-                    AND posts.deleted_at IS NULL
-                    AND posts.status = "published"
-                    AND posts.visibility = "public"
-                ) * 2
-            ) AS contributor_points
-        ')
-        ->where(function ($query) {
-            $query->whereHas('posts', function ($postQuery) {
-                $postQuery
-                    ->whereNull('deleted_at')
-                    ->where('status', 'published')
-                    ->where('visibility', 'public');
-            })->orWhereHas('comments', function ($commentQuery) {
-                $commentQuery->whereNull('deleted_at');
-            });
-        })
-        ->orderByDesc('contributor_points')
-        ->orderByDesc('posts_count')
-        ->orderByDesc('comments_count')
-        ->limit(4)
-        ->get();
+    $topContributors = User::getTopContributors(5);
 
     /*
     |--------------------------------------------------------------------------
@@ -591,11 +487,7 @@ public function store(Request $request)
         }
 
         // Fetch variables needed for sidebar/rightbar components
-        $topContributors = User::with('profile')
-            ->withCount('posts')
-            ->orderByDesc('posts_count')
-            ->take(5)
-            ->get();
+        $topContributors = User::getTopContributors(5);
 
         $trendingTopics = Category::withCount('posts')
             ->orderByDesc('posts_count')
