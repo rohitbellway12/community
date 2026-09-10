@@ -40,7 +40,7 @@
     $username = $profile->username;
 
     $activeTab = request()->query('tab', 'posts');
-    if (!in_array($activeTab, ['posts', 'activity', 'followers', 'following'])) {
+    if (!in_array($activeTab, ['posts', 'comments', 'followers', 'following'])) {
         $activeTab = 'posts';
     }
 
@@ -456,10 +456,10 @@
                             </a>
 
                             <a
-                                href="{{ request()->fullUrlWithQuery(['tab' => 'activity', 'page' => null]) }}"
-                                class="pb-3 border-b-2 {{ $activeTab === 'activity' ? 'border-amber-500 text-[#0b1329]' : 'border-transparent text-slate-400 hover:text-slate-700' }} transition whitespace-nowrap"
+                                href="{{ request()->fullUrlWithQuery(['tab' => 'comments', 'page' => null, 'posts_page' => null, 'comments_page' => null]) }}"
+                                class="pb-3 border-b-2 {{ $activeTab === 'comments' ? 'border-amber-500 text-[#0b1329]' : 'border-transparent text-slate-400 hover:text-slate-700' }} transition whitespace-nowrap"
                             >
-                                Activity
+                                Comments <span class="text-slate-400 font-semibold">{{ number_format($profileStats['comments'] ?? 0) }}</span>
                             </a>
 
                             <a
@@ -2029,38 +2029,112 @@
                                 </div>
                             @endif
 
-                            @elseif($activeTab === 'activity')
-                                @forelse($activities ?? [] as $activity)
-                                    <div class="flex items-start gap-3 p-4 rounded-xl border border-slate-200/70 bg-white shadow-sm">
-                                        <div class="w-2 h-2 rounded-full bg-amber-500 mt-2 shrink-0"></div>
-                                        <div class="min-w-0 flex-1">
-                                            <p class="text-xs sm:text-sm text-slate-700 break-words">
-                                                {{ $activity->description ?? $activity->action ?? 'Performed an activity' }}
-                                            </p>
-                                            <span class="text-[10px] text-slate-400 mt-1 block">
-                                                {{ $activity->created_at?->diffForHumans() }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                @empty
-                                    <div class="py-16 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-                                        <div class="w-12 h-12 mx-auto rounded-full bg-slate-100 flex items-center justify-center mb-3">
-                                            <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                        </div>
-                                        <p class="text-sm font-semibold text-slate-700">No activity yet</p>
-                                        <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                                            Recent user activities and events will appear here.
-                                        </p>
-                                    </div>
-                                @endforelse
+                            @elseif($activeTab === 'comments')
+                                <div class="space-y-4">
+                                    @forelse($comments ?? [] as $comment)
+                                        @php
+                                            $targetPost = $comment->post;
+                                            $isPostDeleted = $targetPost && method_exists($targetPost, 'trashed') && $targetPost->trashed();
+                                            $targetPostAuthor = $targetPost?->user;
+                                            $targetAuthorProfile = $targetPostAuthor?->profile;
+                                            $targetAuthorName = $targetPostAuthor?->name ?? 'User';
+                                            $isReply = $comment->parent_id && $comment->parent;
+                                            $parentUser = $comment->parent?->user;
+                                            $parentUserName = $parentUser?->name ?? 'User';
+                                        @endphp
 
-                                @if(isset($activities) && method_exists($activities, 'hasPages') && $activities->hasPages())
-                                    <div class="mt-6">
-                                        {{ $activities->appends(['tab' => 'activity'])->links() }}
-                                    </div>
-                                @endif
+                                        <div class="bg-white rounded-2xl p-5 border border-slate-200/70 shadow-xs hover:border-slate-300 transition space-y-3">
+                                            {{-- Context Header (Kisko comment kiya) --}}
+                                            <div class="flex items-start justify-between gap-3 text-xs">
+                                                <div class="flex items-center gap-2 flex-wrap min-w-0">
+                                                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-50 text-amber-600 shrink-0">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                        </svg>
+                                                    </span>
+
+                                                    <span class="text-slate-500">
+                                                        @if($isReply)
+                                                            Replied to
+                                                            <a href="{{ $parentUser ? ($parentUser->profile?->username ? route('community.profile', $parentUser->profile->username) : route('community.profile', $parentUser->id)) : '#' }}" class="font-bold text-slate-800 hover:text-amber-600 transition">
+                                                                {{ $parentUserName }}
+                                                            </a>
+                                                            on
+                                                        @else
+                                                            Commented on
+                                                            <a href="{{ $targetPostAuthor ? ($targetAuthorProfile?->username ? route('community.profile', $targetAuthorProfile->username) : route('community.profile', $targetPostAuthor->id)) : '#' }}" class="font-bold text-slate-800 hover:text-amber-600 transition">
+                                                                {{ $targetAuthorName }}'s
+                                                            </a>
+                                                        @endif
+                                                        post
+                                                    </span>
+
+                                                    @if($targetPost)
+                                                        <a
+                                                            href="{{ route('community.posts.show', $targetPost->id) }}"
+                                                            class="font-bold text-[#0b1329] hover:text-amber-600 truncate max-w-xs sm:max-w-md inline-block align-middle transition"
+                                                        >
+                                                            "{{ Str::limit($targetPost->title, 50) }}"
+                                                        </a>
+                                                    @endif
+                                                </div>
+
+                                                <span class="text-[11px] text-slate-400 whitespace-nowrap shrink-0">
+                                                    {{ $comment->created_at?->diffForHumans() }}
+                                                </span>
+                                            </div>
+
+                                            {{-- The Comment Content (Kya comment kiya tha) --}}
+                                            <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-100 text-xs sm:text-sm text-slate-800 leading-relaxed break-words font-medium">
+                                                {{ $comment->content }}
+                                            </div>
+
+                                            {{-- Post Preview & Action Link --}}
+                                            @if($targetPost)
+                                                <div class="flex items-center justify-between pt-1 text-xs">
+                                                    <div class="flex items-center gap-2 text-slate-400 truncate min-w-0">
+                                                        @if($targetPost->category)
+                                                            <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-semibold">
+                                                                {{ $targetPost->category->name }}
+                                                            </span>
+                                                        @endif
+                                                        <span class="truncate text-[11px]">
+                                                            {{ Str::limit(strip_tags($targetPost->content ?? $targetPost->body ?? ''), 80) }}
+                                                        </span>
+                                                    </div>
+
+                                                    <a
+                                                        href="{{ route('community.posts.show', $targetPost->id) }}"
+                                                        class="inline-flex items-center gap-1 font-bold text-amber-600 hover:text-amber-700 transition shrink-0 ml-3"
+                                                    >
+                                                        <span>View Discussion</span>
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                                                        </svg>
+                                                    </a>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @empty
+                                        <div class="py-16 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                                            <div class="w-12 h-12 mx-auto rounded-full bg-slate-100 flex items-center justify-center mb-3">
+                                                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                </svg>
+                                            </div>
+                                            <p class="text-sm font-semibold text-slate-700">No comments yet</p>
+                                            <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                                                When this user comments on posts or replies to discussions, they will appear here.
+                                            </p>
+                                        </div>
+                                    @endforelse
+
+                                    @if(isset($comments) && method_exists($comments, 'hasPages') && $comments->hasPages())
+                                        <div class="mt-6">
+                                            {{ $comments->appends(['tab' => 'comments'])->links() }}
+                                        </div>
+                                    @endif
+                                </div>
 
                             @elseif($activeTab === 'followers')
                                 <div class="bg-slate-50/60 rounded-2xl border border-slate-200/70 p-4 sm:p-5">

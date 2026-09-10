@@ -111,9 +111,12 @@ class UserProfileController extends Controller
             ->with([
                 'post.category',
                 'post.user.profile',
+                'parent.user.profile',
             ])
+            ->whereNull('comments.deleted_at')
+            ->whereHas('post')
             ->latest()
-            ->paginate(5, ['*'], 'comments_page');
+            ->paginate(10, ['*'], 'comments_page');
 
         /*
         |--------------------------------------------------------------------------
@@ -138,6 +141,7 @@ class UserProfileController extends Controller
 
             'comments' => $user->comments()
                 ->whereNull('comments.deleted_at')
+                ->whereHas('post')
                 ->count(),
 
             'likes_received' => Like::whereHas('post', function ($query) use ($user) {
