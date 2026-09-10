@@ -8,6 +8,9 @@
     <title>{{ $group->name }} | Community</title>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
 </head>
 
 <body class="min-h-screen bg-[#f3f4f6] font-sans text-slate-800 antialiased selection:bg-amber-500 selection:text-white pb-20 lg:pb-0">
@@ -130,6 +133,24 @@
                                     @method('DELETE')
                                     <button type="submit" class="px-2.5 py-1 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg border border-rose-200 transition font-medium">
                                         Leave
+                                    </button>
+                                </form>
+                            </div>
+                        @elseif($hasPendingInvitation ?? false)
+                            <div class="flex items-center gap-2">
+                                <span class="px-3 py-1.5 bg-amber-50 text-amber-800 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 border border-amber-200">
+                                    ✉️ You are invited
+                                </span>
+                                <form method="POST" action="{{ route('community.groups.invitation.accept', $group) }}">
+                                    @csrf
+                                    <button type="submit" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer">
+                                        Accept
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ route('community.groups.invitation.reject', $group) }}">
+                                    @csrf
+                                    <button type="submit" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer">
+                                        Decline
                                     </button>
                                 </form>
                             </div>
@@ -276,14 +297,37 @@
                         type="button"
                         @click="activeTab = 'pending'"
                         class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer"
-                        :class="activeTab === 'pending' ? 'bg-amber-500 text-white shadow-xs' : 'text-amber-700 bg-amber-50 hover:bg-amber-100'"
+                        :class="activeTab === 'pending' ? 'bg-[#0b1329] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'"
                     >
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                         </svg>
                         <span>Requests</span>
-                        <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-white text-amber-900 font-extrabold">
+                        <span
+                            class="px-1.5 py-0.5 rounded-full text-[10px]"
+                            :class="activeTab === 'pending' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'"
+                        >
                             {{ $pendingMembers->count() }}
+                        </span>
+                    </button>
+                @endif
+
+                @if($user && (int) $group->owner_id === (int) $user->id && isset($invitedMembers) && $invitedMembers->isNotEmpty())
+                    <button
+                        type="button"
+                        @click="activeTab = 'invited'"
+                        class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer"
+                        :class="activeTab === 'invited' ? 'bg-[#0b1329] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        <span>Invited</span>
+                        <span
+                            class="px-1.5 py-0.5 rounded-full text-[10px]"
+                            :class="activeTab === 'invited' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'"
+                        >
+                            {{ $invitedMembers->count() }}
                         </span>
                     </button>
                 @endif
@@ -464,6 +508,85 @@
                                 No pending join requests for this group.
                             </div>
                         @endforelse
+                    </div>
+                </div>
+            @endif
+
+            {{-- TAB CONTENT: INVITED USERS (OWNER ONLY) --}}
+            @if($user && (int) $group->owner_id === (int) $user->id && isset($invitedMembers) && $invitedMembers->isNotEmpty())
+                <div x-show="activeTab === 'invited'" x-cloak class="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-5 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-900">
+                                Invited Members ({{ $invitedMembers->count() }})
+                            </h2>
+                            <p class="text-xs text-slate-500 mt-0.5">
+                                Users you invited who haven't accepted yet
+                            </p>
+                        </div>
+                        <span class="px-3 py-1 bg-sky-50 text-sky-800 rounded-xl text-xs font-bold">
+                            {{ $invitedMembers->count() }} Invited
+                        </span>
+                    </div>
+
+                    <div class="space-y-3">
+                        @foreach($invitedMembers as $invitedUser)
+                            @php
+                                $iProfile = $invitedUser->profile;
+                                $iAvatar = $iProfile?->avatar
+                                    ? asset('storage/' . $iProfile->avatar)
+                                    : 'https://ui-avatars.com/api/?name=' . urlencode($invitedUser->name) . '&background=0c1b33&color=fff';
+                                $iUsername = $iProfile?->username ?? $invitedUser->id;
+                            @endphp
+
+                            <div class="flex items-center justify-between p-3.5 rounded-xl border border-sky-200/60 bg-sky-50/20 gap-3">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <div class="relative shrink-0">
+                                        <img
+                                            src="{{ $iAvatar }}"
+                                            alt="{{ $invitedUser->name }}"
+                                            class="w-11 h-11 rounded-full object-cover ring-2 ring-sky-300"
+                                        >
+                                        @if($iProfile?->country?->iso_code)
+                                            <img
+                                                src="https://flagcdn.com/20x15/{{ strtolower($iProfile->country->iso_code) }}.png"
+                                                class="absolute -bottom-0.5 -right-0.5 w-4 h-3 object-cover rounded-xs border border-white"
+                                                alt="{{ $iProfile->country->name ?? 'Country' }}"
+                                            >
+                                        @endif
+                                    </div>
+
+                                    <div class="min-w-0">
+                                        <a
+                                            href="{{ route('community.profile', $iUsername) }}"
+                                            class="font-bold text-xs text-slate-900 hover:text-amber-600 hover:underline truncate block"
+                                        >
+                                            {{ $invitedUser->name }}
+                                        </a>
+
+                                        <div class="text-[11px] text-slate-400 mt-0.5">
+                                            {{ '@' . ($iProfile?->username ?? 'user') }} • Invited {{ $invitedUser->pivot->created_at ? \Carbon\Carbon::parse($invitedUser->pivot->created_at)->diffForHumans() : 'Recently' }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <span class="px-2.5 py-1 bg-amber-50 text-amber-700 rounded-lg text-xs font-semibold border border-amber-200/80">
+                                        Waiting for User to Accept
+                                    </span>
+
+                                    <form method="POST" action="{{ route('community.groups.requests.reject', [$group, $invitedUser]) }}" onsubmit="return confirm('Cancel this invitation?');">
+                                        @csrf
+                                        <button
+                                            type="submit"
+                                            class="px-2.5 py-1 text-xs text-rose-600 hover:bg-rose-50 rounded-lg border border-rose-200 transition font-medium cursor-pointer"
+                                        >
+                                            Cancel Invite
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        @endforeach
                     </div>
                 </div>
             @endif

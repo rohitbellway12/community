@@ -236,20 +236,20 @@ class GroupController extends Controller
                         continue;
                     }
 
-                    if ($existingStatus === 'pending') {
+                    if ($existingStatus === 'pending' || $existingStatus === 'invited') {
                         continue;
                     }
                 }
 
                 /*
                 |--------------------------------------------------------------------------
-                | Create Pending Membership
+                | Create Invited Membership
                 |--------------------------------------------------------------------------
                 */
                 $group->users()->syncWithoutDetaching([
                     $invitedUser->id => [
                         'role' => 'member',
-                        'status' => 'pending',
+                        'status' => 'invited',
                     ],
                 ]);
 
@@ -315,6 +315,7 @@ class GroupController extends Controller
         |--------------------------------------------------------------------------
         | Pending Join Requests (Visible to Owner)
         |--------------------------------------------------------------------------
+        | Only actual join requests sent by users to join this group.
         */
         $pendingMembers = ($user && (int) $group->owner_id === (int) $user->id)
             ? $group->users()
@@ -323,6 +324,30 @@ class GroupController extends Controller
                 ->wherePivot('status', 'pending')
                 ->get()
             : collect();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pending Invitations (Sent by Owner)
+        |--------------------------------------------------------------------------
+        */
+        $invitedMembers = ($user && (int) $group->owner_id === (int) $user->id)
+            ? $group->users()
+                ->withPivot(['role', 'status', 'created_at'])
+                ->with(['profile.country'])
+                ->wherePivot('status', 'invited')
+                ->get()
+            : collect();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Check if Current User has a Pending Invitation to this Group
+        |--------------------------------------------------------------------------
+        */
+        $hasPendingInvitation = false;
+        if ($user && !$isMember) {
+            $hasPendingInvitation = ($membership && $membership->status === 'invited')
+                || $this->hasPendingInvitation($user, $group);
+        }
 
         /*
         |--------------------------------------------------------------------------
@@ -385,6 +410,8 @@ class GroupController extends Controller
             'owner' => $owner,
             'members' => $members,
             'pendingMembers' => $pendingMembers,
+            'invitedMembers' => $invitedMembers,
+            'hasPendingInvitation' => $hasPendingInvitation,
             'isMember' => $isMember,
             'membership' => $membership,
             'posts' => $posts,
@@ -431,6 +458,13 @@ class GroupController extends Controller
                 return back()->with(
                     'error',
                     'Your join request is already pending owner approval.'
+                );
+            }
+
+            if ($status === 'invited') {
+                return back()->with(
+                    'info',
+                    'You have an invitation to join this group. Please accept the invitation.'
                 );
             }
         }
@@ -582,7 +616,7 @@ class GroupController extends Controller
                 $group->users()->syncWithoutDetaching([
                     $invitedUser->id => [
                         'role' => 'member',
-                        'status' => 'pending',
+                        'status' => 'invited',
                     ],
                 ]);
 
@@ -821,22 +855,42 @@ class GroupController extends Controller
 
         if (
             !$membership
-            || ($membership->pivot->status ?? null) !== 'pending'
+            || !in_array($membership->pivot->status ?? null, ['pending', 'invited'])
         ) {
             return $this->requestResponse(
                 $request,
                 false,
-                'No pending join request found.',
+                'No pending join request or invitation found.',
                 422
             );
         }
 
+        $wasInvited = (($membership->pivot->status ?? null) === 'invited');
+
         /*
         |--------------------------------------------------------------------------
-        | Remove Request
+        | Remove Request / Cancel Invitation
         |--------------------------------------------------------------------------
         */
         $group->users()->detach($userToReject->id);
+
+        if ($wasInvited) {
+            $this->updateInvitationNotification(
+                $userToReject,
+                $group,
+                'cancelled'
+            );
+
+            return $this->requestResponse(
+                $request,
+                true,
+                "Invitation to {$userToReject->name} has been cancelled.",
+                200,
+                [
+                    'status' => 'cancelled',
+                ]
+            );
+        }
 
         /*
         |--------------------------------------------------------------------------
@@ -892,7 +946,7 @@ class GroupController extends Controller
 
         if (
             !$membership
-            || ($membership->pivot->status ?? null) !== 'pending'
+            || !in_array($membership->pivot->status ?? null, ['pending', 'invited'])
         ) {
             return $this->requestResponse(
                 $request,
@@ -981,7 +1035,7 @@ class GroupController extends Controller
 
         if (
             !$membership
-            || ($membership->pivot->status ?? null) !== 'pending'
+            || !in_array($membership->pivot->status ?? null, ['pending', 'invited'])
         ) {
             return $this->requestResponse(
                 $request,
