@@ -393,7 +393,7 @@
         <div class="flex flex-col gap-2">
             <a href="{{ route('login') }}"
                class="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl transition-colors">
-                Login
+              Community Login
             </a>
             <a href="{{ route('register') }}"
                class="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-xl transition-colors">

@@ -1092,7 +1092,7 @@
                         href="{{ route('login') }}"
                         class="flex items-center justify-center px-3 sm:px-4 h-8 sm:h-9 rounded-lg bg-amber-400 text-slate-950 text-xs font-bold hover:bg-amber-500 transition whitespace-nowrap"
                     >
-                        Login
+                      Community Login
                     </a>
 
                 @endauth
