@@ -3,7 +3,7 @@
 ])
 
 {{-- RIGHT SIDEBAR (Desktop) --}}
-<aside class="space-y-6 hidden lg:block sticky top-6 self-start">
+<aside class="space-y-6 hidden lg:block sticky top-20 self-start">
   
     @auth
         @php
@@ -258,54 +258,49 @@
     </div>
 
     {{-- Community Guidelines Card --}}
+    @php
+        $sidebarGuidelines = \App\Models\CommunityGuideline::where('is_active', true)
+            ->orderBy('sort_order', 'asc')
+            ->orderBy('id', 'asc')
+            ->take(5)
+            ->get();
+    @endphp
     <div class="bg-white p-5 rounded-2xl shadow-[0_4px_20px_-4px_rgba(15,23,42,0.05)] border border-slate-100">
         <h3 class="font-bold text-slate-900 text-sm tracking-tight mb-3">
             Community Guidelines
         </h3>
-        <ul class="space-y-2 text-xs text-slate-600 font-medium">
-            <li class="flex items-start gap-1.5">
-                <span class="text-slate-400 font-bold">&rsaquo;</span>
-                <span>Be respectful and kind to others.</span>
-            </li>
-            <li class="flex items-start gap-1.5">
-                <span class="text-slate-400 font-bold">&rsaquo;</span>
-                <span>No spam or self-promotion.</span>
-            </li>
-            <li class="flex items-start gap-1.5">
-                <span class="text-slate-400 font-bold">&rsaquo;</span>
-                <span>Help others and share authentic info.</span>
-            </li>
-            <li class="flex items-start gap-1.5">
-                <span class="text-slate-400 font-bold">&rsaquo;</span>
-                <span>Use correct category for your post.</span>
-            </li>
+        <ul class="space-y-2.5 text-xs text-slate-600 font-medium">
+            @forelse($sidebarGuidelines as $item)
+                <li class="flex items-start gap-2">
+                    <span class="text-amber-500 font-bold shrink-0">&rsaquo;</span>
+                    <span class="line-clamp-2">{{ $item->title }}</span>
+                </li>
+            @empty
+                <li class="flex items-start gap-1.5">
+                    <span class="text-slate-400 font-bold">&rsaquo;</span>
+                    <span>Be respectful and kind to others.</span>
+                </li>
+                <li class="flex items-start gap-1.5">
+                    <span class="text-slate-400 font-bold">&rsaquo;</span>
+                    <span>No spam or self-promotion.</span>
+                </li>
+                <li class="flex items-start gap-1.5">
+                    <span class="text-slate-400 font-bold">&rsaquo;</span>
+                    <span>Help others and share authentic info.</span>
+                </li>
+                <li class="flex items-start gap-1.5">
+                    <span class="text-slate-400 font-bold">&rsaquo;</span>
+                    <span>Use correct category for your post.</span>
+                </li>
+            @endforelse
         </ul>
         <div class="mt-4 pt-3 border-t border-slate-100">
-            <a href="#" class="text-xs font-bold text-[#0c1b33] hover:text-indigo-600 transition inline-flex items-center gap-1">
+            <a href="{{ route('community.guidelines') }}" class="text-xs font-bold text-[#0c1b33] hover:text-indigo-600 transition inline-flex items-center gap-1">
                 Read Full Guidelines &rarr;
             </a>
         </div>
     </div>
 
-    {{-- Need Expert Help Card --}}
-    <div class="bg-gradient-to-br from-amber-50/60 via-white to-amber-50/30 p-5 rounded-2xl shadow-[0_4px_20px_-4px_rgba(15,23,42,0.05)] border border-amber-100/60 flex items-center justify-between gap-4">
-        <div class="space-y-2.5">
-            <div>
-                <h3 class="font-bold text-slate-900 text-sm tracking-tight">
-                    Need Expert Help?
-                </h3>
-                <p class="text-xs text-slate-500 mt-0.5 leading-snug">
-                    Our counselors are here to help you.
-                </p>
-            </div>
-            <a href="#" class="inline-block text-xs font-bold text-amber-600 hover:text-amber-700 transition">
-                Book a Free Consultation
-            </a>
-        </div>
-        <div class="shrink-0">
-            <img src="https://images.unsplash.com/photo-1531482615713-2afd69097998?w=200&h=150&fit=crop" alt="Counselors" class="w-24 h-20 object-cover rounded-xl shadow-xs border border-white">
-        </div>
-    </div>
 
     @auth
         {{-- Recent Activity --}}

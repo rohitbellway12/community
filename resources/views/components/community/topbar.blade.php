@@ -1067,6 +1067,16 @@
                                 View Profile
                             </a>
 
+                            <a
+                                href="{{ route('community.saved') }}"
+                                class="flex items-center px-4 py-2.5 text-xs font-semibold hover:bg-slate-50 transition text-slate-700"
+                            >
+                                <svg class="w-4 h-4 mr-2 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                </svg>
+                                Saved Posts
+                            </a>
+
                             <div class="border-t border-slate-100 my-1"></div>
 
                             <form method="POST" action="{{ route('logout') }}">

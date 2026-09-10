@@ -52,6 +52,27 @@
         @endauth
     </div>
 
+    {{-- QUICK NAVIGATION (Feed / Saved Posts) --}}
+    <div class="bg-white p-2.5 rounded-2xl shadow-xs border border-slate-200/70 space-y-1">
+        <a href="{{ route('community.index') }}"
+            class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition {{ request()->routeIs('community.index') && !request('filter') ? 'bg-[#0c1b33] text-white shadow-xs' : 'text-slate-700 hover:bg-slate-100/70' }}">
+            <svg class="w-4 h-4 {{ request()->routeIs('community.index') && !request('filter') ? 'text-amber-400' : 'text-slate-400' }}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+            </svg>
+            <span>Community Feed</span>
+        </a>
+
+        @auth
+            <a href="{{ route('community.saved') }}"
+                class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition {{ request()->routeIs('community.saved') ? 'bg-[#0c1b33] text-white shadow-xs' : 'text-slate-700 hover:bg-slate-100/70' }}">
+                <svg class="w-4 h-4 {{ request()->routeIs('community.saved') ? 'text-amber-400' : 'text-slate-400' }}" fill="{{ request()->routeIs('community.saved') ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+                <span>Saved Posts</span>
+            </a>
+        @endauth
+    </div>
+
  {{-- JOINED GROUPS & MANAGEMENT SECTION --}}
 @auth
     <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/70 space-y-3">

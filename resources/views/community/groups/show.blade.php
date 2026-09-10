@@ -621,7 +621,7 @@
                             expandedContent: false,
                             expandedTags: false,
                             newCommentText: '',
-                            comments: {{ Js::from($post->comments->whereNull('parent_id')->map(fn($c) => [
+                            comments: {{ Js::from($post->comments->whereNull('parent_id')->take(4)->map(fn($c) => [
                                 'id' => $c->id,
                                 'content' => $c->content,
                                 'created_at_human' => $c->created_at->diffForHumans(),
@@ -644,7 +644,7 @@
                                     ]
                                 ])->values()
                             ])->values()) }},
-                            hasMoreComments: {{ $post->comments()->whereNull('parent_id')->count() > 3 ? 'true' : 'false' }},
+                            hasMoreComments: {{ $post->comments()->whereNull('parent_id')->count() > 4 ? 'true' : 'false' }},
                             loadingMore: false,
 
                             toggleLike() {
@@ -940,7 +940,7 @@
                             <div class="text-center pt-1" x-show="hasMoreComments">
                                 <button type="button" @click="loadMoreComments()" :disabled="loadingMore"
                                     class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-50 hover:bg-amber-50 border border-slate-200 text-xs font-semibold text-amber-600 hover:text-amber-700 transition disabled:opacity-50">
-                                    <span x-text="loadingMore ? 'Loading comments...' : 'See more comments'"></span>
+                                    <span x-text="loadingMore ? 'Loading comments...' : 'Read more'"></span>
                                 </button>
                             </div>
                         </div>

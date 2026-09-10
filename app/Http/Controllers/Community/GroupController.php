@@ -362,7 +362,7 @@ class GroupController extends Controller
                     'comments' => function ($query) {
                         $query->whereNull('parent_id')
                             ->latest()
-                            ->take(3)
+                            ->take(4)
                             ->with([
                                 'user.profile',
                                 'replies' => function ($rq) {
@@ -523,6 +523,81 @@ class GroupController extends Controller
             'group' => $group->slug,
             'tab' => 'members',
         ]);
+    }
+
+    /**
+     * Remove Member from Group (by Group Owner)
+     */
+    public function removeMember(
+        Request $request,
+        Group $group,
+        User $userToRemove
+    ) {
+        $user = $request->user();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Owner Authorization
+        |--------------------------------------------------------------------------
+        */
+        if ((int) $group->owner_id !== (int) $user->id) {
+            return $this->requestResponse(
+                $request,
+                false,
+                'Only the group owner can remove members.',
+                403
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Cannot remove the owner
+        |--------------------------------------------------------------------------
+        */
+        if ((int) $userToRemove->id === (int) $group->owner_id) {
+            return $this->requestResponse(
+                $request,
+                false,
+                'The group owner cannot be removed.',
+                422
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Check Membership
+        |--------------------------------------------------------------------------
+        */
+        $membership = $group->users()
+            ->where('user_id', $userToRemove->id)
+            ->first();
+
+        if (!$membership) {
+            return $this->requestResponse(
+                $request,
+                false,
+                'This user is not a member of the group.',
+                404
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Detach Member
+        |--------------------------------------------------------------------------
+        */
+        $group->users()->detach($userToRemove->id);
+
+        return $this->requestResponse(
+            $request,
+            true,
+            "{$userToRemove->name} has been removed from the group.",
+            200,
+            [
+                'status' => 'removed',
+                'user_id' => $userToRemove->id,
+            ]
+        );
     }
 
     /**

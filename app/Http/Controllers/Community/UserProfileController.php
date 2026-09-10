@@ -84,7 +84,7 @@ class UserProfileController extends Controller
                 'comments' => function ($query) {
                     $query->whereNull('parent_id')
                         ->latest()
-                        ->take(3)
+                        ->take(4)
                         ->with([
                             'user.profile',
                             'replies' => function ($rq) {
@@ -348,6 +348,10 @@ class UserProfileController extends Controller
         | Save Profile
         |--------------------------------------------------------------------------
         */
+
+        if (isset($data['name']) && filled($data['name'])) {
+            $user->update(['name' => trim($data['name'])]);
+        }
 
         $profile->update($data);
 

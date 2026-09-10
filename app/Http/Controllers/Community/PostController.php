@@ -70,11 +70,46 @@ public function index(Request $request)
     */
 
     $postsQuery = Post::query()
-        ->where('status', 'published')
-        ->where('visibility', 'public');
+        ->where('status', 'published');
 
     if ($activeGroup) {
         $postsQuery->where('group_id', $activeGroup->id);
+        if ($activeGroup->visibility === 'private') {
+            if (!$user) {
+                $postsQuery->whereRaw('1 = 0');
+            } else {
+                $isMemberOrOwner = (int) $activeGroup->owner_id === (int) $user->id
+                    || $activeGroup->users()->where('users.id', $user->id)->wherePivot('status', 'active')->exists()
+                    || in_array($user->role?->value ?? (string) $user->role, ['admin', 'super_admin'], true);
+
+                if (!$isMemberOrOwner) {
+                    $postsQuery->whereRaw('1 = 0');
+                }
+            }
+        }
+    } else {
+        $postsQuery->where(function ($q) use ($user) {
+            $q->where(function ($sub) {
+                $sub->where('visibility', 'public')
+                    ->where(function ($gSub) {
+                        $gSub->whereNull('group_id')
+                             ->orWhereHas('group', function ($g) {
+                                 $g->where('visibility', 'public');
+                             });
+                    });
+            });
+
+            if ($user) {
+                $q->orWhere('user_id', $user->id)
+                  ->orWhereHas('group', function ($g) use ($user) {
+                      $g->where('owner_id', $user->id)
+                        ->orWhereHas('users', function ($uq) use ($user) {
+                            $uq->where('users.id', $user->id)
+                               ->where('group_user.status', 'active');
+                        });
+                  });
+            }
+        });
     }
 
     $postsQuery
@@ -92,7 +127,7 @@ public function index(Request $request)
                 $query
                     ->whereNull('parent_id')
                     ->latest()
-                    ->take(3)
+                    ->take(4)
                     ->with([
                         'user.profile',
                         'replies' => function ($replyQuery) {
@@ -327,23 +362,13 @@ public function store(Request $request)
     if (empty($validated['group_id'])) {
         $visibility = 'public';
     } else {
-        $visibility = $validated['visibility'] ?? 'public';
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Verify Group Membership
-    |--------------------------------------------------------------------------
-    */
-
-    if (!empty($validated['group_id'])) {
-
         $group = Group::findOrFail($validated['group_id']);
 
-        $isMember = $group->users()
-            ->where('user_id', $request->user()->id)
-            ->wherePivot('status', 'active')
-            ->exists();
+        $isMember = (int) $group->owner_id === (int) $request->user()->id
+            || $group->users()
+                ->where('user_id', $request->user()->id)
+                ->wherePivot('status', 'active')
+                ->exists();
 
         if (!$isMember) {
             return back()
@@ -352,6 +377,12 @@ public function store(Request $request)
                     'error',
                     'You must be a member of this group to create posts here.'
                 );
+        }
+
+        if ($group->visibility === 'private') {
+            $visibility = 'private';
+        } else {
+            $visibility = $validated['visibility'] ?? 'public';
         }
     }
 
@@ -440,7 +471,25 @@ public function store(Request $request)
      */
     public function show(Request $request, Post $post)
     {
-        
+        $post->loadMissing('group');
+        $isPrivate = $post->visibility === 'private'
+            || ($post->group && $post->group->visibility === 'private');
+
+        if ($isPrivate) {
+            if (!Auth::check()) {
+                return redirect()->guest(route('login'))->with('error', 'Please log in to view this private discussion.');
+            }
+
+            $currentUser = Auth::user();
+            $canView = (int) $post->user_id === (int) $currentUser->id
+                || ($post->group && (int) $post->group->owner_id === (int) $currentUser->id)
+                || ($post->group && $post->group->users()->where('users.id', $currentUser->id)->wherePivot('status', 'active')->exists())
+                || in_array($currentUser->role?->value ?? (string) $currentUser->role, ['admin', 'super_admin'], true);
+
+            if (!$canView) {
+                abort(403, 'This discussion is private and only accessible to group members.');
+            }
+        }
 
         $post->increment('views_count');
 
@@ -453,7 +502,7 @@ public function store(Request $request)
                 $query
                     ->whereNull('parent_id')
                     ->latest()
-                    ->take(10)
+                    ->take(4)
                     ->with([
                         'user.profile',
                         'replies' => function ($replyQuery) {
@@ -471,6 +520,13 @@ public function store(Request $request)
 
         $relatedPosts = Post::query()
             ->where('status', 'published')
+            ->where('visibility', 'public')
+            ->where(function ($gq) {
+                $gq->whereNull('group_id')
+                   ->orWhereHas('group', function ($g) {
+                       $g->where('visibility', 'public');
+                   });
+            })
             ->where('category_id', $post->category_id)
             ->where('id', '!=', $post->id)
             ->with(['user.profile', 'category'])

@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\AdminCategoryController;
 use App\Http\Controllers\Admin\AdminGroupController;
 use App\Http\Controllers\Admin\AdminReportController;
+use App\Http\Controllers\Admin\AdminGuidelineController;
 use App\Http\Controllers\Admin\CountryController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\Community\CommunityController;
@@ -72,6 +73,11 @@ Route::prefix('community')->group(function () {
         '/profile/{username}/following',
         [UserProfileController::class, 'following']
     )->name('community.profile.following');
+
+    Route::get(
+        '/guidelines',
+        [CommunityController::class, 'guidelines']
+    )->name('community.guidelines');
 
     /*
     |--------------------------------------------------------------------------
@@ -159,6 +165,11 @@ Route::prefix('community')->group(function () {
                 '/groups/{group:slug}/members',
                 [GroupController::class, 'members']
             )->name('groups.members');
+
+            Route::delete(
+                '/groups/{group:slug}/members/{userToRemove}',
+                [GroupController::class, 'removeMember']
+            )->name('groups.members.remove');
 
             Route::post('/groups/{group:slug}/requests/{userToAccept}/accept', [GroupController::class, 'acceptRequest'])
                 ->name('groups.requests.accept');
@@ -320,6 +331,13 @@ Route::prefix('community')->group(function () {
             Route::delete('/reports/{report}/content', [AdminReportController::class, 'deleteContent'])->name('reports.deleteContent');
             Route::post('/reports/{report}/ban-user', [AdminReportController::class, 'banUser'])->name('reports.banUser');
             Route::delete('/reports/{report}', [AdminReportController::class, 'destroy'])->name('reports.destroy');
+
+            // Guidelines
+            Route::get('/guidelines', [AdminGuidelineController::class, 'index'])->name('guidelines.index');
+            Route::post('/guidelines', [AdminGuidelineController::class, 'store'])->name('guidelines.store');
+            Route::put('/guidelines/{guideline}', [AdminGuidelineController::class, 'update'])->name('guidelines.update');
+            Route::patch('/guidelines/{guideline}/status', [AdminGuidelineController::class, 'updateStatus'])->name('guidelines.updateStatus');
+            Route::delete('/guidelines/{guideline}', [AdminGuidelineController::class, 'destroy'])->name('guidelines.destroy');
         });
 
     Route::middleware('auth')->group(function () {

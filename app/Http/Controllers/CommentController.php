@@ -18,6 +18,24 @@ class CommentController extends Controller
 
         $user = Auth::user();
 
+        $post->loadMissing('group');
+        $isPrivate = $post->visibility === 'private'
+            || ($post->group && $post->group->visibility === 'private');
+
+        if ($isPrivate) {
+            $canComment = (int) $post->user_id === (int) $user->id
+                || ($post->group && (int) $post->group->owner_id === (int) $user->id)
+                || ($post->group && $post->group->users()->where('users.id', $user->id)->wherePivot('status', 'active')->exists())
+                || in_array($user->role?->value ?? (string) $user->role, ['admin', 'super_admin'], true);
+
+            if (!$canComment) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You cannot comment on this private discussion.',
+                ], 403);
+            }
+        }
+
         $comment = $post->comments()->create([
             'user_id' => $user->id,
             'parent_id' => $request->input('parent_id'),

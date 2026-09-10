@@ -663,12 +663,10 @@
         </section>
 
         {{-- RIGHT SIDEBAR --}}
-        <aside class="hidden lg:block">
-            <x-community.rightbar
-                :user="$user"
-                :trending-topics="$trendingTopics ?? collect()"
-            />
-        </aside>
+        <x-community.rightbar
+            :user="$user"
+            :trending-topics="$trendingTopics ?? collect()"
+        />
     </main>
 
 

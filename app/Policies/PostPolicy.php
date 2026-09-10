@@ -7,22 +7,40 @@ use App\Models\User;
 
 class PostPolicy
 {
-   public function view(?User $user, Post $post): bool
+    public function view(?User $user, Post $post): bool
     {
-        // Public posts are viewable by everyone
-        if (is_null($post->group_id)) {
+        $post->loadMissing('group');
+        $isPrivate = $post->visibility === 'private'
+            || ($post->group && $post->group->visibility === 'private');
+
+        if (!$isPrivate) {
             return true;
         }
 
-        // Group posts require active membership
         if (!$user) {
             return false;
         }
 
-        return $post->group->users()
-            ->where('user_id', $user->id)
-            ->wherePivot('status', 'active')
-            ->exists();
+        if ((int) $post->user_id === (int) $user->id) {
+            return true;
+        }
+
+        if (in_array($user->role?->value ?? (string) $user->role, ['admin', 'super_admin'], true)) {
+            return true;
+        }
+
+        if ($post->group) {
+            if ((int) $post->group->owner_id === (int) $user->id) {
+                return true;
+            }
+
+            return $post->group->users()
+                ->where('users.id', $user->id)
+                ->wherePivot('status', 'active')
+                ->exists();
+        }
+
+        return false;
     }
 
     public function update(User $user, Post $post): bool

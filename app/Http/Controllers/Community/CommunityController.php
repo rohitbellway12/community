@@ -141,7 +141,6 @@ class CommunityController extends Controller
 
     public function saved(Request $request): View
     {
-        dd('hello');
         $user = $request->user();
         $user->load('profile');
 
@@ -150,7 +149,7 @@ class CommunityController extends Controller
                 $query->where('user_id', $user->id);
             })
             ->with([
-                'user',
+                'user.profile',
                 'category',
                 'tags',
                 'media',
@@ -163,12 +162,40 @@ class CommunityController extends Controller
             ->paginate(10);
 
         $topContributors = User::getTopContributors(5);
+        $categories = \App\Models\Category::where('status', 1)->orderBy('sort_order')->take(8)->get();
+        $tags = \App\Models\Tag::take(10)->get();
+        $trendingTopics = \App\Models\Category::withCount('posts')->orderByDesc('posts_count')->take(5)->get();
 
         return view('community.saved', [
             'user' => $user,
             'profile' => $user->profile,
             'posts' => $posts,
             'topContributors' => $topContributors,
+            'categories' => $categories,
+            'tags' => $tags,
+            'trendingTopics' => $trendingTopics,
+        ]);
+    }
+
+    public function guidelines(): View
+    {
+        $guidelines = \App\Models\CommunityGuideline::where('is_active', true)
+            ->orderBy('sort_order', 'asc')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        $topContributors = User::getTopContributors(5);
+        $categories = \App\Models\Category::where('status', 1)->orderBy('sort_order')->take(8)->get();
+        $tags = \App\Models\Tag::take(10)->get();
+        $trendingTopics = \App\Models\Category::withCount('posts')->orderByDesc('posts_count')->take(5)->get();
+
+        return view('community.guidelines', [
+            'user' => auth()->user(),
+            'guidelines' => $guidelines,
+            'topContributors' => $topContributors,
+            'categories' => $categories,
+            'tags' => $tags,
+            'trendingTopics' => $trendingTopics,
         ]);
     }
 
@@ -377,6 +404,32 @@ class CommunityController extends Controller
         Request $request,
         Post $post
     ): JsonResponse {
+        $post->loadMissing('group');
+        $isPrivate = $post->visibility === 'private'
+            || ($post->group && $post->group->visibility === 'private');
+
+        if ($isPrivate) {
+            if (!Auth::check()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please log in to view comments.',
+                ], 401);
+            }
+
+            $currentUser = Auth::user();
+            $canView = (int) $post->user_id === (int) $currentUser->id
+                || ($post->group && (int) $post->group->owner_id === (int) $currentUser->id)
+                || ($post->group && $post->group->users()->where('users.id', $currentUser->id)->wherePivot('status', 'active')->exists())
+                || in_array($currentUser->role?->value ?? (string) $currentUser->role, ['admin', 'super_admin'], true);
+
+            if (!$canView) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This discussion is private.',
+                ], 403);
+            }
+        }
+
         $validated = $request->validate([
             'skip' => [
                 'nullable',
@@ -386,7 +439,7 @@ class CommunityController extends Controller
         ]);
 
         $skip = (int) ($validated['skip'] ?? 0);
-        $take = 5;
+        $take = 4;
 
         // Total count of top-level comments
         $totalTopLevel = $post->comments()
