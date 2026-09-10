@@ -19,7 +19,11 @@ use App\Http\Controllers\TagController;
 
 Route::get('/', function () {
     return redirect()->route('community.index');
-});
+})->name('home');
+
+Route::get('/dashboard', function () {
+    return redirect()->route('community.index');
+})->name('dashboard');
 
 Route::get('/admin/{any?}', function ($any = null) {
     return redirect('/community/admin' . ($any ? '/' . $any : '/dashboard'));
@@ -30,25 +34,25 @@ Route::prefix('community')->group(function () {
 
     Route::middleware('auth')->group(function () {
 
-        Route::get('/profile', [ProfileController::class, 'edit'])
+        Route::get('/account/profile', [ProfileController::class, 'edit'])
             ->name('profile.edit');
 
-        Route::patch('/profile', [ProfileController::class, 'update'])
+        Route::patch('/account/profile', [ProfileController::class, 'update'])
             ->name('profile.update');
 
-        Route::delete('/profile', [ProfileController::class, 'destroy'])
+        Route::delete('/account/profile', [ProfileController::class, 'destroy'])
             ->name('profile.destroy');
     });
 
     Route::get('/', [PostController::class, 'index'])
         ->name('community.index');
 
-    Route::get('/community/posts/{post}', [PostController::class, 'show'])
+    Route::get('/posts/{post}', [PostController::class, 'show'])
         ->whereNumber('post')
         ->name('community.posts.show');
 
     Route::get(
-        '/community/{post}/comments',
+        '/posts/{post}/comments',
         [CommunityController::class, 'loadMoreComments']
     )
         ->whereNumber('post')
@@ -76,7 +80,6 @@ Route::prefix('community')->group(function () {
     */
 
     Route::middleware('auth')
-        ->prefix('community')
         ->name('community.')
         ->group(function () {
 
@@ -335,14 +338,14 @@ Route::prefix('community')->group(function () {
         Route::get('/users/{user}/followers', ['App\\Http\\Controllers\\Community\\FollowController', 'followers'])
             ->name('users.followers');
 
-        Route::post('/community/followers/{user}/remove', ['App\\Http\\Controllers\\Community\\FollowController', 'removeFollower'])
+        Route::post('/followers/{user}/remove', ['App\\Http\\Controllers\\Community\\FollowController', 'removeFollower'])
             ->name('users.followers.remove');
 
         Route::get('/users/{user}/following', ['App\\Http\\Controllers\\Community\\FollowController', 'following'])
             ->name('users.following');
     });
 
-    Route::delete('/community/notifications/{id}', [NotificationController::class, 'destroy'])->name('community.notifications.destroy');
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('community.notifications.destroy');
 
     Route::middleware(['auth'])->group(function () {
 
@@ -354,11 +357,11 @@ Route::prefix('community')->group(function () {
     Route::middleware('auth')->group(function () {
 
         // Notification page
-        Route::get('/community/notifications', [NotificationController::class, 'page'])
+        Route::get('/notifications', [NotificationController::class, 'page'])
             ->name('community.notifications');
 
         // Topbar AJAX/JSON
-        Route::get('/community/notifications/data', [NotificationController::class, 'index'])
+        Route::get('/notifications/data', [NotificationController::class, 'index'])
             ->name('community.notifications.data');
 
     });

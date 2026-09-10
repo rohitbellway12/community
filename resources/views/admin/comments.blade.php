@@ -446,7 +446,7 @@
                     </button>
 
                     {{-- Toggle Hide Form in Modal --}}
-                    <form :action="'{{ url('/community/admin/comments') }}/' + currentComment.id + '/toggle-hide'" method="POST" class="inline">
+                    <form :action="'{{ route('admin.comments') }}/' + currentComment.id + '/toggle-hide'" method="POST" class="inline">
                         @csrf
                         @method('PATCH')
                         <button type="submit" class="px-4 py-2 text-xs font-bold text-slate-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl transition">

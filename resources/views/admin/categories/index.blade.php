@@ -234,7 +234,7 @@
                 <button type="button" @click="editModalOpen = false" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
             </div>
 
-            <form :action="'{{ url('admin/categories') }}/' + editCategory.id" method="POST" class="space-y-4">
+            <form :action="'{{ route('admin.categories.index') }}/' + editCategory.id" method="POST" class="space-y-4">
                 @csrf
                 @method('PUT')
                 <div>

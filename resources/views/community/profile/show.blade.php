@@ -2196,7 +2196,7 @@
                                                             if (removing) return;
                                                             removing = true;
 
-                                                            fetch('{{ url('/community/followers/' . $person->id . '/remove') }}', {
+                                                            fetch('{{ route('users.followers.remove', $person->id) }}', {
                                                                 method: 'POST',
                                                                 headers: {
                                                                     'Content-Type': 'application/json',
