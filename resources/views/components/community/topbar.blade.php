@@ -1390,153 +1390,153 @@
 
         </nav>
     </div>
+</header>
 
-    {{-- MOBILE BOTTOM NAVIGATION --}}
-    <div
-        class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/80 lg:hidden px-3 pt-2 pb-3 z-40 flex items-center justify-between shadow-[0_-4px_20px_rgba(0,0,0,0.06)]"
+{{-- MOBILE BOTTOM NAVIGATION --}}
+<div
+    class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/80 lg:hidden px-3 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] z-50 flex items-center justify-between shadow-[0_-4px_20px_rgba(0,0,0,0.06)]"
+>
+    {{-- Groups --}}
+    <a
+        href="{{ auth()->check() ? route('community.groups.index') : route('login') }}"
+        class="flex flex-1 flex-col items-center justify-center gap-1 py-1 transition touch-manipulation {{ request()->routeIs('community.groups.*') ? 'text-[#0b1329] font-bold' : 'text-slate-400 hover:text-slate-600 font-medium' }}"
     >
-        {{-- Groups --}}
-        <a
-            href="{{ route('community.groups.index') }}"
-            class="flex flex-1 flex-col items-center justify-center gap-1 transition {{ request()->routeIs('community.groups.*') ? 'text-[#0b1329] font-bold' : 'text-slate-400 hover:text-slate-600 font-medium' }}"
+        <svg class="h-5 w-5 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-4-4h-1" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 20H4v-2a4 4 0 014-4h1" />
+            <circle cx="9" cy="7" r="4" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 3.5a4 4 0 010 7" />
+        </svg>
+
+        <span class="text-[10px] tracking-tight pointer-events-none">
+            Groups
+        </span>
+    </a>
+
+    {{-- Community --}}
+    <a
+        href="{{ route('community.index') }}"
+        class="flex flex-1 flex-col items-center justify-center gap-1 py-1 transition touch-manipulation {{ request()->routeIs('community.index') ? 'text-[#0b1329] font-bold' : 'text-slate-400 hover:text-slate-600 font-medium' }}"
+    >
+        <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+        </svg>
+
+        <span class="text-[10px] tracking-tight pointer-events-none">
+            Community
+        </span>
+    </a>
+
+    {{-- Create --}}
+    <div class="flex flex-1 flex-col items-center justify-center">
+        <button
+            type="button"
+            @click="$dispatch('{{ auth()->check() ? 'open-post-modal' : 'open-login-modal' }}')"
+            class="group relative -top-4 w-12 h-12 bg-[#0b1329] hover:bg-[#162247] rounded-full flex items-center justify-center text-white shadow-xl shadow-slate-900/20 border-4 border-white transition transform active:scale-95 touch-manipulation"
         >
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-4-4h-1" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 20H4v-2a4 4 0 014-4h1" />
-                <circle cx="9" cy="7" r="4" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 3.5a4 4 0 010 7" />
-            </svg>
-
-            <span class="text-[10px] tracking-tight">
-                Groups
-            </span>
-        </a>
-
-        {{-- Community --}}
-        <a
-            href="{{ route('community.index') }}"
-            class="flex flex-1 flex-col items-center justify-center gap-1 transition {{ request()->routeIs('community.index') ? 'text-[#0b1329] font-bold' : 'text-slate-400 hover:text-slate-600 font-medium' }}"
-        >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
-            </svg>
-
-            <span class="text-[10px] tracking-tight">
-                Community
-            </span>
-        </a>
-
-        {{-- Create --}}
-        <div class="flex flex-1 flex-col items-center justify-center">
-            <button
-                type="button"
-                @click="$dispatch('{{ auth()->check() ? 'open-post-modal' : 'open-login-modal' }}')"
-                class="group relative -top-4 w-12 h-12 bg-[#0b1329] hover:bg-[#162247] rounded-full flex items-center justify-center text-white shadow-xl shadow-slate-900/20 border-4 border-white transition transform active:scale-95"
+            <svg
+                class="w-6 h-6 transition-transform group-hover:rotate-90 duration-300 pointer-events-none"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                viewBox="0 0 24 24"
             >
-                <svg
-                    class="w-6 h-6 transition-transform group-hover:rotate-90 duration-300"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                    viewBox="0 0 24 24"
-                >
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-            </button>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+        </button>
 
-            <span class="text-[10px] font-semibold text-slate-700 -mt-2">
-                Create
-            </span>
+        <span class="text-[10px] font-semibold text-slate-700 -mt-2 pointer-events-none">
+            Create
+        </span>
+    </div>
+
+    {{-- Notifications / Alerts (Direct Route) --}}
+    <a
+        href="{{ auth()->check() ? route('community.notifications') : route('login') }}"
+        class="flex flex-1 flex-col items-center justify-center gap-1 py-1 transition relative w-full touch-manipulation {{ request()->routeIs('community.notifications*') ? 'text-[#0b1329] font-bold' : 'text-slate-400 hover:text-slate-600 font-medium' }}"
+    >
+        <div
+            class="relative pointer-events-none"
+            x-data="{ count: {{ (int) $unreadNotificationsCount }} }"
+            @notification-count-changed.window="count = $event.detail.count"
+        >
+            <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 1 0-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"
+                />
+            </svg>
+
+            @auth
+                <span
+                    x-show="count > 0"
+                    x-transition
+                    x-text="count > 99 ? '99+' : count"
+                    class="absolute -top-1.5 -right-2.5 bg-amber-500 text-slate-950 text-[9px] min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center font-bold border border-white"
+                    style="{{ $unreadNotificationsCount > 0 ? '' : 'display: none;' }}"
+                >
+                    {{ $unreadNotificationsCount > 99 ? '99+' : $unreadNotificationsCount }}
+                </span>
+            @endauth
         </div>
 
-        {{-- Notifications / Alerts (Direct Route) --}}
-        <a
-            href="{{ auth()->check() ? route('community.notifications') : route('login') }}"
-            class="flex flex-1 flex-col items-center justify-center gap-1 transition relative w-full {{ request()->routeIs('community.notifications*') ? 'text-[#0b1329] font-bold' : 'text-slate-400 hover:text-slate-600 font-medium' }}"
-        >
-            <div
-                class="relative"
-                x-data="{ count: {{ (int) $unreadNotificationsCount }} }"
-                @notification-count-changed.window="count = $event.detail.count"
-            >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 1 0-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"
-                    />
-                </svg>
+        <span class="text-[10px] tracking-tight pointer-events-none">
+            Alerts
+        </span>
+    </a>
 
-                @auth
-                    <span
-                        x-show="count > 0"
-                        x-transition
-                        x-text="count > 99 ? '99+' : count"
-                        class="absolute -top-1.5 -right-2.5 bg-amber-500 text-slate-950 text-[9px] min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center font-bold border border-white"
-                        style="{{ $unreadNotificationsCount > 0 ? '' : 'display: none;' }}"
-                    >
-                        {{ $unreadNotificationsCount > 99 ? '99+' : $unreadNotificationsCount }}
+    {{-- Profile / Login --}}
+    @auth
+        <a
+            href="{{ $topbarProfile?->username ? route('community.profile', $topbarProfile->username) : route('community.profile.me') }}"
+            class="flex flex-1 flex-col items-center justify-center gap-1 py-1 transition touch-manipulation {{ request()->routeIs('community.profile*') ? 'text-[#0b1329] font-bold' : 'text-slate-400 hover:text-slate-600 font-medium' }}"
+        >
+            <div class="relative w-5 h-5 rounded-full flex items-center justify-center shrink-0 pointer-events-none {{ request()->routeIs('community.profile*') ? 'ring-2 ring-[#0b1329] ring-offset-1' : 'ring-1 ring-slate-300' }}">
+                <img
+                    src="{{ $topbarAvatar }}"
+                    alt="{{ $userName }}"
+                    class="w-full h-full rounded-full object-cover"
+                    onerror="this.onerror=null; this.src='{{ $defaultAvatar }}';"
+                >
+                @if ($topbarIsoCode)
+                    <span class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full overflow-hidden border border-white flex items-center justify-center bg-white shrink-0">
+                        <img src="https://flagcdn.com/w40/{{ $topbarIsoCode }}.png" alt="" class="w-full h-full object-cover rounded-full">
                     </span>
-                @endauth
+                @endif
             </div>
 
-            <span class="text-[10px] tracking-tight">
-                Alerts
+            <span class="text-[10px] tracking-tight pointer-events-none">
+                Profile
             </span>
         </a>
+    @else
+        <a
+            href="{{ route('login') }}"
+            class="flex flex-1 flex-col items-center justify-center gap-1 py-1 text-slate-400 hover:text-slate-600 font-medium touch-manipulation"
+        >
+            <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"
+                />
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M10 17l5-5-5-5"
+                />
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M15 12H3"
+                />
+            </svg>
 
-        {{-- Profile / Login --}}
-        @auth
-            <a
-                href="{{ $topbarProfile?->username ? route('community.profile', $topbarProfile->username) : route('community.profile.me') }}"
-                class="flex flex-1 flex-col items-center justify-center gap-1 transition {{ request()->routeIs('community.profile*') ? 'text-[#0b1329] font-bold' : 'text-slate-400 hover:text-slate-600 font-medium' }}"
-            >
-                <div class="relative w-5 h-5 rounded-full flex items-center justify-center shrink-0 {{ request()->routeIs('community.profile*') ? 'ring-2 ring-[#0b1329] ring-offset-1' : 'ring-1 ring-slate-300' }}">
-                    <img
-                        src="{{ $topbarAvatar }}"
-                        alt="{{ $userName }}"
-                        class="w-full h-full rounded-full object-cover"
-                        onerror="this.onerror=null; this.src='{{ $defaultAvatar }}';"
-                    >
-                    @if ($topbarIsoCode)
-                        <span class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full overflow-hidden border border-white flex items-center justify-center bg-white shrink-0">
-                            <img src="https://flagcdn.com/w40/{{ $topbarIsoCode }}.png" alt="" class="w-full h-full object-cover rounded-full">
-                        </span>
-                    @endif
-                </div>
+            <span class="text-[10px] tracking-tight pointer-events-none">
+                Community Login
+            </span>
+        </a>
+    @endauth
 
-                <span class="text-[10px] tracking-tight">
-                    Profile
-                </span>
-            </a>
-        @else
-            <a
-                href="{{ route('login') }}"
-                class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600 font-medium"
-            >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"
-                    />
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M10 17l5-5-5-5"
-                    />
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M15 12H3"
-                    />
-                </svg>
-
-                <span class="text-[10px] tracking-tight">
-                    Community Login
-                </span>
-            </a>
-        @endauth
-
-    </div>
-</header>
+</div>
