@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AdminCategoryController;
 use App\Http\Controllers\Admin\AdminGroupController;
 use App\Http\Controllers\Admin\AdminReportController;
 use App\Http\Controllers\Admin\AdminGuidelineController;
+use App\Http\Controllers\Admin\AdminBannerController;
 use App\Http\Controllers\Admin\CountryController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\Community\CommunityController;
@@ -244,6 +245,11 @@ Route::prefix('community')->group(function () {
                 [AdminDashboardController::class, 'index']
             )->name('dashboard');
 
+            Route::get(
+                '/dashboard/analytics',
+                [AdminDashboardController::class, 'analytics']
+            )->name('dashboard.analytics');
+
             // Users
     
             Route::get(
@@ -338,6 +344,13 @@ Route::prefix('community')->group(function () {
             Route::put('/guidelines/{guideline}', [AdminGuidelineController::class, 'update'])->name('guidelines.update');
             Route::patch('/guidelines/{guideline}/status', [AdminGuidelineController::class, 'updateStatus'])->name('guidelines.updateStatus');
             Route::delete('/guidelines/{guideline}', [AdminGuidelineController::class, 'destroy'])->name('guidelines.destroy');
+
+            // Banners
+            Route::get('/banners', [AdminBannerController::class, 'index'])->name('banners.index');
+            Route::post('/banners', [AdminBannerController::class, 'store'])->name('banners.store');
+            Route::put('/banners/{banner}', [AdminBannerController::class, 'update'])->name('banners.update');
+            Route::patch('/banners/{banner}/status', [AdminBannerController::class, 'updateStatus'])->name('banners.updateStatus');
+            Route::delete('/banners/{banner}', [AdminBannerController::class, 'destroy'])->name('banners.destroy');
         });
 
     Route::middleware('auth')->group(function () {

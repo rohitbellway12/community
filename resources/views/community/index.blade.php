@@ -9,6 +9,7 @@
     'trendingTopics' => collect(),
     'categories' => collect(),
     'tags' => collect(),
+    'activeBanner' => null,
 ])
 
 <!DOCTYPE html>
@@ -179,6 +180,113 @@
             </nav>
         </div>
     </div>
+
+    {{-- TOP PROMOTIONAL / ANNOUNCEMENT BANNER --}}
+    @if(!empty($activeBanner))
+        <div
+            x-data="{ bannerDismissed: false }"
+            x-show="!bannerDismissed"
+            x-cloak
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 transform scale-100"
+            x-transition:leave-end="opacity-0 transform -translate-y-2"
+            class="max-w-[1520px] mx-auto px-4 lg:px-6 pt-4 -mb-1"
+        >
+            <div class="relative group rounded-2xl overflow-hidden border border-slate-200/80 shadow-md bg-slate-950 text-white w-full">
+                
+                {{-- Dismiss button --}}
+                <button
+                    type="button"
+                    @click="bannerDismissed = true"
+                    class="absolute top-3.5 right-3.5 z-30 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white/90 hover:text-white flex items-center justify-center text-xs font-bold transition backdrop-blur-md shadow-md"
+                    aria-label="Dismiss banner"
+                >
+                    ✕
+                </button>
+
+                @if($activeBanner->image_url)
+                    {{-- SLEEK HORIZONTAL HERO BANNER WITH OPTIONAL OVERLAY --}}
+                    <div class="relative w-full h-36 sm:h-44 md:h-52 lg:h-56 max-h-[220px] overflow-hidden">
+                        <img
+                            src="{{ $activeBanner->image_url }}"
+                            alt="{{ $activeBanner->title ?: 'Community Banner' }}"
+                            class="w-full h-full object-cover object-center transition duration-500 group-hover:scale-[1.01]"
+                        >
+
+                        @if(!empty($activeBanner->title) || !empty($activeBanner->description) || !empty($activeBanner->button_text))
+                            {{-- Sleek Gradient Overlay for Text & Button --}}
+                            <div class="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-slate-950/90 via-slate-950/60 to-transparent/10 flex items-end md:items-center p-4 sm:p-6 md:p-8 z-20">
+                                <div class="max-w-xl sm:max-w-2xl space-y-1.5 sm:space-y-2">
+                                    @if($activeBanner->title)
+                                        <h2 class="text-base sm:text-xl md:text-2xl font-black text-white tracking-tight leading-snug drop-shadow-md truncate">
+                                            {{ $activeBanner->title }}
+                                        </h2>
+                                    @endif
+
+                                    @if($activeBanner->description)
+                                        <p class="text-[11px] sm:text-xs md:text-sm text-slate-200 line-clamp-2 leading-relaxed font-medium drop-shadow-sm">
+                                            {{ $activeBanner->description }}
+                                        </p>
+                                    @endif
+
+                                    @if($activeBanner->button_text || $activeBanner->link_url)
+                                        <div class="pt-1">
+                                            <a
+                                                href="{{ $activeBanner->link_url ?: '#' }}"
+                                                {{ $activeBanner->link_url && (str_starts_with($activeBanner->link_url, 'http://') || str_starts_with($activeBanner->link_url, 'https://')) ? 'target="_blank"' : '' }}
+                                                class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/20 transition transform active:scale-95"
+                                            >
+                                                <span>{{ $activeBanner->button_text ?: 'Explore Now' }}</span>
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                                </svg>
+                                            </a>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @elseif($activeBanner->link_url)
+                            {{-- Pure Image Clickable Overlay Link --}}
+                            <a href="{{ $activeBanner->link_url }}" target="_blank" class="absolute inset-0 z-20" aria-label="Open banner link"></a>
+                        @endif
+                    </div>
+                @else
+                    {{-- Text-Only Gradient Card Banner (When no image was uploaded) --}}
+                    <div class="p-5 sm:p-6 md:p-8 bg-gradient-to-r from-[#0B132B] via-[#1C2541] to-[#0B132B] relative flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div class="space-y-1.5 max-w-2xl z-10">
+                            @if($activeBanner->title)
+                                <h2 class="text-base sm:text-xl md:text-2xl font-black text-white tracking-tight leading-tight">
+                                    {{ $activeBanner->title }}
+                                </h2>
+                            @endif
+
+                            @if($activeBanner->description)
+                                <p class="text-xs sm:text-sm text-slate-300 line-clamp-2 leading-relaxed font-normal">
+                                    {{ $activeBanner->description }}
+                                </p>
+                            @endif
+
+                            @if($activeBanner->link_url || $activeBanner->button_text)
+                                <div class="pt-1">
+                                    <a
+                                        href="{{ $activeBanner->link_url ?: '#' }}"
+                                        {{ $activeBanner->link_url && (str_starts_with($activeBanner->link_url, 'http://') || str_starts_with($activeBanner->link_url, 'https://')) ? 'target="_blank"' : '' }}
+                                        class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs shadow-lg"
+                                    >
+                                        <span>{{ $activeBanner->button_text ?: 'Explore Now' }}</span>
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                        </svg>
+                                    </a>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+
+            </div>
+        </div>
+    @endif
 
     {{-- MAIN CONTENT GRID --}}
     <main

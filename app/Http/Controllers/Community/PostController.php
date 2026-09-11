@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Community;
 
 use App\Enums\PostStatus;
 use App\Http\Controllers\Controller;
+use App\Models\Banner;
 use App\Models\Category;
 use App\Models\Comment;
 use App\Models\Group;
@@ -272,6 +273,8 @@ public function index(Request $request)
         ];
     }
 
+    $activeBanner = Banner::active()->latest()->first();
+
     return view('community.index', compact(
         'posts',
         'categories',
@@ -284,7 +287,8 @@ public function index(Request $request)
         'trendingTopics',
         'topContributors',
         'profileStats',
-        'user'
+        'user',
+        'activeBanner'
     ));
 }
 
