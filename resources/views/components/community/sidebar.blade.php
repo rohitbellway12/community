@@ -5,6 +5,13 @@
 ])
 
 @php
+    if ($categories->isEmpty()) {
+        $categories = \App\Models\Category::all();
+    }
+    if ($tags->isEmpty()) {
+        $tags = \App\Models\Tag::all();
+    }
+
     $joinedGroups = \App\Models\Group::query()
         ->where(function ($query) {
             $query->where('owner_id', auth()->id())->orWhereHas('users', function ($userQuery) {

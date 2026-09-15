@@ -1394,6 +1394,7 @@
 
 {{-- MOBILE BOTTOM NAVIGATION --}}
 <div
+    x-data="{}"
     class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/80 lg:hidden px-3 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] z-50 flex items-center justify-between shadow-[0_-4px_20px_rgba(0,0,0,0.06)]"
 >
     {{-- Groups --}}
@@ -1432,7 +1433,8 @@
         <button
             type="button"
             @click="$dispatch('{{ auth()->check() ? 'open-post-modal' : 'open-login-modal' }}')"
-            class="group relative -top-4 w-12 h-12 bg-[#0b1329] hover:bg-[#162247] rounded-full flex items-center justify-center text-white shadow-xl shadow-slate-900/20 border-4 border-white transition transform active:scale-95 touch-manipulation"
+            onclick="window.dispatchEvent(new CustomEvent('{{ auth()->check() ? 'open-post-modal' : 'open-login-modal' }}'))"
+            class="group relative -top-4 w-12 h-12 bg-[#0b1329] hover:bg-[#162247] rounded-full flex items-center justify-center text-white shadow-xl shadow-slate-900/20 border-4 border-white transition transform active:scale-95 touch-manipulation cursor-pointer"
         >
             <svg
                 class="w-6 h-6 transition-transform group-hover:rotate-90 duration-300 pointer-events-none"

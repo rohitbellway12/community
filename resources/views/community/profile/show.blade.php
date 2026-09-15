@@ -8,12 +8,19 @@
 ])
 
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="bg-slate-100">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="bg-slate-100" x-data="{ mobileMenuOpen: false }">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title }}</title>
+
+    <style>
+        [x-cloak] {
+            display: none !important;
+        }
+    </style>
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen m-0 w-full max-w-none overflow-x-hidden bg-slate-100">
