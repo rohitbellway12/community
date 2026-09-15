@@ -51,13 +51,15 @@ class AdminDashboardController extends Controller
 
         // 4. Recent Posts
         $recentPosts = Post::with(['user.profile', 'category'])
-            ->latest()
+            ->whereNotNull('created_at')
+            ->latest('created_at')
             ->take(5)
             ->get();
 
         // 5. New Members
         $newMembers = User::with('profile')
-            ->latest()
+            ->whereNotNull('created_at')
+            ->latest('created_at')
             ->take(5)
             ->get();
 
@@ -91,7 +93,24 @@ class AdminDashboardController extends Controller
     }
 
     /**
-     * Query and assemble analytics datasets for Chart.js
+     * Dedicated full-page Data Table view for Analytics
+     */
+    public function analyticsTable(Request $request)
+    {
+        $analytics = $this->getAnalyticsData($request);
+
+        return view('admin.analytics_table', [
+            'analytics' => $analytics,
+            'filter'    => $analytics['filter'],
+            'startDate' => $analytics['start_date'],
+            'endDate'   => $analytics['end_date'],
+            'tableRows' => $analytics['table_rows'],
+            'totals'    => $analytics['totals'],
+        ]);
+    }
+
+    /**
+     * Query and assemble analytics datasets for Chart.js and Data Table
      */
     protected function getAnalyticsData(Request $request): array
     {
@@ -104,32 +123,33 @@ class AdminDashboardController extends Controller
         $kstUpdated = "CONVERT_TZ(updated_at, '+00:00', '+09:00')";
 
         if ($filter === 'monthly') {
-            $startDate = now($KST)->subMonths(11)->startOfMonth()->setTimezone('UTC');
-            $endDate   = now($KST)->endOfMonth()->setTimezone('UTC');
+            $startKst = now($KST)->subMonths(11)->startOfMonth();
+            $endKst   = now($KST)->endOfMonth();
             $groupByCreated = "DATE_FORMAT({$kstCreated}, '%Y-%m')";
             $groupByUpdated = "DATE_FORMAT({$kstUpdated}, '%Y-%m')";
             $intervalType = 'month';
         } elseif ($filter === 'yearly') {
-            $startDate = now($KST)->subYears(4)->startOfYear()->setTimezone('UTC');
-            $endDate   = now($KST)->endOfYear()->setTimezone('UTC');
+            $startKst = now($KST)->subYears(4)->startOfYear();
+            $endKst   = now($KST)->endOfYear();
             $groupByCreated = "YEAR({$kstCreated})";
             $groupByUpdated = "YEAR({$kstUpdated})";
             $intervalType = 'year';
         } elseif ($filter === 'custom' && $request->filled('start_date') && $request->filled('end_date')) {
             try {
-                // Treat user-supplied dates as KST calendar days, then convert boundaries to UTC
-                $startDate = Carbon::parse($request->input('start_date'), $KST)->startOfDay()->setTimezone('UTC');
-                $endDate   = Carbon::parse($request->input('end_date'),   $KST)->endOfDay()->setTimezone('UTC');
-                if ($startDate->gt($endDate)) {
-                    [$startDate, $endDate] = [$endDate, $startDate];
+                $startKst = Carbon::parse($request->input('start_date'), $KST)->startOfDay();
+                $endKst   = Carbon::parse($request->input('end_date'),   $KST)->endOfDay();
+                if ($startKst->gt($endKst)) {
+                    [$startKst, $endKst] = [$endKst, $startKst];
                 }
             } catch (\Exception $e) {
-                $startDate = now($KST)->subDays(13)->startOfDay()->setTimezone('UTC');
-                $endDate   = now($KST)->endOfDay()->setTimezone('UTC');
+                $startKst = now($KST)->subDays(13)->startOfDay();
+                $endKst   = now($KST)->endOfDay();
             }
 
-            $diffDays = $startDate->diffInDays($endDate);
+            $diffDays = $startKst->diffInDays($endKst);
             if ($diffDays > 90) {
+                $startKst = $startKst->copy()->startOfMonth();
+                $endKst   = $endKst->copy()->endOfMonth();
                 $groupByCreated = "DATE_FORMAT({$kstCreated}, '%Y-%m')";
                 $groupByUpdated = "DATE_FORMAT({$kstUpdated}, '%Y-%m')";
                 $intervalType = 'month';
@@ -139,40 +159,44 @@ class AdminDashboardController extends Controller
                 $intervalType = 'day';
             }
         } else {
-            // Default: daily — last 14 KST days
-            $filter    = 'daily';
-            $startDate = now($KST)->subDays(13)->startOfDay()->setTimezone('UTC');
-            $endDate   = now($KST)->endOfDay()->setTimezone('UTC');
+            // Default: daily — last 14 KST days (including today)
+            $filter   = 'daily';
+            $startKst = now($KST)->subDays(13)->startOfDay();
+            $endKst   = now($KST)->endOfDay();
             $groupByCreated = "DATE({$kstCreated})";
             $groupByUpdated = "DATE({$kstUpdated})";
             $intervalType = 'day';
         }
 
+        // Convert boundaries to UTC for querying the database
+        $utcStart = $startKst->copy()->setTimezone('UTC');
+        $utcEnd   = $endKst->copy()->setTimezone('UTC');
+
         // 1. Registrations
         $registrations = DB::table('users')
-            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereBetween('created_at', [$utcStart, $utcEnd])
             ->selectRaw("{$groupByCreated} as period_key, COUNT(*) as aggregate")
             ->groupBy('period_key')
             ->pluck('aggregate', 'period_key');
 
         // 2. Posts
         $posts = DB::table('posts')
-            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereBetween('created_at', [$utcStart, $utcEnd])
             ->selectRaw("{$groupByCreated} as period_key, COUNT(*) as aggregate")
             ->groupBy('period_key')
             ->pluck('aggregate', 'period_key');
 
         // 3. Active Users (Users who updated profile, created posts or commented)
         $userUpdates = DB::table('users')
-            ->whereBetween('updated_at', [$startDate, $endDate])
+            ->whereBetween('updated_at', [$utcStart, $utcEnd])
             ->selectRaw("{$groupByUpdated} as period_key, id as user_id");
 
         $postActivity = DB::table('posts')
-            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereBetween('created_at', [$utcStart, $utcEnd])
             ->selectRaw("{$groupByCreated} as period_key, user_id");
 
         $commentActivity = DB::table('comments')
-            ->whereBetween('created_at', [$startDate, $endDate])
+            ->whereBetween('created_at', [$utcStart, $utcEnd])
             ->selectRaw("{$groupByCreated} as period_key, user_id");
 
         $union = $userUpdates->union($postActivity)->union($commentActivity);
@@ -182,60 +206,92 @@ class AdminDashboardController extends Controller
             ->groupBy('period_key')
             ->pluck('aggregate', 'period_key');
 
-        // Build continuous date intervals without gaps
+        // Build continuous intervals and table rows without gaps
         $labels = [];
         $regData = [];
         $postData = [];
         $activeData = [];
+        $tableRows = [];
 
         if ($intervalType === 'year') {
-            $currYear = (int) $startDate->format('Y');
-            $endYear = (int) $endDate->format('Y');
+            $currYear = (int) $startKst->format('Y');
+            $endYear  = (int) $endKst->format('Y');
             for ($y = $currYear; $y <= $endYear; $y++) {
                 $key = (string) $y;
                 $labels[] = $key;
-                $regData[] = (int) ($registrations[$key] ?? 0);
-                $postData[] = (int) ($posts[$key] ?? 0);
-                $activeData[] = (int) ($activeUsers[$key] ?? 0);
+                $reg = (int) ($registrations[$key] ?? 0);
+                $pst = (int) ($posts[$key] ?? 0);
+                $act = (int) ($activeUsers[$key] ?? 0);
+                $regData[] = $reg;
+                $postData[] = $pst;
+                $activeData[] = $act;
+                $tableRows[] = [
+                    'date'          => $key,
+                    'registrations' => $reg,
+                    'posts'         => $pst,
+                    'active_users'  => $act,
+                ];
             }
         } elseif ($intervalType === 'month') {
-            $curr = $startDate->copy()->startOfMonth();
-            $end = $endDate->copy()->endOfMonth();
+            $curr = $startKst->copy()->startOfMonth();
+            $end  = $endKst->copy()->endOfMonth();
             while ($curr <= $end) {
                 $key = $curr->format('Y-m');
-                $labels[] = $curr->format('M Y');
-                $regData[] = (int) ($registrations[$key] ?? 0);
-                $postData[] = (int) ($posts[$key] ?? 0);
-                $activeData[] = (int) ($activeUsers[$key] ?? 0);
+                $label = $curr->format('M Y');
+                $labels[] = $label;
+                $reg = (int) ($registrations[$key] ?? 0);
+                $pst = (int) ($posts[$key] ?? 0);
+                $act = (int) ($activeUsers[$key] ?? 0);
+                $regData[] = $reg;
+                $postData[] = $pst;
+                $activeData[] = $act;
+                $tableRows[] = [
+                    'date'          => $label,
+                    'registrations' => $reg,
+                    'posts'         => $pst,
+                    'active_users'  => $act,
+                ];
                 $curr->addMonth();
             }
         } else {
-            // Day by day
-            $period = CarbonPeriod::create($startDate, '1 day', $endDate);
-            foreach ($period as $date) {
-                $key = $date->format('Y-m-d');
-                $labels[] = $date->format('d M');
-                $regData[] = (int) ($registrations[$key] ?? 0);
-                $postData[] = (int) ($posts[$key] ?? 0);
-                $activeData[] = (int) ($activeUsers[$key] ?? 0);
+            // Day by day in KST
+            $curr = $startKst->copy()->startOfDay();
+            $end  = $endKst->copy()->startOfDay();
+            while ($curr <= $end) {
+                $key = $curr->format('Y-m-d');
+                $label = $curr->format('d M');
+                $labels[] = $label;
+                $reg = (int) ($registrations[$key] ?? 0);
+                $pst = (int) ($posts[$key] ?? 0);
+                $act = (int) ($activeUsers[$key] ?? 0);
+                $regData[] = $reg;
+                $postData[] = $pst;
+                $activeData[] = $act;
+                $tableRows[] = [
+                    'date'          => $curr->format('d M Y'),
+                    'registrations' => $reg,
+                    'posts'         => $pst,
+                    'active_users'  => $act,
+                ];
+                $curr->addDay();
             }
         }
 
         return [
             'filter'     => $filter,
-            // Return the boundary dates displayed to the user in KST
-            'start_date' => $startDate->copy()->setTimezone('Asia/Seoul')->format('Y-m-d'),
-            'end_date'   => $endDate->copy()->setTimezone('Asia/Seoul')->format('Y-m-d'),
-            'labels' => $labels,
-            'datasets' => [
+            'start_date' => $startKst->format('Y-m-d'),
+            'end_date'   => $endKst->format('Y-m-d'),
+            'labels'     => $labels,
+            'datasets'   => [
                 'registrations' => $regData,
-                'posts' => $postData,
-                'active_users' => $activeData,
+                'posts'         => $postData,
+                'active_users'  => $activeData,
             ],
-            'totals' => [
+            'table_rows' => $tableRows,
+            'totals'     => [
                 'registrations' => array_sum($regData),
-                'posts' => array_sum($postData),
-                'active_users' => array_sum($activeData),
+                'posts'         => array_sum($postData),
+                'active_users'  => array_sum($activeData),
             ],
         ];
     }

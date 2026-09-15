@@ -306,169 +306,176 @@ public function index(Request $request)
     /**
      * Store a new post.
      */
-public function store(Request $request)
-{
-    @ini_set('max_execution_time', 300);
-    @ini_set('memory_limit', '512M');
+    public function store(Request $request)
+    {
+        @ini_set('max_execution_time', 300);
+        @ini_set('memory_limit', '512M');
 
-    $validated = $request->validate([
-        'title' => 'required|string|max:255',
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'title' => 'required|string|max:255',
+            'content' => 'required|string',
+            'category_id' => 'required|exists:categories,id',
+            'group_id' => 'nullable|exists:groups,id',
+            'visibility' => ['nullable', 'in:public,private'],
+            'media' => 'nullable|array|max:10',
+            'media.*' => [
+                'file',
+                'max:102400',
+                function ($attribute, $value, $fail) {
+                    if (!$value instanceof \Illuminate\Http\UploadedFile) {
+                        return;
+                    }
+                    $allowedImageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'avif', 'bmp', 'tiff', 'svg', 'ico'];
+                    $allowedVideoExts = ['mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v', 'qt', '3gp', 'ogg', 'wmv'];
 
-        // Content is saved exactly as submitted.
-        'content' => 'required|string',
+                    $origExt = strtolower($value->getClientOriginalExtension() ?: '');
+                    $guessedExt = strtolower($value->guessExtension() ?: '');
+                    $ext = $origExt ?: $guessedExt;
+                    $mime = strtolower($value->getMimeType() ?: '');
 
-        'category_id' => 'required|exists:categories,id',
+                    $isImage = str_starts_with($mime, 'image/') 
+                        || in_array($ext, $allowedImageExts)
+                        || (in_array($mime, ['application/octet-stream', 'binary/octet-stream']) && in_array($ext, $allowedImageExts));
 
-        'group_id' => 'nullable|exists:groups,id',
+                    $isVideo = str_starts_with($mime, 'video/') 
+                        || in_array($ext, $allowedVideoExts)
+                        || (in_array($mime, ['application/octet-stream', 'binary/octet-stream']) && in_array($ext, $allowedVideoExts));
 
-        'visibility' => [
-            'nullable',
-            'in:public,private',
-        ],
-
-        'media' => 'nullable|array|max:10',
-
-        'media.*' => [
-            'file',
-            'max:102400',
-            function ($attribute, $value, $fail) {
-                if (!$value instanceof \Illuminate\Http\UploadedFile) {
-                    return;
-                }
-                $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v', 'qt', '3gp', 'ogg'];
-                $ext = strtolower($value->getClientOriginalExtension());
-                $mime = strtolower($value->getMimeType() ?: '');
-
-                $isImage = str_starts_with($mime, 'image/') || in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
-                $isVideo = str_starts_with($mime, 'video/') || in_array($ext, ['mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v', 'qt', '3gp', 'ogg']);
-
-                if (!$isImage && !$isVideo) {
-                    $fail("The {$attribute} must be an image (jpg, jpeg, png, webp, gif) or video (mp4, mov, avi, webm, mkv).");
-                }
-            },
-        ],
-
-        // TAGS
-        'tags' => 'nullable|array|max:5',
-        'tags.*' => [
-            'integer',
-            'distinct',
-            'exists:tags,id',
-        ],
-    ]);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Determine Visibility
-    |--------------------------------------------------------------------------
-    */
-
-    if (empty($validated['group_id'])) {
-        $visibility = 'public';
-    } else {
-        $group = Group::findOrFail($validated['group_id']);
-
-        $isMember = (int) $group->owner_id === (int) $request->user()->id
-            || $group->users()
-                ->where('user_id', $request->user()->id)
-                ->wherePivot('status', 'active')
-                ->exists();
-
-        if (!$isMember) {
-            return back()
-                ->withInput()
-                ->with(
-                    'error',
-                    'You must be a member of this group to create posts here.'
-                );
-        }
-
-        if ($group->visibility === 'private') {
-            $visibility = 'private';
-        } else {
-            $visibility = $validated['visibility'] ?? 'public';
-        }
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Create Post + Tags + Media
-    |--------------------------------------------------------------------------
-    */
-
-    DB::transaction(function () use ($request, $validated, $visibility) {
-
-        $post = Post::create([
-            'user_id' => $request->user()->id,
-
-            'category_id' => $validated['category_id'],
-
-            'group_id' => $validated['group_id'] ?? null,
-
-            'title' => $validated['title'],
-
-            'slug' => Str::slug($validated['title']) . '-' . uniqid(),
-
-            // Preserve exact content
-            'content' => $validated['content'],
-
-            'visibility' => $visibility,
-
-            'status' => PostStatus::PUBLISHED,
+                    if (!$isImage && !$isVideo) {
+                        $name = $value->getClientOriginalName() ?: 'file';
+                        $fail("The file '{$name}' is not supported. Please upload an image (JPG, PNG, WEBP, HEIC) or video (MP4, MOV).");
+                    }
+                },
+            ],
+            'tags' => 'nullable|array|max:5',
+            'tags.*' => ['integer', 'distinct', 'exists:tags,id'],
+        ], [
+            'title.required' => 'Please provide a title for your discussion.',
+            'content.required' => 'Please write some content for your discussion.',
+            'category_id.required' => 'Please select a category.',
+            'category_id.exists' => 'The selected category is invalid.',
+            'media.max' => 'You can upload at most 10 media files.',
+            'media.*.max' => 'Each file cannot exceed 100MB.',
         ]);
 
+        if ($validator->fails()) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $validator->errors()->first(),
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $validated = $validator->validated();
+
         /*
         |--------------------------------------------------------------------------
-        | SAVE TAGS
+        | Determine Visibility
         |--------------------------------------------------------------------------
         */
 
-        $post->tags()->sync($validated['tags'] ?? []);
+        if (empty($validated['group_id'])) {
+            $visibility = 'public';
+        } else {
+            $group = Group::findOrFail($validated['group_id']);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Upload Media
-        |--------------------------------------------------------------------------
-        */
+            $isMember = (int) $group->owner_id === (int) $request->user()->id
+                || $group->users()
+                    ->where('user_id', $request->user()->id)
+                    ->wherePivot('status', 'active')
+                    ->exists();
 
-        if ($request->hasFile('media')) {
-
-            foreach ($request->file('media') as $index => $file) {
-
-                if (!$file->isValid()) {
-                    continue;
+            if (!$isMember) {
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'You must be a member of this group to create posts here.'
+                    ], 403);
                 }
+                return back()
+                    ->withInput()
+                    ->with(
+                        'error',
+                        'You must be a member of this group to create posts here.'
+                    );
+            }
 
-                $filePath = $file->store('post-media', 'public');
-
-                $mimeType = $file->getMimeType() ?: '';
-                $ext = strtolower($file->getClientOriginalExtension());
-
-                $isVideo = str_starts_with($mimeType, 'video/') || in_array($ext, ['mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v', 'qt', '3gp', 'ogg']);
-                $type = $isVideo ? 'video' : 'image';
-
-                PostMedia::create([
-                    'post_id' => $post->id,
-
-                    'type' => $type,
-
-                    'file_path' => $filePath,
-
-                    'mime_type' => $mimeType,
-
-                    'file_size' => $file->getSize(),
-
-                    'sort_order' => $index,
-                ]);
+            if ($group->visibility === 'private') {
+                $visibility = 'private';
+            } else {
+                $visibility = $validated['visibility'] ?? 'public';
             }
         }
-    });
 
-    return back()->with(
-        'success',
-        'Post created successfully.'
-    );
-}
+        /*
+        |--------------------------------------------------------------------------
+        | Create Post + Tags + Media
+        |--------------------------------------------------------------------------
+        */
+
+        $post = DB::transaction(function () use ($request, $validated, $visibility) {
+
+            $post = Post::create([
+                'user_id' => $request->user()->id,
+                'category_id' => $validated['category_id'],
+                'group_id' => $validated['group_id'] ?? null,
+                'title' => $validated['title'],
+                'slug' => Str::slug($validated['title']) . '-' . uniqid(),
+                'content' => $validated['content'],
+                'visibility' => $visibility,
+                'status' => PostStatus::PUBLISHED,
+            ]);
+
+            $post->tags()->sync($validated['tags'] ?? []);
+
+            if ($request->hasFile('media')) {
+                $allowedVideoExts = ['mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v', 'qt', '3gp', 'ogg', 'wmv'];
+
+                foreach ($request->file('media') as $index => $file) {
+                    if (!$file->isValid()) {
+                        continue;
+                    }
+
+                    $filePath = $file->store('post-media', 'public');
+
+                    $mimeType = strtolower($file->getMimeType() ?: '');
+                    $origExt = strtolower($file->getClientOriginalExtension() ?: '');
+                    $guessedExt = strtolower($file->guessExtension() ?: '');
+                    $ext = $origExt ?: $guessedExt;
+
+                    $isVideo = str_starts_with($mimeType, 'video/') || in_array($ext, $allowedVideoExts);
+                    $type = $isVideo ? 'video' : 'image';
+
+                    PostMedia::create([
+                        'post_id' => $post->id,
+                        'file_path' => $filePath,
+                        'file_type' => $type,
+                        'file_size' => $file->getSize(),
+                        'mime_type' => $mimeType,
+                        'sort_order' => $index,
+                    ]);
+                }
+            }
+
+            return $post;
+        });
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Post created successfully.',
+                'post_id' => $post->id,
+            ]);
+        }
+
+        return back()->with(
+            'success',
+            'Post created successfully.'
+        );
+    }
 
     /**
      * Display a single post.
@@ -606,15 +613,25 @@ public function store(Request $request)
                 if (!$value instanceof \Illuminate\Http\UploadedFile) {
                     return;
                 }
-                $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v', 'qt', '3gp', 'ogg'];
-                $ext = strtolower($value->getClientOriginalExtension());
+                $allowedImageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'avif', 'bmp', 'tiff', 'svg', 'ico'];
+                $allowedVideoExts = ['mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v', 'qt', '3gp', 'ogg', 'wmv'];
+
+                $origExt = strtolower($value->getClientOriginalExtension() ?: '');
+                $guessedExt = strtolower($value->guessExtension() ?: '');
+                $ext = $origExt ?: $guessedExt;
                 $mime = strtolower($value->getMimeType() ?: '');
 
-                $isImage = str_starts_with($mime, 'image/') || in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']);
-                $isVideo = str_starts_with($mime, 'video/') || in_array($ext, ['mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v', 'qt', '3gp', 'ogg']);
+                $isImage = str_starts_with($mime, 'image/') 
+                    || in_array($ext, $allowedImageExts)
+                    || (in_array($mime, ['application/octet-stream', 'binary/octet-stream']) && in_array($ext, $allowedImageExts));
+
+                $isVideo = str_starts_with($mime, 'video/') 
+                    || in_array($ext, $allowedVideoExts)
+                    || (in_array($mime, ['application/octet-stream', 'binary/octet-stream']) && in_array($ext, $allowedVideoExts));
 
                 if (!$isImage && !$isVideo) {
-                    $fail("The {$attribute} must be an image (jpg, jpeg, png, webp, gif) or video (mp4, mov, avi, webm, mkv).");
+                    $name = $value->getClientOriginalName() ?: 'file';
+                    $fail("The file '{$name}' is not supported. Please upload an image (JPG, PNG, WEBP, HEIC) or video (MP4, MOV).");
                 }
             },
         ],

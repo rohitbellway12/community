@@ -466,6 +466,7 @@
     
     <div x-data="createDiscussionModal({{ $errors->any() ? 'true' : 'false' }})"
         @open-post-modal.window="openModal = true; groupId = $event.detail?.groupId || null;"
+        @community-post-error.window="openModal = true"
         x-show="openModal"
         class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/65 backdrop-blur-sm p-4 sm:p-0"
         x-transition.opacity style="display: none;" x-cloak>
@@ -491,6 +492,19 @@
                 @csrf
 
                 <div class="p-6 overflow-y-auto custom-scrollbar flex-1 flex flex-col gap-4">
+                    {{-- DYNAMIC JS/AJAX ERROR BANNER --}}
+                    <div x-data="{ dynamicError: '' }"
+                         @community-post-error.window="dynamicError = $event.detail?.message || ''"
+                         x-show="dynamicError"
+                         x-cloak
+                         class="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 font-bold flex items-start justify-between gap-2 shadow-xs">
+                        <div class="flex items-start gap-2">
+                            <span class="text-sm shrink-0">⚠️</span>
+                            <span x-text="dynamicError"></span>
+                        </div>
+                        <button type="button" @click="dynamicError = ''" class="text-red-400 hover:text-red-700 font-bold ml-2">✕</button>
+                    </div>
+
                     @if ($errors->any())
                         <div class="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 font-semibold space-y-1">
                             @foreach ($errors->all() as $error)
@@ -597,7 +611,16 @@
                             <template x-for="(preview, index) in previews" :key="index">
                                 <div class="relative group rounded-lg overflow-hidden bg-slate-900 aspect-video flex items-center justify-center border border-slate-200">
                                     <template x-if="preview.type === 'image'">
-                                        <img :src="preview.url" class="w-full h-full object-cover">
+                                        <div class="w-full h-full relative flex items-center justify-center bg-slate-800">
+                                            <img :src="preview.url" class="w-full h-full object-cover"
+                                                 x-on:error="$el.style.display='none'; if ($el.nextElementSibling) $el.nextElementSibling.style.display='flex'">
+                                            <div class="flex flex-col items-center justify-center p-2 text-center text-white" style="display: none;">
+                                                <svg class="w-7 h-7 mb-1 text-amber-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                                </svg>
+                                                <span class="text-[10px] font-semibold text-slate-200 truncate max-w-[100px]" x-text="preview.name"></span>
+                                            </div>
+                                        </div>
                                     </template>
                                     <template x-if="preview.type === 'video'">
                                         <video :src="preview.url" class="w-full h-full object-cover" controls></video>
@@ -651,7 +674,7 @@
                                 </path>
                             </svg>
                             <input x-ref="createMediaInput" type="file" name="media[]" @change="handleFiles($event)" multiple
-                                accept="image/*,video/*" class="hidden">
+                                accept="image/*,video/*,.heic,.heif,.jpg,.jpeg,.png,.webp,.gif,.mp4,.mov,.webm" class="hidden">
                         </label>
                         <span class="text-[10px] font-medium text-slate-400">Max 100MB per file</span>
                     </div>
@@ -705,7 +728,7 @@
                     this.files = incoming;
                     this.previews = incoming.map(file => ({
                         url: URL.createObjectURL(file),
-                        type: (file.type && file.type.startsWith('video/')) || /\.(mp4|mov|avi|webm|mkv|m4v)$/i.test(file.name) ? 'video' : 'image',
+                        type: (file.type && file.type.startsWith('video/')) || /\.(mp4|mov|avi|webm|mkv|m4v|qt|3gp|ogg|wmv)$/i.test(file.name) ? 'video' : 'image',
                         name: file.name
                     }));
                 },
@@ -719,10 +742,16 @@
                     this.previews.splice(index, 1);
 
                     const input = this.$refs.createMediaInput;
-                    if (input && typeof DataTransfer !== 'undefined') {
-                        const dt = new DataTransfer();
-                        this.files.forEach(f => dt.items.add(f));
-                        input.files = dt.files;
+                    if (input) {
+                        try {
+                            if (typeof DataTransfer !== 'undefined') {
+                                const dt = new DataTransfer();
+                                this.files.forEach(f => dt.items.add(f));
+                                input.files = dt.files;
+                            }
+                        } catch (err) {
+                            console.warn('DataTransfer sync skipped:', err);
+                        }
                     }
                 },
 

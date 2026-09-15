@@ -2376,7 +2376,7 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                         headers: {
                             'X-CSRF-TOKEN': csrf(),
                             'X-Requested-With': 'XMLHttpRequest',
-                            'Accept': 'text/html,application/xhtml+xml,application/json'
+                            'Accept': 'application/json'
                         },
                         body: new FormData(form),
                         credentials: 'same-origin'
@@ -2387,20 +2387,41 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                         return;
                     }
 
-                    if (!response.ok) {
-                        const text = await response.text();
-                        throw new Error(text || 'Unable to create post.');
+                    const data = await response.json().catch(() => null);
+
+                    if (!response.ok || !data?.success) {
+                        let errMsg = data?.message || 'Unable to create post.';
+                        if (data?.errors) {
+                            const firstKey = Object.keys(data.errors)[0];
+                            if (firstKey && data.errors[firstKey] && data.errors[firstKey][0]) {
+                                errMsg = data.errors[firstKey][0];
+                            }
+                        }
+                        window.dispatchEvent(new CustomEvent('community-post-error', {
+                            detail: { message: errMsg }
+                        }));
+                        return;
                     }
 
-                    const html = await response.text();
-                    await replaceFeedFromHtml(html);
+                    // Success: Fetch updated feed HTML
+                    const feedRes = await fetch(window.location.href, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    if (feedRes.ok) {
+                        const html = await feedRes.text();
+                        await replaceFeedFromHtml(html);
+                    } else {
+                        window.location.reload();
+                        return;
+                    }
 
-                    // Close the existing Create Post modal without modifying sidebar.blade.php.
+                    // Close Create Post modal and clear previews
                     const modal = document.querySelector('[x-show="openModal"]');
                     if (modal && modal.__x) {
                         modal.__x.$data.openModal = false;
+                        if (modal.__x.$data.files) modal.__x.$data.files = [];
+                        if (modal.__x.$data.previews) modal.__x.$data.previews = [];
                     } else {
-                        // Alpine v3 exposes data through the element; dispatch a click on its close button.
                         const closeButton = modal?.querySelector('button[type="button"]');
                         if (closeButton) closeButton.click();
                     }
@@ -2412,16 +2433,16 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                     });
                 } catch (error) {
                     console.error('Create post error:', error);
-                    window.dispatchEvent(new CustomEvent('community-index-error', {
+                    window.dispatchEvent(new CustomEvent('community-post-error', {
                         detail: {
-                            message: error.message || 'Unable to create post.'
+                            message: error.message || 'A network error occurred while uploading. Please check file size and connection.'
                         }
                     }));
                 } finally {
                     form.dataset.ajaxBusy = '0';
                     if (submitButton) {
                         submitButton.disabled = false;
-                        submitButton.innerHTML = originalButtonHtml || 'Post';
+                        submitButton.innerHTML = originalButtonHtml || 'Publish';
                     }
                 }
             }, true);

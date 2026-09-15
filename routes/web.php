@@ -250,6 +250,11 @@ Route::prefix('community')->group(function () {
                 [AdminDashboardController::class, 'analytics']
             )->name('dashboard.analytics');
 
+            Route::get(
+                '/dashboard/analytics/table',
+                [AdminDashboardController::class, 'analyticsTable']
+            )->name('dashboard.analytics.table');
+
             // Users
     
             Route::get(

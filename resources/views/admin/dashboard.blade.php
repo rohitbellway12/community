@@ -145,12 +145,12 @@
         </div>
     </div>
 
-    {{-- INTERACTIVE ANALYTICS GRAPH CARD --}}
+    {{-- INTERACTIVE ANALYTICS GRAPH & DATA TABLE CARD --}}
     <div
         class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6"
         x-data="analyticsDashboard(@js($initialChartData))"
     >
-        {{-- Card Header with Filter Controls --}}
+        {{-- Card Header with Filter Controls and View Switcher --}}
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
             <div>
                 <div class="flex items-center gap-2">
@@ -158,12 +158,24 @@
                     <h2 class="text-base font-extrabold text-slate-900">Growth & Activity Analytics</h2>
                 </div>
                 <p class="text-xs text-slate-500 mt-0.5">
-                    Compare new registrations, discussions posted, and active user engagement on the same graph
+                    Compare new registrations, discussions posted, and active user engagement across all dates
                 </p>
             </div>
 
-            {{-- Filter Controls --}}
+            {{-- Controls: Data Table Link + Filter Tabs --}}
             <div class="flex flex-wrap items-center gap-2">
+                {{-- Data Table in New Page Button --}}
+                <button
+                    type="button"
+                    @click="openDataTablePage()"
+                    class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition flex items-center gap-1.5 shadow-xs border border-slate-200"
+                    title="Open full Data Table in a new page"
+                >
+                    <span>📋</span>
+                    <span>Data Table</span>
+                    <span class="text-slate-400 font-normal">↗</span>
+                </button>
+
                 {{-- Filter Tabs --}}
                 <div class="inline-flex p-1 bg-slate-100/80 rounded-xl border border-slate-200/80 text-xs font-semibold">
                     <button
@@ -339,7 +351,7 @@
                                         {{ $post->user->name ?? 'Anonymous' }}
                                     </td>
                                     <td class="p-3 text-slate-400 whitespace-nowrap">
-                                        {{ $post->created_at->diffForHumans() }}
+                                        {{ $post->created_at ? $post->created_at->copy()->setTimezone('Asia/Seoul')->format('d M Y, h:i A') : 'N/A' }}
                                     </td>
                                 </tr>
                             @empty
@@ -417,7 +429,7 @@
                                 </div>
                             </div>
                             <span class="text-[10px] text-slate-400 font-medium shrink-0">
-                                {{ $member->created_at->diffForHumans(null, true) }}
+                                {{ $member->created_at ? $member->created_at->copy()->setTimezone('Asia/Seoul')->format('d M Y, h:i A') : 'N/A' }}
                             </span>
                         </div>
                     @empty
@@ -465,6 +477,8 @@
 // ────────────────────────────────────────────────────────────────
 </script>
 <script>
+let analyticsChartInstance = null;
+
 document.addEventListener('alpine:init', () => {
     Alpine.data('analyticsDashboard', (initialData) => ({
         filter: initialData.filter || 'daily',
@@ -475,7 +489,8 @@ document.addEventListener('alpine:init', () => {
         showCustomPicker: false,
         isLoading: false,
         totals: initialData.totals || { registrations: 0, posts: 0, active_users: 0 },
-        chart: null,
+        tableRows: initialData.table_rows || [],
+        datasetVisible: { 0: true, 1: true, 2: true },
 
         init() {
             this.$nextTick(() => {
@@ -483,14 +498,29 @@ document.addEventListener('alpine:init', () => {
             });
         },
 
+        openDataTablePage() {
+            const params = new URLSearchParams({
+                filter: this.filter,
+                start_date: this.startDate || this.customStart,
+                end_date: this.endDate || this.customEnd
+            });
+            window.open(`{{ route('admin.dashboard.analytics.table') }}?${params.toString()}`, '_blank');
+        },
+
         setFilter(newFilter) {
+            this.filter = newFilter;
             if (newFilter === 'custom') {
                 this.showCustomPicker = true;
-                this.filter = 'custom';
+                if (this.customStart && this.customEnd) {
+                    this.fetchData({
+                        filter: 'custom',
+                        start_date: this.customStart,
+                        end_date: this.customEnd
+                    });
+                }
                 return;
             }
             this.showCustomPicker = false;
-            this.filter = newFilter;
             this.fetchData({ filter: newFilter });
         },
 
@@ -516,11 +546,21 @@ document.addEventListener('alpine:init', () => {
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`Server returned HTTP ${res.status}`);
+                }
+                return res.json();
+            })
             .then(data => {
-                this.totals = data.totals;
-                this.startDate = data.start_date;
-                this.endDate = data.end_date;
+                this.totals = data.totals || { registrations: 0, posts: 0, active_users: 0 };
+                this.startDate = data.start_date || '';
+                this.endDate = data.end_date || '';
+                this.tableRows = data.table_rows || [];
+                if (this.filter !== 'custom') {
+                    this.customStart = data.start_date || '';
+                    this.customEnd = data.end_date || '';
+                }
                 this.updateChart(data);
             })
             .catch(err => {
@@ -534,6 +574,11 @@ document.addEventListener('alpine:init', () => {
         renderChart(data) {
             const canvas = document.getElementById('analyticsChart');
             if (!canvas) return;
+
+            if (analyticsChartInstance) {
+                analyticsChartInstance.destroy();
+                analyticsChartInstance = null;
+            }
 
             const ctx = canvas.getContext('2d');
             
@@ -550,14 +595,14 @@ document.addEventListener('alpine:init', () => {
             activeGrad.addColorStop(0, 'rgba(124, 58, 237, 0.20)');
             activeGrad.addColorStop(1, 'rgba(124, 58, 237, 0.00)');
 
-            this.chart = new Chart(canvas, {
+            analyticsChartInstance = new Chart(canvas, {
                 type: 'line',
                 data: {
-                    labels: data.labels,
+                    labels: data.labels || [],
                     datasets: [
                         {
                             label: 'New Registrations',
-                            data: data.datasets.registrations,
+                            data: data.datasets?.registrations || [],
                             borderColor: '#10b981',
                             backgroundColor: regGrad,
                             borderWidth: 2.5,
@@ -571,7 +616,7 @@ document.addEventListener('alpine:init', () => {
                         },
                         {
                             label: 'Posts Created',
-                            data: data.datasets.posts,
+                            data: data.datasets?.posts || [],
                             borderColor: '#2563eb',
                             backgroundColor: postGrad,
                             borderWidth: 2.5,
@@ -585,7 +630,7 @@ document.addEventListener('alpine:init', () => {
                         },
                         {
                             label: 'Active Users',
-                            data: data.datasets.active_users,
+                            data: data.datasets?.active_users || [],
                             borderColor: '#7c3aed',
                             backgroundColor: activeGrad,
                             borderWidth: 2.5,
@@ -649,24 +694,27 @@ document.addEventListener('alpine:init', () => {
         },
 
         updateChart(data) {
-            if (!this.chart) return;
-            this.chart.data.labels = data.labels;
-            this.chart.data.datasets[0].data = data.datasets.registrations;
-            this.chart.data.datasets[1].data = data.datasets.posts;
-            this.chart.data.datasets[2].data = data.datasets.active_users;
-            this.chart.update();
+            if (!analyticsChartInstance) {
+                this.renderChart(data);
+                return;
+            }
+            analyticsChartInstance.data.labels = [...(data.labels || [])];
+            analyticsChartInstance.data.datasets[0].data = [...(data.datasets?.registrations || [])];
+            analyticsChartInstance.data.datasets[1].data = [...(data.datasets?.posts || [])];
+            analyticsChartInstance.data.datasets[2].data = [...(data.datasets?.active_users || [])];
+            analyticsChartInstance.update();
         },
 
         toggleDataset(index) {
-            if (!this.chart) return;
-            const isVisible = this.chart.isDatasetVisible(index);
-            this.chart.setDatasetVisibility(index, !isVisible);
-            this.chart.update();
+            if (!analyticsChartInstance) return;
+            const isVisible = analyticsChartInstance.isDatasetVisible(index);
+            analyticsChartInstance.setDatasetVisibility(index, !isVisible);
+            analyticsChartInstance.update();
+            this.datasetVisible[index] = !isVisible;
         },
 
         isDatasetVisible(index) {
-            if (!this.chart) return true;
-            return this.chart.isDatasetVisible(index);
+            return this.datasetVisible[index] !== false;
         }
     }));
 });
