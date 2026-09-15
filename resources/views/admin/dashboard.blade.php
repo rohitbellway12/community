@@ -31,6 +31,12 @@
             <p class="text-xs text-slate-500 mt-0.5">Real-time statistics, engagement metrics & growth analytics for REIAC Community</p>
         </div>
         <div class="flex items-center gap-2">
+            {{-- Live KST Clock --}}
+            <div class="bg-slate-50 border border-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 shadow-xs">
+                <span class="text-base leading-none">🇰🇷</span>
+                <span id="kst-clock" class="tabular-nums tracking-tight text-slate-800">--:--:-- --</span>
+                <span class="text-slate-400 font-semibold">KST</span>
+            </div>
             <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 shadow-xs">
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 System Healthy
@@ -435,6 +441,29 @@
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// ── KST Live Clock ──────────────────────────────────────────────
+(function () {
+    const el = document.getElementById('kst-clock');
+    if (!el) return;
+
+    const fmt = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Seoul',
+        hour:     '2-digit',
+        minute:   '2-digit',
+        second:   '2-digit',
+        hour12:   true
+    });
+
+    function tick() {
+        el.textContent = fmt.format(new Date());
+    }
+
+    tick();
+    setInterval(tick, 1000);
+})();
+// ────────────────────────────────────────────────────────────────
+</script>
 <script>
 document.addEventListener('alpine:init', () => {
     Alpine.data('analyticsDashboard', (initialData) => ({

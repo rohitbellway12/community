@@ -31,14 +31,17 @@ class AdminDashboardController extends Controller
         $totalCategories = Category::count();
         $pendingReportsCount = Report::where('status', 'pending')->count();
 
-        // 2. Today's Pulse Metrics
-        $todayRegistrations = User::whereDate('created_at', today())->count();
-        $todayPosts = Post::whereDate('created_at', today())->count();
+        // 2. Today's Pulse Metrics — all relative to KST (Asia/Seoul, UTC+9)
+        $kstNow   = now('Asia/Seoul');
+        $kstToday = $kstNow->toDateString(); // 'YYYY-MM-DD' in KST
 
-        $todayUserUpdates = DB::table('users')->whereDate('updated_at', today())->pluck('id');
-        $todayPostAuthors = DB::table('posts')->whereDate('created_at', today())->pluck('user_id');
-        $todayCommentAuthors = DB::table('comments')->whereDate('created_at', today())->pluck('user_id');
-        $todayActiveUsers = $todayUserUpdates->merge($todayPostAuthors)->merge($todayCommentAuthors)->unique()->count();
+        $todayRegistrations = User::whereRaw("DATE(CONVERT_TZ(created_at, '+00:00', '+09:00')) = ?", [$kstToday])->count();
+        $todayPosts         = Post::whereRaw("DATE(CONVERT_TZ(created_at, '+00:00', '+09:00')) = ?", [$kstToday])->count();
+
+        $todayUserUpdates    = DB::table('users')   ->whereRaw("DATE(CONVERT_TZ(updated_at, '+00:00', '+09:00')) = ?", [$kstToday])->pluck('id');
+        $todayPostAuthors    = DB::table('posts')   ->whereRaw("DATE(CONVERT_TZ(created_at, '+00:00', '+09:00')) = ?", [$kstToday])->pluck('user_id');
+        $todayCommentAuthors = DB::table('comments')->whereRaw("DATE(CONVERT_TZ(created_at, '+00:00', '+09:00')) = ?", [$kstToday])->pluck('user_id');
+        $todayActiveUsers    = $todayUserUpdates->merge($todayPostAuthors)->merge($todayCommentAuthors)->unique()->count();
 
         // Active today (legacy name kept for compatibility)
         $activeToday = $todayActiveUsers;
@@ -92,51 +95,56 @@ class AdminDashboardController extends Controller
      */
     protected function getAnalyticsData(Request $request): array
     {
+        // All date logic runs in KST (Asia/Seoul, UTC+9)
+        $KST = 'Asia/Seoul';
         $filter = strtolower(trim($request->get('filter', 'daily')));
 
+        // SQL expression: shift stored UTC timestamp into KST before grouping
+        $kstCreated = "CONVERT_TZ(created_at, '+00:00', '+09:00')";
+        $kstUpdated = "CONVERT_TZ(updated_at, '+00:00', '+09:00')";
+
         if ($filter === 'monthly') {
-            $startDate = now()->subMonths(11)->startOfMonth();
-            $endDate = now()->endOfMonth();
-            $groupByCreated = "DATE_FORMAT(created_at, '%Y-%m')";
-            $groupByUpdated = "DATE_FORMAT(updated_at, '%Y-%m')";
+            $startDate = now($KST)->subMonths(11)->startOfMonth()->setTimezone('UTC');
+            $endDate   = now($KST)->endOfMonth()->setTimezone('UTC');
+            $groupByCreated = "DATE_FORMAT({$kstCreated}, '%Y-%m')";
+            $groupByUpdated = "DATE_FORMAT({$kstUpdated}, '%Y-%m')";
             $intervalType = 'month';
         } elseif ($filter === 'yearly') {
-            $startDate = now()->subYears(4)->startOfYear();
-            $endDate = now()->endOfYear();
-            $groupByCreated = "YEAR(created_at)";
-            $groupByUpdated = "YEAR(updated_at)";
+            $startDate = now($KST)->subYears(4)->startOfYear()->setTimezone('UTC');
+            $endDate   = now($KST)->endOfYear()->setTimezone('UTC');
+            $groupByCreated = "YEAR({$kstCreated})";
+            $groupByUpdated = "YEAR({$kstUpdated})";
             $intervalType = 'year';
         } elseif ($filter === 'custom' && $request->filled('start_date') && $request->filled('end_date')) {
             try {
-                $startDate = Carbon::parse($request->input('start_date'))->startOfDay();
-                $endDate = Carbon::parse($request->input('end_date'))->endOfDay();
+                // Treat user-supplied dates as KST calendar days, then convert boundaries to UTC
+                $startDate = Carbon::parse($request->input('start_date'), $KST)->startOfDay()->setTimezone('UTC');
+                $endDate   = Carbon::parse($request->input('end_date'),   $KST)->endOfDay()->setTimezone('UTC');
                 if ($startDate->gt($endDate)) {
-                    $tmp = $startDate;
-                    $startDate = $endDate;
-                    $endDate = $tmp;
+                    [$startDate, $endDate] = [$endDate, $startDate];
                 }
             } catch (\Exception $e) {
-                $startDate = now()->subDays(13)->startOfDay();
-                $endDate = now()->endOfDay();
+                $startDate = now($KST)->subDays(13)->startOfDay()->setTimezone('UTC');
+                $endDate   = now($KST)->endOfDay()->setTimezone('UTC');
             }
 
             $diffDays = $startDate->diffInDays($endDate);
             if ($diffDays > 90) {
-                $groupByCreated = "DATE_FORMAT(created_at, '%Y-%m')";
-                $groupByUpdated = "DATE_FORMAT(updated_at, '%Y-%m')";
+                $groupByCreated = "DATE_FORMAT({$kstCreated}, '%Y-%m')";
+                $groupByUpdated = "DATE_FORMAT({$kstUpdated}, '%Y-%m')";
                 $intervalType = 'month';
             } else {
-                $groupByCreated = "DATE(created_at)";
-                $groupByUpdated = "DATE(updated_at)";
+                $groupByCreated = "DATE({$kstCreated})";
+                $groupByUpdated = "DATE({$kstUpdated})";
                 $intervalType = 'day';
             }
         } else {
-            // Default: daily (last 14 days)
-            $filter = 'daily';
-            $startDate = now()->subDays(13)->startOfDay();
-            $endDate = now()->endOfDay();
-            $groupByCreated = "DATE(created_at)";
-            $groupByUpdated = "DATE(updated_at)";
+            // Default: daily — last 14 KST days
+            $filter    = 'daily';
+            $startDate = now($KST)->subDays(13)->startOfDay()->setTimezone('UTC');
+            $endDate   = now($KST)->endOfDay()->setTimezone('UTC');
+            $groupByCreated = "DATE({$kstCreated})";
+            $groupByUpdated = "DATE({$kstUpdated})";
             $intervalType = 'day';
         }
 
@@ -214,9 +222,10 @@ class AdminDashboardController extends Controller
         }
 
         return [
-            'filter' => $filter,
-            'start_date' => $startDate->format('Y-m-d'),
-            'end_date' => $endDate->format('Y-m-d'),
+            'filter'     => $filter,
+            // Return the boundary dates displayed to the user in KST
+            'start_date' => $startDate->copy()->setTimezone('Asia/Seoul')->format('Y-m-d'),
+            'end_date'   => $endDate->copy()->setTimezone('Asia/Seoul')->format('Y-m-d'),
             'labels' => $labels,
             'datasets' => [
                 'registrations' => $regData,
