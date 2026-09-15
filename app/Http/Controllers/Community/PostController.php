@@ -311,6 +311,19 @@ public function index(Request $request)
         @ini_set('max_execution_time', 300);
         @ini_set('memory_limit', '512M');
 
+        // Check if PHP dropped files due to server upload limits (upload_max_filesize / post_max_size)
+        if (!empty($_FILES['media']['error'])) {
+            foreach ((array) $_FILES['media']['error'] as $err) {
+                if ($err === UPLOAD_ERR_INI_SIZE || $err === UPLOAD_ERR_FORM_SIZE) {
+                    $msg = 'The uploaded file exceeds the server upload limit. Please try with a smaller image or compressed photo.';
+                    if ($request->ajax() || $request->wantsJson()) {
+                        return response()->json(['success' => false, 'message' => $msg], 422);
+                    }
+                    return back()->withErrors(['media' => $msg])->withInput();
+                }
+            }
+        }
+
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'content' => 'required|string',
@@ -356,6 +369,8 @@ public function index(Request $request)
             'category_id.exists' => 'The selected category is invalid.',
             'media.max' => 'You can upload at most 10 media files.',
             'media.*.max' => 'Each file cannot exceed 100MB.',
+            'media.*.file' => 'The uploaded file failed to transfer. The image might be too large or the connection dropped.',
+            'media.*.uploaded' => 'The uploaded file failed to transfer. The image might be too large or the connection dropped.',
         ]);
 
         if ($validator->fails()) {
@@ -638,6 +653,9 @@ public function index(Request $request)
 
         'tags' => ['nullable', 'array'],
         'tags.*' => ['exists:tags,id'],
+    ], [
+        'media.*.file' => 'The uploaded file failed to transfer. The image might be too large or the connection dropped.',
+        'media.*.uploaded' => 'The uploaded file failed to transfer. The image might be too large or the connection dropped.',
     ]);
 
     return DB::transaction(function () use ($request, $post, $validated) {

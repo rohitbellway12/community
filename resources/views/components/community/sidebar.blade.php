@@ -696,6 +696,63 @@
     </div>
 
     <script>
+        function compressImageIfNeeded(file) {
+            const isImage = (file.type && file.type.startsWith('image/')) || /\.(jpg|jpeg|png|webp|heic|heif|avif)$/i.test(file.name);
+            if (!isImage || file.type === 'image/gif') {
+                return Promise.resolve(file);
+            }
+            if (file.size <= 1.8 * 1024 * 1024) {
+                return Promise.resolve(file);
+            }
+
+            return new Promise(resolve => {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const img = new Image();
+                    img.onload = () => {
+                        try {
+                            const maxDim = 1920;
+                            let w = img.width;
+                            let h = img.height;
+                            if (w > maxDim || h > maxDim) {
+                                if (w > h) {
+                                    h = Math.round((h * maxDim) / w);
+                                    w = maxDim;
+                                } else {
+                                    w = Math.round((w * maxDim) / h);
+                                    h = maxDim;
+                                }
+                            }
+                            const canvas = document.createElement('canvas');
+                            canvas.width = w;
+                            canvas.height = h;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, w, h);
+                            canvas.toBlob(blob => {
+                                if (blob && blob.size < file.size) {
+                                    const baseName = file.name.replace(/\.[^/.]+$/, '');
+                                    const compressed = new File([blob], baseName + '.jpg', {
+                                        type: 'image/jpeg',
+                                        lastModified: Date.now()
+                                    });
+                                    resolve(compressed);
+                                } else {
+                                    resolve(file);
+                                }
+                            }, 'image/jpeg', 0.85);
+                        } catch (err) {
+                            console.warn('Canvas compression fallback:', err);
+                            resolve(file);
+                        }
+                    };
+                    img.onerror = () => resolve(file);
+                    img.src = e.target.result;
+                };
+                reader.onerror = () => resolve(file);
+                reader.readAsDataURL(file);
+            });
+        }
+
         function createDiscussionModal(hasErrors = false) {
             return {
                 openModal: hasErrors,
@@ -713,7 +770,7 @@
                     });
                 },
 
-                handleFiles(e) {
+                async handleFiles(e) {
                     const incoming = Array.from(e.target.files || []);
                     if (!incoming.length) return;
 
@@ -732,12 +789,26 @@
                         }
                     });
 
-                    this.files = incoming;
-                    this.previews = incoming.map(file => ({
+                    // Automatically optimize large mobile camera photos
+                    const processed = await Promise.all(incoming.map(f => compressImageIfNeeded(f)));
+
+                    this.files = processed;
+                    this.previews = processed.map(file => ({
                         url: URL.createObjectURL(file),
                         type: (file.type && file.type.startsWith('video/')) || /\.(mp4|mov|avi|webm|mkv|m4v|qt|3gp|ogg|wmv)$/i.test(file.name) ? 'video' : 'image',
                         name: file.name
                     }));
+
+                    const input = this.$refs.createMediaInput;
+                    if (input && typeof DataTransfer !== 'undefined') {
+                        try {
+                            const dt = new DataTransfer();
+                            processed.forEach(f => dt.items.add(f));
+                            input.files = dt.files;
+                        } catch (err) {
+                            console.warn('DataTransfer sync skipped:', err);
+                        }
+                    }
                 },
 
                 removeFile(index) {

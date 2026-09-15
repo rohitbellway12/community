@@ -2370,7 +2370,13 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                     submitButton.innerHTML = 'Posting...';
                 }
 
-                try {
+                    const formData = new FormData(form);
+                    const modalEl = document.querySelector('[x-show="openModal"]');
+                    if (modalEl?.__x?.$data?.files && modalEl.__x.$data.files.length > 0) {
+                        formData.delete('media[]');
+                        modalEl.__x.$data.files.forEach(f => formData.append('media[]', f));
+                    }
+
                     const response = await fetch(form.action, {
                         method: 'POST',
                         headers: {
@@ -2378,7 +2384,7 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                             'X-Requested-With': 'XMLHttpRequest',
                             'Accept': 'application/json'
                         },
-                        body: new FormData(form),
+                        body: formData,
                         credentials: 'same-origin'
                     });
 
