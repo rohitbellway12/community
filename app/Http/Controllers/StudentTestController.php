@@ -201,6 +201,16 @@ class StudentTestController extends Controller
     public function take(Test $test, TestAttempt $attempt): View|RedirectResponse
     {
         $this->authorizeStudent($test);
+
+        if ($attempt->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized.');
+        }
+
+        if ($attempt->status === 'completed') {
+            return redirect()->route('tests.student.result', ['test' => $test, 'attempt' => $attempt])
+                ->with('info', 'This examination attempt has already been submitted.');
+        }
+
         $this->authorizeAttempt($attempt);
 
         if ($attempt->isTimedOut()) {
@@ -275,7 +285,20 @@ class StudentTestController extends Controller
             $submissionType = 'tab_switch_violation';
         }
 
-        $attempt->gradeAndComplete(null, $submissionType, $tabSwitchCount);
+        $answers = null;
+        if ($request->filled('answers')) {
+            $rawAnswers = $request->input('answers');
+            if (is_string($rawAnswers)) {
+                $decoded = json_decode($rawAnswers, true);
+                if (is_array($decoded)) {
+                    $answers = $decoded;
+                }
+            } elseif (is_array($rawAnswers)) {
+                $answers = $rawAnswers;
+            }
+        }
+
+        $attempt->gradeAndComplete($answers, $submissionType, $tabSwitchCount);
 
         $message = match ($submissionType) {
             'timeout' => 'Examination time expired. Your paper has been auto-submitted.',
@@ -295,6 +318,15 @@ class StudentTestController extends Controller
         $test->load(['questions.options', 'testLevel']);
         $attempt->load(['answers.question.options', 'answers.option', 'user']);
 
+        // Maintain consistent question ordering according to test definition
+        $orderMap = $test->questions->pluck('pivot.question_order', 'id')->all();
+        $attempt->setRelation(
+            'answers',
+            $attempt->answers->sortBy(function ($ans) use ($orderMap) {
+                return $orderMap[$ans->question_id] ?? $ans->id;
+            })->values()
+        );
+
         return view('student.tests.result', compact('test', 'attempt'));
     }
 
@@ -303,17 +335,44 @@ class StudentTestController extends Controller
         $this->authorizeStudent($test);
         $this->authorizeAttempt($attempt);
 
-        $questionId = $request->input('question_id');
-        $selectedOptionId = $request->input('selected_option_id');
+        $questionId = (int) $request->input('question_id');
+        $selectedOptionId = $request->input('selected_option_id') ?? $request->input('option_id');
+
+        if (!$selectedOptionId) {
+            return response()->json(['success' => false, 'message' => 'No option selected'], 422);
+        }
+
+        $selectedOptionId = (int) $selectedOptionId;
+
+        // Verify that the option belongs to the question
+        $optionExists = \App\Models\QuestionOption::where('question_id', $questionId)
+            ->where('id', $selectedOptionId)
+            ->exists();
+
+        if (!$optionExists) {
+            return response()->json(['success' => false, 'message' => 'Invalid option selected for this question'], 422);
+        }
 
         $answer = AttemptAnswer::where('test_attempt_id', $attempt->id)
             ->where('question_id', $questionId)
-            ->firstOrFail();
+            ->first();
 
-        $answer->update([
-            'selected_option_id' => $selectedOptionId,
-            'answered_at' => now(),
-        ]);
+        if (!$answer) {
+            $answer = AttemptAnswer::create([
+                'test_attempt_id' => $attempt->id,
+                'question_id' => $questionId,
+                'selected_option_id' => $selectedOptionId,
+                'is_marked_for_review' => false,
+                'is_correct' => false,
+                'marks_obtained' => 0,
+                'answered_at' => now(),
+            ]);
+        } else {
+            $answer->update([
+                'selected_option_id' => $selectedOptionId,
+                'answered_at' => now(),
+            ]);
+        }
 
         return response()->json(['success' => true]);
     }
@@ -323,16 +382,18 @@ class StudentTestController extends Controller
         $this->authorizeStudent($test);
         $this->authorizeAttempt($attempt);
 
-        $questionId = $request->input('question_id');
+        $questionId = (int) $request->input('question_id');
 
         $answer = AttemptAnswer::where('test_attempt_id', $attempt->id)
             ->where('question_id', $questionId)
-            ->firstOrFail();
+            ->first();
 
-        $answer->update([
-            'selected_option_id' => null,
-            'answered_at' => null,
-        ]);
+        if ($answer) {
+            $answer->update([
+                'selected_option_id' => null,
+                'answered_at' => null,
+            ]);
+        }
 
         return response()->json(['success' => true]);
     }

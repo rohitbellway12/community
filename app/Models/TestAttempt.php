@@ -88,17 +88,18 @@ class TestAttempt extends Model
             $totalMarks += $question->marks;
 
             if ($answers !== null) {
-                $selectedOptionId = $answers[$question->id] ?? null;
-                $answer->selected_option_id = $selectedOptionId;
-                $answer->answered_at = now();
+                $submittedOptionId = $answers[$question->id] ?? $answers[(string) $question->id] ?? null;
+                $selectedOptionId = $submittedOptionId ?: $answer->selected_option_id;
+                $answer->selected_option_id = $selectedOptionId ? (int) $selectedOptionId : null;
+                $answer->answered_at = $selectedOptionId ? ($answer->answered_at ?? now()) : null;
             } else {
-                $selectedOptionId = $answer->selected_option_id;
-                $answer->answered_at = $answer->answered_at ?? now();
+                $selectedOptionId = $answer->selected_option_id ? (int) $answer->selected_option_id : null;
+                $answer->answered_at = $selectedOptionId ? ($answer->answered_at ?? now()) : null;
             }
 
             $correctOption = $question->options->firstWhere('is_correct', true);
 
-            if ($selectedOptionId && $correctOption && $selectedOptionId == $correctOption->id) {
+            if ($selectedOptionId && $correctOption && (int) $selectedOptionId === (int) $correctOption->id) {
                 $answer->is_correct = true;
                 $answer->marks_obtained = $question->marks;
                 $correctCount++;
