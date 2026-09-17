@@ -2145,7 +2145,7 @@
                                         @endphp
 
                                         <div class="bg-white rounded-2xl p-5 border border-slate-200/70 shadow-xs hover:border-slate-300 transition space-y-3">
-                                            {{-- Context Header (Kisko comment kiya) --}}
+                                            {{-- Context Header (Reply / Comment target) --}}
                                             <div class="flex items-start justify-between gap-3 text-xs">
                                                 <div class="flex items-center gap-2 flex-wrap min-w-0">
                                                     <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-50 text-amber-600 shrink-0">
@@ -2185,7 +2185,7 @@
                                                 </span>
                                             </div>
 
-                                            {{-- The Comment Content (Kya comment kiya tha) --}}
+                                            {{-- Comment Content --}}
                                             <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-100 text-xs sm:text-sm text-slate-800 leading-relaxed break-words font-medium">
                                                 {{ $comment->content }}
                                             </div>

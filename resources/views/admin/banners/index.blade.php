@@ -61,17 +61,17 @@
                 📐
             </span>
             <div>
-                <h3 class="font-extrabold text-amber-950 text-sm">Banner Ka Sahi Size (Recommended Dimensions)</h3>
+                <h3 class="font-extrabold text-amber-950 text-sm">Recommended Banner Dimensions</h3>
                 <p class="text-amber-800 text-xs mt-0.5">
-                    Landing page par best fit ke liye <strong>Horizontal / Landscape</strong> banner upload karein:
-                    <span class="font-bold text-slate-900 bg-white/90 px-2 py-0.5 rounded border border-amber-300 ml-1">1200 x 300 px</span> ya
+                    For optimal fit on the landing page, please upload a <strong>Horizontal / Landscape</strong> banner:
+                    <span class="font-bold text-slate-900 bg-white/90 px-2 py-0.5 rounded border border-amber-300 ml-1">1200 x 300 px</span> or
                     <span class="font-bold text-slate-900 bg-white/90 px-2 py-0.5 rounded border border-amber-300 ml-1">1400 x 320 px</span>
-                    (Aspect Ratio: <strong>4:1</strong> ya <strong>5:1</strong>).
+                    (Aspect Ratio: <strong>4:1</strong> or <strong>5:1</strong>).
                 </p>
             </div>
         </div>
         <div class="text-[11px] text-amber-700 font-medium shrink-0 bg-white/80 px-3 py-1.5 rounded-xl border border-amber-200/60">
-            ⚠️ Vertical / Square image na dalein, horizontal wide banner dalein.
+            ⚠️ Avoid vertical or square images; use wide landscape banners only.
         </div>
     </div>
 
@@ -367,13 +367,13 @@
                             Banner Image
                         </label>
                         <span class="text-[11px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
-                            Sahi Size: 1200 x 300 px (4:1 Ratio)
+                            Recommended: 1200 x 300 px (4:1 Ratio)
                         </span>
                     </div>
 
                     <div class="p-2.5 bg-amber-50/70 border border-amber-200/80 rounded-xl text-[11px] text-amber-900 flex items-center gap-2">
                         <span class="text-sm shrink-0">💡</span>
-                        <span><strong>Tip:</strong> Horizontal (chouda) banner upload karein. Height 200–250px se zyada lambee na ho taaki page clean dikhe.</span>
+                        <span><strong>Tip:</strong> Upload a wide horizontal banner. Keep height between 200–250px for a clean layout.</span>
                     </div>
 
                     <div class="border-2 border-dashed border-slate-200 hover:border-amber-400 rounded-xl p-4 text-center cursor-pointer transition relative bg-slate-50/60">
