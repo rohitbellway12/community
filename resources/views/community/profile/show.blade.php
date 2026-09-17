@@ -5,6 +5,8 @@
     'sidebar' => true,
     'rightbar' => true,
     'notificationsCount' => 0,
+    'testStats' => null,
+    'testAttempts' => null,
 ])
 
 <!DOCTYPE html>
@@ -49,7 +51,7 @@
     $username = $profile->username;
 
     $activeTab = request()->query('tab', 'posts');
-    if (!in_array($activeTab, ['posts', 'comments', 'followers', 'following'])) {
+    if (!in_array($activeTab, ['posts', 'comments', 'followers', 'following', 'tests'])) {
         $activeTab = 'posts';
     }
 
@@ -564,9 +566,18 @@
                                 href="{{ request()->fullUrlWithQuery(['tab' => 'following', 'page' => null, 'followers_page' => null, 'following_page' => null]) }}"
                                 class="pb-3 border-b-2 {{ $activeTab === 'following' ? 'border-amber-500 text-[#0b1329]' : 'border-transparent text-slate-400 hover:text-slate-700' }} transition whitespace-nowrap"
                             >
-                                Following <span class="text-slate-400 font-semibold">{{ number_format($followingCount) }}</span>
-                            </a>
-                        </div>
+                                 Following <span class="text-slate-400 font-semibold">{{ number_format($followingCount) }}</span>
+                             </a>
+
+                             @if($isOwnProfile)
+                                 <a
+                                     href="{{ request()->fullUrlWithQuery(['tab' => 'tests', 'page' => null, 'posts_page' => null, 'comments_page' => null, 'followers_page' => null, 'following_page' => null]) }}"
+                                     class="pb-3 border-b-2 {{ $activeTab === 'tests' ? 'border-amber-500 text-[#0b1329]' : 'border-transparent text-slate-400 hover:text-slate-700' }} transition whitespace-nowrap"
+                                 >
+                                     Tests<span class="text-slate-400 font-semibold"> {{ $testStats ? ' (' . $testStats['total'] . ')' : '' }}</span>
+                                 </a>
+                             @endif
+                         </div>
 
                         <div class="mt-6 space-y-4">
                             @if($activeTab === 'posts')
@@ -899,27 +910,21 @@
                                                     .catch(error => console.error(error));
                                                 },
 
-                                                async sharePost() {
-                                                    const url = @js(route('community.posts.show', $post));
-
-                                                    try {
-                                                        if (navigator.share) {
-                                                            await navigator.share({
-                                                                title: @js($post->title),
-                                                                text: @js(\Illuminate\Support\Str::limit(strip_tags($post->content ?? $post->body ?? ''), 180)),
-                                                                url
-                                                            });
-                                                            return;
+                                                sharePost() {
+                                                    window.dispatchEvent(new CustomEvent('open-share-modal', {
+                                                        detail: {
+                                                            id: {{ (int) $post->id }},
+                                                            title: @js($post->title),
+                                                            url: @js(route('community.posts.show', $post)),
+                                                            text: @js(\Illuminate\Support\Str::limit(strip_tags($post->content ?? $post->body ?? ''), 200)),
+                                                            image: @js($post->media?->first() ? asset('storage/' . $post->media->first()->file_path) : null),
+                                                            authorName: @js($post->user?->name ?? $profileUser->name ?? 'User'),
+                                                            authorUsername: @js($post->user?->profile?->username ? '@' . $post->user->profile->username : ($profileUser->profile?->username ? '@' . $profileUser->profile->username : '')),
+                                                            authorAvatar: @js($post->user?->profile?->avatar ? asset('storage/' . $post->user->profile->avatar) : ($profileUser->profile?->avatar ? asset('storage/' . $profileUser->profile->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode($profileUser->name ?? 'User') . '&background=0c1b33&color=fff')),
+                                                            category: @js($post->category?->name ?? ''),
+                                                            shareEndpoint: @js(route('community.posts.share', $post))
                                                         }
-
-                                                        await navigator.clipboard.writeText(url);
-                                                        this.copied = true;
-                                                        setTimeout(() => this.copied = false, 2000);
-                                                    } catch (error) {
-                                                        if (error?.name !== 'AbortError') {
-                                                            console.error(error);
-                                                        }
-                                                    }
+                                                    }));
                                                 },
 
                                                 showToast(message, type = 'success') {
@@ -1481,11 +1486,15 @@
                                                     </button>
 
                                                     <button type="button"
-                                                        @click="sharePost()"
-                                                        class="flex items-center gap-1.5"
-                                                        :class="copied ? 'text-emerald-600' : 'hover:text-emerald-500'">
-                                                        <span x-text="copied ? 'Copied!' : 'Share'"></span>
-                                                    </button>
+                                                         @click="sharePost()"
+                                                         class="flex items-center gap-1.5 hover:text-emerald-500 transition text-slate-500 font-medium">
+                                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                             <path stroke-linecap="round" stroke-linejoin="round"
+                                                                 d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z">
+                                                             </path>
+                                                         </svg>
+                                                         <span>Share</span>
+                                                     </button>
                                                 </div>
 
                                                 {{-- <button type="button"
@@ -2526,15 +2535,137 @@
                                         <div class="mt-5">
                                             {{ $following->appends(['tab' => 'following'])->links() }}
                                         </div>
-                                    @endif
+                                     @endif
                                 </div>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            </main>
-        </div>
-    </div>
+
+                                @elseif($activeTab === 'tests')
+                                    <div class="space-y-6 max-w-full w-full">
+                                        @if(!$isOwnProfile)
+                                            <div class="bg-white rounded-2xl border border-slate-200/70 p-12 text-center">
+                                                <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                                    </svg>
+                                                </div>
+                                                <h3 class="text-sm font-bold text-slate-800">Test Records are Private</h3>
+                                                <p class="text-xs text-slate-400 mt-1">This student's test results are only visible to them.</p>
+                                            </div>
+                                        @else
+                                            {{-- Test Stats Overview --}}
+                                            @if($testStats && $testStats['total'] > 0)
+                                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                                    <div class="bg-white rounded-2xl border border-slate-200/70 p-4 text-center shadow-xs">
+                                                        <div class="text-2xl font-extrabold text-[#0b1329]">{{ $testStats['total'] }}</div>
+                                                        <div class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mt-1">Tests Completed</div>
+                                                    </div>
+                                                    <div class="bg-white rounded-2xl border border-slate-200/70 p-4 text-center shadow-xs">
+                                                        <div class="text-2xl font-extrabold text-emerald-600">{{ $testStats['passed'] }}</div>
+                                                        <div class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mt-1">Passed</div>
+                                                    </div>
+                                                    <div class="bg-white rounded-2xl border border-slate-200/70 p-4 text-center shadow-xs">
+                                                        <div class="text-2xl font-extrabold text-rose-600">{{ $testStats['failed'] }}</div>
+                                                        <div class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mt-1">Retake Needed</div>
+                                                    </div>
+                                                    <div class="bg-white rounded-2xl border border-slate-200/70 p-4 text-center shadow-xs">
+                                                        <div class="text-2xl font-extrabold text-amber-500">{{ $testStats['best_score'] }}%</div>
+                                                        <div class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mt-1">Best Score</div>
+                                                    </div>
+                                                </div>
+                                            @endif
+
+                                            {{-- Test History Cards --}}
+                                            <div class="space-y-3">
+                                                <div class="flex items-center justify-between">
+                                                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Test Attempts & Scorecards</h3>
+                                                    <a href="{{ route('tests.student.index') }}"
+                                                       class="text-xs font-bold text-amber-600 hover:text-amber-700 transition flex items-center gap-1">
+                                                        <span>Browse All Tests</span>
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                                        </svg>
+                                                    </a>
+                                                </div>
+
+                                                @forelse(($testAttempts ?? collect()) as $attempt)
+                                                    @php
+                                                        $test = $attempt->test;
+                                                        $isPass = $attempt->result === 'pass';
+                                                    @endphp
+                                                    <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:border-amber-300 hover:shadow-sm transition">
+                                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                                            <div class="flex-1 min-w-0">
+                                                                <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+                                                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-700 border border-slate-200">
+                                                                        {{ $test->testLevel->name ?? 'Proficiency Test' }}
+                                                                    </span>
+                                                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold {{ $isPass ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200' }}">
+                                                                        {{ $isPass ? '✓ PASSED' : '✗ FAILED' }}
+                                                                    </span>
+                                                                    <span class="text-[11px] text-slate-400">
+                                                                        Attempt #{{ $attempt->attempt_number }}
+                                                                    </span>
+                                                                </div>
+
+                                                                <h4 class="text-sm font-bold text-slate-900 truncate">{{ $test->title ?? 'Test' }}</h4>
+
+                                                                <div class="flex items-center gap-4 mt-2 text-xs text-slate-500 flex-wrap">
+                                                                    <span>
+                                                                        Score: <strong class="text-slate-800">{{ $attempt->score_obtained }} / {{ $test->total_marks ?? '—' }} pts</strong> ({{ $attempt->percentage }}%)
+                                                                    </span>
+                                                                    <span>•</span>
+                                                                    <span>
+                                                                        Correct: <strong class="text-slate-800">{{ $attempt->correct_count }} of {{ $attempt->total_questions }}</strong>
+                                                                    </span>
+                                                                    <span>•</span>
+                                                                    <span class="text-[11px] text-slate-400">
+                                                                        {{ $attempt->submitted_at?->format('M d, Y · h:i A') ?? 'N/A' }}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="shrink-0">
+                                                                @if($test)
+                                                                    <a href="{{ route('tests.student.result', ['test' => $test, 'attempt' => $attempt]) }}"
+                                                                       class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-[#0b1329] bg-amber-400 hover:bg-amber-500 transition shadow-xs">
+                                                                        <span>View Scorecard</span>
+                                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                                                                        </svg>
+                                                                    </a>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                @empty
+                                                    <div class="bg-white rounded-2xl border border-dashed border-slate-200 p-10 text-center">
+                                                        <div class="w-12 h-12 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center mx-auto mb-3">
+                                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                            </svg>
+                                                        </div>
+                                                        <h4 class="text-sm font-bold text-slate-800">No Tests Taken Yet</h4>
+                                                        <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                                                            You haven't participated in any online language proficiency tests yet.
+                                                        </p>
+                                                        <a href="{{ route('tests.student.index') }}"
+                                                           class="inline-flex items-center gap-1.5 mt-4 px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#0b1329] hover:bg-slate-800 transition shadow-xs">
+                                                            <span>Explore Available Tests</span>
+                                                            <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                                                            </svg>
+                                                        </a>
+                                                    </div>
+                                                @endforelse
+
+                                                @if(isset($testAttempts) && method_exists($testAttempts, 'hasPages') && $testAttempts->hasPages())
+                                                    <div class="mt-4">
+                                                        {{ $testAttempts->appends(['tab' => 'tests'])->links() }}
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endif
 
     {{-- GLOBAL LOGIN PROMPT MODAL --}}
     <div
@@ -2545,7 +2676,7 @@
         style="display: none;"
         x-cloak
     >
-    </div>
+    <x-community.share-modal />
 </div>
 </body>
 </html>

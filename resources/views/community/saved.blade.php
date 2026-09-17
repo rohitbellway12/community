@@ -327,6 +327,29 @@
                                     </svg>
                                     <span>{{ $post->comments_count ?? 0 }}</span>
                                 </a>
+
+                                {{-- Share button --}}
+                                <button type="button"
+                                    @click="$dispatch('open-share-modal', {
+                                        id: {{ (int) $post->id }},
+                                        title: @js($post->title),
+                                        url: @js($shareUrl),
+                                        text: @js(\Illuminate\Support\Str::limit(strip_tags($post->content ?? ''), 200)),
+                                        image: @js($post->media?->first() ? asset('storage/' . $post->media->first()->file_path) : null),
+                                        authorName: @js($author?->name ?? 'User'),
+                                        authorUsername: @js($authorUsername ? '@' . $authorUsername : ''),
+                                        authorAvatar: @js($authorAvatar),
+                                        category: @js($post->category?->name ?? ''),
+                                        shareEndpoint: @js(route('community.posts.share', $post))
+                                    })"
+                                    class="inline-flex items-center gap-1.5 text-slate-500 hover:text-emerald-600 transition font-semibold">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z">
+                                        </path>
+                                    </svg>
+                                    <span>Share</span>
+                                </button>
                             </div>
 
                             <div class="flex items-center gap-2">
@@ -386,6 +409,8 @@
         <x-community.rightbar :user="$user" :trending-topics="$trendingTopics" />
 
     </main>
+
+    <x-community.share-modal />
 
 </body>
 </html>

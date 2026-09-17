@@ -77,6 +77,24 @@
                 </svg>
                 <span>Saved Posts</span>
             </a>
+
+            @php
+                $hasActiveTest = \App\Models\Test::where('status', 'published')->get()->first(function($t) { return $t->isOpen(); });
+            @endphp
+            <a href="{{ route('tests.student.index') }}"
+                class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition {{ request()->is('*tests/student*') ? 'bg-[#0c1b33] text-white shadow-xs' : 'text-slate-700 hover:bg-slate-100/70' }} group">
+                <div class="flex items-center gap-2.5">
+                    <svg class="w-4 h-4 {{ request()->is('*tests/student*') ? 'text-amber-400' : 'text-slate-400 group-hover:text-amber-500' }}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Online Tests</span>
+                </div>
+                @if($hasActiveTest)
+                    <span class="inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> Live
+                    </span>
+                @endif
+            </a>
         @endauth
     </div>
 

@@ -46,6 +46,20 @@ Route::prefix('community')->group(function () {
             ->name('profile.destroy');
     });
 
+    // Student Test-Taking
+
+    Route::middleware('auth')->name('tests.student.')->prefix('tests')->group(function () {
+        Route::get('/student', [\App\Http\Controllers\StudentTestController::class, 'index'])->name('index');
+        Route::get('/student/{test}/show', [\App\Http\Controllers\StudentTestController::class, 'show'])->name('show');
+        Route::post('/student/{test}/start', [\App\Http\Controllers\StudentTestController::class, 'start'])->name('start');
+        Route::get('/student/{test}/take/{attempt}', [\App\Http\Controllers\StudentTestController::class, 'take'])->name('take');
+        Route::post('/student/{test}/submit/{attempt}', [\App\Http\Controllers\StudentTestController::class, 'submit'])->name('submit');
+        Route::get('/student/{test}/result/{attempt}', [\App\Http\Controllers\StudentTestController::class, 'result'])->name('result');
+        Route::post('/student/{test}/answer/{attempt}', [\App\Http\Controllers\StudentTestController::class, 'saveAnswer'])->name('answer.save');
+        Route::post('/student/{test}/clear-answer/{attempt}', [\App\Http\Controllers\StudentTestController::class, 'clearAnswer'])->name('answer.clear');
+        Route::post('/student/{test}/mark-review/{attempt}', [\App\Http\Controllers\StudentTestController::class, 'toggleMarkForReview'])->name('answer.mark-review');
+    });
+
     Route::get('/', [PostController::class, 'index'])
         ->name('community.index');
 
@@ -59,6 +73,13 @@ Route::prefix('community')->group(function () {
     )
         ->whereNumber('post')
         ->name('community.posts.comments');
+
+    Route::post(
+        '/posts/{post}/share',
+        [CommunityController::class, 'share']
+    )
+        ->whereNumber('post')
+        ->name('community.posts.share');
 
     Route::get(
         '/profile/{username}',
@@ -124,10 +145,6 @@ Route::prefix('community')->group(function () {
             Route::post('/posts/{post}/like', [CommunityController::class, 'like'])
                 ->whereNumber('post')
                 ->name('posts.like');
-
-            Route::post('/posts/{post}/share', [CommunityController::class, 'share'])
-                ->whereNumber('post')
-                ->name('posts.share');
 
             Route::post('/posts/{post}/comments', [CommentController::class, 'store'])
                 ->whereNumber('post')
@@ -349,13 +366,32 @@ Route::prefix('community')->group(function () {
             Route::put('/guidelines/{guideline}', [AdminGuidelineController::class, 'update'])->name('guidelines.update');
             Route::patch('/guidelines/{guideline}/status', [AdminGuidelineController::class, 'updateStatus'])->name('guidelines.updateStatus');
             Route::delete('/guidelines/{guideline}', [AdminGuidelineController::class, 'destroy'])->name('guidelines.destroy');
-
             // Banners
+            
             Route::get('/banners', [AdminBannerController::class, 'index'])->name('banners.index');
             Route::post('/banners', [AdminBannerController::class, 'store'])->name('banners.store');
             Route::put('/banners/{banner}', [AdminBannerController::class, 'update'])->name('banners.update');
             Route::patch('/banners/{banner}/status', [AdminBannerController::class, 'updateStatus'])->name('banners.updateStatus');
             Route::delete('/banners/{banner}', [AdminBannerController::class, 'destroy'])->name('banners.destroy');
+
+            // Test Levels
+            Route::patch('/test-levels/{level}/status', [\App\Http\Controllers\Admin\AdminTestLevelController::class, 'updateStatus'])->name('test-levels.updateStatus');
+            Route::resource('test-levels', \App\Http\Controllers\Admin\AdminTestLevelController::class);
+
+            // Questions
+            Route::patch('/questions/{question}/status', [\App\Http\Controllers\Admin\AdminQuestionController::class, 'updateStatus'])->name('questions.updateStatus');
+            Route::resource('questions', \App\Http\Controllers\Admin\AdminQuestionController::class);
+
+            // Tests
+
+            // Test Attempts (Analytics) - before resource to avoid conflict
+
+            Route::prefix('tests')->name('tests.')->group(function () {
+                Route::get('/attempts', [\App\Http\Controllers\Admin\AdminTestAttemptController::class, 'index'])->name('attempts.index');
+                Route::get('/attempts/{attempt}', [\App\Http\Controllers\Admin\AdminTestAttemptController::class, 'show'])->name('attempts.show');
+            });
+
+            Route::resource('tests', \App\Http\Controllers\Admin\AdminTestController::class);
         });
 
     Route::middleware('auth')->group(function () {

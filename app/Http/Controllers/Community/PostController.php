@@ -13,6 +13,8 @@ use App\Models\Post;
 use App\Models\PostMedia;
 use App\Models\Share;
 use App\Models\Tag;
+use App\Models\Test;
+use App\Models\TestAttempt;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -275,6 +277,20 @@ public function index(Request $request)
 
     $activeBanner = Banner::active()->latest()->first();
 
+    /*
+    |--------------------------------------------------------------------------
+    | Live Test Check (For Navigation / Notification)
+    |--------------------------------------------------------------------------
+    */
+    $liveTest = null;
+    if ($user) {
+        $liveTest = Test::where('status', 'published')
+            ->get()
+            ->first(function ($t) use ($user) {
+                return $t->isAvailableFor($user);
+            });
+    }
+
     return view('community.index', compact(
         'posts',
         'categories',
@@ -288,7 +304,8 @@ public function index(Request $request)
         'topContributors',
         'profileStats',
         'user',
-        'activeBanner'
+        'activeBanner',
+        'liveTest'
     ));
 }
 

@@ -8,6 +8,8 @@ use App\Models\Country;
 use App\Models\Profile;
 use App\Models\Like;
 use App\Models\Share;
+use App\Models\Test;
+use App\Models\TestAttempt;
 use App\Models\Comment;
 use App\Models\Post;
 use App\Models\User;
@@ -167,6 +169,36 @@ class UserProfileController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | Test Results (own profile only)
+        |--------------------------------------------------------------------------
+        */
+
+        $testStats = null;
+        $testAttempts = null;
+
+        $isOwnProfile = auth()->check() && (int) auth()->id() === (int) $user->id;
+
+        if ($isOwnProfile) {
+            $testAttempts = TestAttempt::where('user_id', $user->id)
+                ->where('status', 'completed')
+                ->with(['test.testLevel'])
+                ->latest('submitted_at')
+                ->paginate(10, ['*'], 'tests_page');
+
+            $completedQuery = TestAttempt::where('user_id', $user->id)
+                ->where('status', 'completed');
+
+            $testStats = [
+                'total' => $completedQuery->count(),
+                'passed' => (clone $completedQuery)->where('result', 'pass')->count(),
+                'failed' => (clone $completedQuery)->where('result', 'fail')->count(),
+                'avg_score' => round((clone $completedQuery)->avg('percentage') ?? 0, 1),
+                'best_score' => (clone $completedQuery)->max('percentage') ?? 0,
+            ];
+        }
+
+        /*
+        |--------------------------------------------------------------------------
         | Public Profile View
         |--------------------------------------------------------------------------
         */
@@ -180,7 +212,9 @@ class UserProfileController extends Controller
                 'comments',
                 'activities',
                 'profileStats',
-                'topContributors'
+                'topContributors',
+                'testStats',
+                'testAttempts'
             )
         );
     }

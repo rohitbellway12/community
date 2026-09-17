@@ -10,6 +10,7 @@
     'categories' => collect(),
     'tags' => collect(),
     'activeBanner' => null,
+    'liveTest' => null,
 ])
 
 <!DOCTYPE html>
@@ -146,6 +147,30 @@
                     </svg>
                     Saved Posts
                 </a>
+
+                @auth
+                    @php
+                        $hasActiveTestMobile = \App\Models\Test::where('status', 'published')
+                            ->get()
+                            ->first(function ($t) { return $t->isAvailableFor(auth()->user()); });
+                    @endphp
+                    <a href="{{ route('tests.student.index') }}"
+                        class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition {{ request()->is('*tests/student*') ? 'bg-[#0c1b33] text-white shadow-xs' : 'text-slate-700 hover:bg-slate-100/70' }} group">
+                        <div class="flex items-center gap-2.5">
+                            <svg class="w-4 h-4 {{ request()->is('*tests/student*') ? 'text-amber-400' : 'text-slate-400 group-hover:text-amber-500' }}" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span>Online Tests</span>
+                        </div>
+                        @if($hasActiveTestMobile)
+                            <span class="inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> Live
+                            </span>
+                        @endif
+                    </a>
+                @endauth
 
                 <div class="border-t border-slate-100 my-2"></div>
 
@@ -286,7 +311,9 @@
 
             </div>
         </div>
-    @endif
+     @endif
+
+
 
     {{-- MAIN CONTENT GRID --}}
     <main
@@ -296,6 +323,59 @@
 
         {{-- CENTER FEED --}}
         <section id="community-posts-feed" class="space-y-5 min-w-0">
+
+            {{-- MOBILE ONLINE TESTS FEATURE CARD --}}
+            @php
+                $activeOnlineTest = $liveTest ?? (\App\Models\Test::where('status', 'published')->get()->first(function ($t) {
+                    return auth()->check() ? $t->isAvailableFor(auth()->user()) : $t->isOpen();
+                }));
+            @endphp
+            <div class="lg:hidden">
+                <a href="{{ auth()->check() ? route('tests.student.index') : route('login') }}"
+                    class="flex items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md transition active:scale-[0.99] group">
+                    
+                    <div class="flex items-center gap-3.5 min-w-0">
+                        {{-- Test Icon --}}
+                        <div class="w-11 h-11 rounded-xl bg-amber-50 border border-amber-200/80 flex items-center justify-center text-amber-600 shrink-0 shadow-xs">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+
+                        {{-- Text info --}}
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="font-extrabold text-sm sm:text-base tracking-tight text-slate-900">Online Tests</span>
+                                @if($activeOnlineTest)
+                                    <span class="inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> Live
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                                        Portal
+                                    </span>
+                                @endif
+                            </div>
+                            <p class="text-xs text-slate-500 truncate mt-0.5">
+                                @if($activeOnlineTest)
+                                    <span class="font-semibold text-slate-700">{{ $activeOnlineTest->title }}</span> &bull; <span class="text-emerald-600 font-medium">Active Now</span>
+                                @else
+                                    Practice tests, mock exams & assessments
+                                @endif
+                            </p>
+                        </div>
+                    </div>
+
+                    {{-- Action Button --}}
+                    <div class="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs shadow-xs transition transform group-hover:scale-105">
+                        <span>{{ $activeOnlineTest ? 'Take Test' : 'View Tests' }}</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                    </div>
+                </a>
+            </div>
 
             <div class="bg-white p-5 lg:p-6 rounded-2xl shadow-sm border border-slate-200/70">
 
@@ -497,9 +577,13 @@
                     $shareText = trim(
                         $post->title . ' — ' . \Illuminate\Support\Str::limit(strip_tags($post->content ?? ''), 180),
                     );
-                    $shareImageUrl = $post->media?->first()
-                        ? asset('storage/' . $post->media->first()->file_path)
+                    $firstMedia = $post->media?->first();
+                    $shareMediaUrl = $firstMedia
+                        ? asset('storage/' . $firstMedia->file_path)
                         : null;
+                    $shareMediaType = ($firstMedia && (($firstMedia->type ?? '') === 'video' || str_starts_with($firstMedia->mime_type ?? '', 'video') || preg_match('/\.(mp4|mov|avi|webm|mkv|m4v|qt|3gp|ogg|wmv)$/i', $firstMedia->file_path)))
+                        ? 'video'
+                        : 'image';
                 @endphp
 
                 <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200/70 space-y-4 min-w-0 overflow-hidden"
@@ -875,67 +959,23 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                                 .catch(error => console.error('Save error:', error));
                         },
                     
-                        async sharePost() {
-                            const shareUrl = @js($shareUrl);
-                            const shareTitle = @js($post->title);
-                            const shareText = @js($shareText);
-                            const imageUrl = @js($shareImageUrl);
-                    
-                            try {
-                                if (navigator.share) {
-                                    const shareData = {
-                                        title: shareTitle,
-                                        text: shareText,
-                                        url: shareUrl
-                                    };
-                    
-                                    if (
-                                        imageUrl &&
-                                        navigator.canShare &&
-                                        typeof File !== 'undefined'
-                                    ) {
-                                        try {
-                                            const response = await fetch(imageUrl);
-                    
-                                            if (response.ok) {
-                                                const blob = await response.blob();
-                                                const imageFile = new File(
-                                                    [blob],
-                                                    'reiac-post.jpg', { type: blob.type || 'image/jpeg' }
-                                                );
-                    
-                                                if (navigator.canShare({ files: [imageFile] })) {
-                                                    shareData.files = [imageFile];
-                                                }
-                                            }
-                                        } catch (imageError) {
-                                            console.warn('Image share unavailable:', imageError);
-                                        }
-                                    }
-                    
-                                    await navigator.share(shareData);
-                                    return;
+                        sharePost() {
+                            window.dispatchEvent(new CustomEvent('open-share-modal', {
+                                detail: {
+                                    id: {{ (int) $post->id }},
+                                    title: @js($post->title),
+                                    url: @js($shareUrl),
+                                    text: @js($shareText),
+                                    mediaUrl: @js($shareMediaUrl),
+                                    mediaType: @js($shareMediaType),
+                                    image: @js($shareMediaUrl),
+                                    authorName: @js($author?->name ?? 'User'),
+                                    authorUsername: @js($authorUsername ? '@' . $authorUsername : ''),
+                                    authorAvatar: @js($authorAvatar),
+                                    category: @js($post->category?->name ?? ''),
+                                    shareEndpoint: @js(route('community.posts.share', $post))
                                 }
-                    
-                                if (navigator.clipboard?.writeText) {
-                                    await navigator.clipboard.writeText(shareUrl);
-                                    this.copied = true;
-                    
-                                    setTimeout(() => {
-                                        this.copied = false;
-                                    }, 2000);
-                    
-                                    return;
-                                }
-                    
-                                window.prompt('Copy this link:', shareUrl);
-                            } catch (error) {
-                                if (error?.name === 'AbortError') {
-                                    return;
-                                }
-                    
-                                console.error('Share failed:', error);
-                            }
+                            }));
                         },
                     
                         showCommentToast(message, type = 'success') {
@@ -1610,21 +1650,14 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                                 <span x-text="commentsCount"></span>
                             </button>
 
-                            <button type="button" @click="sharePost()" class="flex items-center gap-1.5 transition"
-                                :class="copied ? 'text-emerald-600' : 'hover:text-emerald-500'">
-                                <svg x-show="!copied" class="w-4 h-4" fill="none" stroke="currentColor"
+                            <button type="button" @click="sharePost()" class="flex items-center gap-1.5 transition text-slate-500 hover:text-emerald-600 font-medium">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
                                     stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round"
                                         d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z">
                                     </path>
                                 </svg>
-
-                                <svg x-show="copied" class="w-4 h-4" fill="none" stroke="currentColor"
-                                    stroke-width="2.5" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
-                                </svg>
-
-                                <span x-text="copied ? 'Copied!' : 'Share'"></span>
+                                <span>Share</span>
                             </button>
 
                         </div>
@@ -2462,6 +2495,7 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
         })();
     </script>
 
+    <x-community.share-modal />
 
 </body>
 

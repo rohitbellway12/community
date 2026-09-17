@@ -70,9 +70,11 @@ class NotificationController extends Controller
                         $title = 'New Comment';
                     } elseif (str_contains($type, 'like') || str_contains($dataType, 'like')) {
                         $title = 'Post Liked';
-                    } elseif (str_contains($type, 'follow') || str_contains($dataType, 'follow')) {
-                        $title = 'New Follower';
-                    } else {
+                } elseif (str_contains($type, 'follow') || str_contains($dataType, 'follow')) {
+                    $title = 'New Follower';
+                } elseif ($dataType === 'new_test') {
+                    $title = 'New Test Available';
+                } else {
                         $title = 'Notification';
                     }
                 }

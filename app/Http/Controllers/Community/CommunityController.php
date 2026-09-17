@@ -514,10 +514,12 @@ class CommunityController extends Controller
 
         if ($request->user() === null) {
             return response()->json([
-                'success' => false,
-                'message' => 'Unauthenticated.',
-                'redirect' => route('login'),
-            ], 401);
+                'success' => true,
+                'message' => 'Post shared.',
+                'shared' => false,
+                'shares_count' => $post->shares()->count(),
+                'url' => route('community.posts.show', $post),
+            ]);
         }
 
         $user = $request->user();

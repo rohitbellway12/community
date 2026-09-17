@@ -18,8 +18,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title }}</title>
+    <meta name="description" content="{{ \Illuminate\Support\Str::limit(strip_tags($post->content ?? ''), 200) }}">
+
+    @php
+        $firstMedia = $post->media?->first();
+        $shareMediaUrl = $firstMedia ? asset('storage/' . $firstMedia->file_path) : null;
+        $shareMediaType = ($firstMedia && (($firstMedia->type ?? '') === 'video' || str_starts_with($firstMedia->mime_type ?? '', 'video') || preg_match('/\.(mp4|mov|avi|webm|mkv|m4v|qt|3gp|ogg|wmv)$/i', $firstMedia->file_path))) ? 'video' : 'image';
+        $ogImage = ($shareMediaType === 'image') ? $shareMediaUrl : null;
+    @endphp
+
+    @if($ogImage)
+        <meta property="og:image" content="{{ $ogImage }}">
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
+    @endif
+
+    <meta property="og:title" content="{{ $post->title ?? 'Post' }}">
+    <meta property="og:description" content="{{ \Illuminate\Support\Str::limit(strip_tags($post->content ?? ''), 200) }}">
+    <meta property="og:url" content="{{ route('community.posts.show', $post) }}">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="REIAC Community">
+    <meta property="article:published_time" content="{{ $post->created_at?->toIso8601String() }}">
+    <meta property="article:author" content="{{ $post->user?->name ?? 'Anonymous' }}">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $post->title ?? 'Post' }}">
+    <meta name="twitter:description" content="{{ \Illuminate\Support\Str::limit(strip_tags($post->content ?? ''), 200) }}">
+    @if($ogImage)
+        <meta name="twitter:image" content="{{ $ogImage }}">
+    @endif
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-<style>
+    <style>
 [x-cloak] { display: none !important; }
 
 .community-post-card {
@@ -440,27 +470,23 @@
                         .catch(error => console.error(error));
                     },
 
-                    async sharePost() {
-                        const url = @js(route('community.posts.show', $post));
-
-                        try {
-                            if (navigator.share) {
-                                await navigator.share({
-                                    title: @js($post->title),
-                                    text: @js(\Illuminate\Support\Str::limit(strip_tags($post->content ?? $post->body ?? ''), 180)),
-                                    url
-                                });
-                                return;
+                    sharePost() {
+                        window.dispatchEvent(new CustomEvent('open-share-modal', {
+                            detail: {
+                                id: {{ (int) $post->id }},
+                                title: @js($post->title),
+                                url: @js(route('community.posts.show', $post)),
+                                text: @js(\Illuminate\Support\Str::limit(strip_tags($post->content ?? $post->body ?? ''), 200)),
+                                mediaUrl: @js($shareMediaUrl),
+                                mediaType: @js($shareMediaType),
+                                image: @js($shareMediaUrl),
+                                authorName: @js($post->user?->name ?? 'User'),
+                                authorUsername: @js($post->user?->profile?->username ? '@' . $post->user->profile->username : ''),
+                                authorAvatar: @js($post->user?->profile?->avatar ? asset('storage/' . $post->user->profile->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode($post->user?->name ?? 'User') . '&background=0c1b33&color=fff'),
+                                category: @js($post->category?->name ?? ''),
+                                shareEndpoint: @js(route('community.posts.share', $post))
                             }
-
-                            await navigator.clipboard.writeText(url);
-                            this.copied = true;
-                            setTimeout(() => this.copied = false, 2000);
-                        } catch (error) {
-                            if (error?.name !== 'AbortError') {
-                                console.error(error);
-                            }
-                        }
+                        }));
                     },
 
                     showToast(message, type = 'success') {
@@ -1022,9 +1048,13 @@
 
                         <button type="button"
                             @click="sharePost()"
-                            class="flex items-center gap-1.5"
-                            :class="copied ? 'text-emerald-600' : 'hover:text-emerald-500'">
-                            <span x-text="copied ? 'Copied!' : 'Share'"></span>
+                            class="flex items-center gap-1.5 hover:text-emerald-500 transition text-slate-500 font-medium">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z">
+                                </path>
+                            </svg>
+                            <span>Share</span>
                         </button>
                     </div>
 
@@ -1652,6 +1682,8 @@
         />
 
     </main>
+
+    <x-community.share-modal />
 
 </body>
 </html>

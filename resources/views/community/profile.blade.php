@@ -136,9 +136,20 @@
                                 }).then(res => res.json()).then(data => { if(data.success) { this.saved = data.saved; } });
                             },
                             sharePost() {
-                                navigator.clipboard.writeText('{{ route('community.posts.show', $post) }}').then(() => {
-                                    this.copied = true; setTimeout(() => this.copied = false, 2000);
-                                });
+                                window.dispatchEvent(new CustomEvent('open-share-modal', {
+                                    detail: {
+                                        id: {{ (int) $post->id }},
+                                        title: @js($post->title),
+                                        url: @js(route('community.posts.show', $post)),
+                                        text: @js(\Illuminate\Support\Str::limit(strip_tags($post->content ?? ''), 200)),
+                                        image: @js($post->media?->first() ? asset('storage/' . $post->media->first()->file_path) : null),
+                                        authorName: @js($post->user?->name ?? 'User'),
+                                        authorUsername: @js($post->user?->profile?->username ? '@' . $post->user->profile->username : ''),
+                                        authorAvatar: @js($post->user?->profile?->avatar ? asset('storage/' . $post->user->profile->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode($post->user?->name ?? 'User') . '&background=0c1b33&color=fff'),
+                                        category: @js($post->category?->name ?? ''),
+                                        shareEndpoint: @js(route('community.posts.share', $post))
+                                    }
+                                }));
                             }
                          }">
                         
@@ -177,10 +188,9 @@
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg> 
                                         <span x-text="commentsCount"></span>
                                     </a>
-                                    <button @click="sharePost()" class="flex items-center gap-1.5 transition" :class="copied ? 'text-emerald-600' : 'hover:text-emerald-500'">
-                                        <svg x-show="!copied" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg> 
-                                        <svg x-show="copied" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
-                                        <span class="hidden sm:inline" x-text="copied ? 'Copied' : 'Share'"></span>
+                                    <button @click="sharePost()" class="flex items-center gap-1.5 transition text-slate-500 hover:text-emerald-500 font-medium">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg> 
+                                        <span class="hidden sm:inline">Share</span>
                                     </button>
                                     <button @click="toggleSave()" class="flex items-center gap-1.5 transition" :class="saved ? 'text-amber-500' : 'hover:text-amber-500'">
                                         <svg class="w-4 h-4" :fill="saved ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg> 
@@ -217,4 +227,6 @@
             
         </div>
     </div>
+
+    <x-community.share-modal />
 </x-community.shell>

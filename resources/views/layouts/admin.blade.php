@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@yield('title', 'Admin Dashboard') - REIAC Community</title>
 
@@ -74,6 +75,18 @@
 
     <div class="min-h-full flex flex-col lg:flex-row">
 
+        @php
+            $isAdmin = auth()->check() && in_array(auth()->user()->role?->value ?? auth()->user()->role, ['admin', 'super_admin'], true);
+
+            $adminUser = auth()->user();
+            $adminProfile = $adminUser?->profile;
+            $adminAvatar = $adminProfile?->avatar
+                ? asset('storage/' . $adminProfile->avatar)
+                : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+            $adminRole = $adminProfile?->role ?? $adminUser?->role?->value ?? 'Administrator';
+        @endphp
+
+        @if($isAdmin)
         {{-- ============================================================
              MOBILE BACKDROP
         ============================================================= --}}
@@ -575,6 +588,128 @@
 
 
                 {{-- ====================================================
+                     LANGUAGE TESTS (STEP-BY-STEP WORKFLOW)
+                ===================================================== --}}
+                @php
+                    $isTestMenuOpen = request()->is('*admin/test-levels*') || request()->is('*admin/questions*') || request()->is('*admin/tests*');
+                    $sidebarLevelsCount = \App\Models\TestLevel::count();
+                    $sidebarQuestionsCount = \App\Models\Question::count();
+                    $sidebarTestsCount = \App\Models\Test::count();
+                    $sidebarAttemptsCount = \App\Models\TestAttempt::count();
+                @endphp
+                <div x-data="{ open: {{ $isTestMenuOpen ? 'true' : 'true' }} }">
+
+                    <button
+                        @click="open = !open"
+                        type="button"
+                        class="w-full flex items-center justify-between px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors
+                               {{ $isTestMenuOpen ? 'text-reiac-gold' : 'text-slate-400 hover:text-white' }}"
+                    >
+                        <span class="flex items-center space-x-2">
+                            <svg class="w-3.5 h-3.5 {{ $isTestMenuOpen ? 'text-reiac-gold' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span>Language Tests</span>
+                        </span>
+
+                        <svg
+                            class="w-3.5 h-3.5 transform transition-transform duration-200"
+                            :class="open ? 'rotate-90' : ''"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M9 5l7 7-7 7"
+                            />
+                        </svg>
+
+                    </button>
+
+
+                    <div
+                        x-show="open"
+                        x-collapse
+                        class="mt-2 space-y-1 pl-2"
+                    >
+
+                        {{-- STEP 1: Test Levels --}}
+                        <a
+                            href="{{ route('admin.test-levels.index') }}"
+                            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors group
+                                   {{ request()->is('*admin/test-levels*')
+                                        ? 'bg-reiac-slate text-reiac-gold font-bold shadow-xs'
+                                        : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
+                        >
+                            <span class="flex items-center space-x-2.5">
+                                <span class="w-5 h-5 rounded-md text-[10px] font-black flex items-center justify-center {{ request()->is('*admin/test-levels*') ? 'bg-reiac-gold text-reiac-navy' : 'bg-slate-700 text-slate-300' }}">1</span>
+                                <span>Test Levels</span>
+                            </span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-slate-300">
+                                {{ $sidebarLevelsCount }}
+                            </span>
+                        </a>
+
+                        {{-- STEP 2: Questions --}}
+                        <a
+                            href="{{ route('admin.questions.index') }}"
+                            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors group
+                                   {{ request()->is('*admin/questions*')
+                                        ? 'bg-reiac-slate text-reiac-gold font-bold shadow-xs'
+                                        : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
+                        >
+                            <span class="flex items-center space-x-2.5">
+                                <span class="w-5 h-5 rounded-md text-[10px] font-black flex items-center justify-center {{ request()->is('*admin/questions*') ? 'bg-reiac-gold text-reiac-navy' : 'bg-slate-700 text-slate-300' }}">2</span>
+                                <span>Question Bank</span>
+                            </span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-slate-300">
+                                {{ $sidebarQuestionsCount }}
+                            </span>
+                        </a>
+
+                        {{-- STEP 3: Tests --}}
+                        <a
+                            href="{{ route('admin.tests.index') }}"
+                            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors group
+                                   {{ (request()->is('*admin/tests*') && !request()->is('*admin/tests/attempts*'))
+                                        ? 'bg-reiac-slate text-reiac-gold font-bold shadow-xs'
+                                        : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
+                        >
+                            <span class="flex items-center space-x-2.5">
+                                <span class="w-5 h-5 rounded-md text-[10px] font-black flex items-center justify-center {{ (request()->is('*admin/tests*') && !request()->is('*admin/tests/attempts*')) ? 'bg-reiac-gold text-reiac-navy' : 'bg-slate-700 text-slate-300' }}">3</span>
+                                <span>Create Tests</span>
+                            </span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-slate-300">
+                                {{ $sidebarTestsCount }}
+                            </span>
+                        </a>
+
+                        {{-- STEP 4: Submissions --}}
+                        <a
+                            href="{{ route('admin.tests.attempts.index') }}"
+                            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors group
+                                   {{ request()->is('*admin/tests/attempts*')
+                                        ? 'bg-reiac-slate text-reiac-gold font-bold shadow-xs'
+                                        : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
+                        >
+                            <span class="flex items-center space-x-2.5">
+                                <span class="w-5 h-5 rounded-md text-[10px] font-black flex items-center justify-center {{ request()->is('*admin/tests/attempts*') ? 'bg-reiac-gold text-reiac-navy' : 'bg-slate-700 text-slate-300' }}">4</span>
+                                <span>Submissions & Results</span>
+                            </span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-slate-300">
+                                {{ $sidebarAttemptsCount }}
+                            </span>
+                        </a>
+
+                    </div>
+
+                </div>
+
+
+                {{-- ====================================================
                      SETTINGS
                 ===================================================== --}}
                 <div>
@@ -639,18 +774,6 @@
 
                 <div class="flex items-center space-x-3 min-w-0">
 
-                    @php
-    $adminUser = auth()->user();
-    $adminProfile = $adminUser?->profile;
-    
-    // Check if avatar exists in profile, otherwise use fallback placeholder
-    $adminAvatar = $adminProfile?->avatar 
-        ? asset('storage/' . $adminProfile->avatar) 
-        : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
-        
-    $adminRole = $adminProfile?->role ?? $adminUser->role->value ?? 'Administrator';
-@endphp
-
                     <img
                         src="{{ $adminAvatar }}"
                         class="w-9 h-9 rounded-full object-cover
@@ -679,14 +802,14 @@
             </div>
 
         </aside>
-
+        @endif
 
         {{-- ============================================================
              MAIN CONTENT WRAPPER
         ============================================================= --}}
         <div
-            class="flex-1 flex flex-col min-w-0
-                   overflow-hidden lg:pl-64"
+            class="flex-1 flex flex-col min-w-0 overflow-hidden
+                   @if($isAdmin) lg:pl-64 @endif"
         >
 
             {{-- ========================================================
@@ -701,6 +824,7 @@
                 {{-- Left --}}
                 <div class="flex items-center space-x-4">
 
+                    @if($isAdmin)
                     {{-- Mobile Menu --}}
                     <button
                         @click="mobileSidebarOpen = true"
@@ -723,7 +847,7 @@
                             />
                         </svg>
                     </button>
-
+                    @endif
 
                     {{-- Breadcrumb --}}
                     <nav
@@ -731,7 +855,7 @@
                                space-x-2 text-xs font-medium
                                text-slate-500"
                     >
-                        <span>REIAC Admin</span>
+                        <span>@if($isAdmin) REIAC Admin @else REIAC @endif</span>
 
                         <span>/</span>
 
