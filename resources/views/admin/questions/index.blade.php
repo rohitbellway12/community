@@ -171,11 +171,12 @@
                                     Edit
                                 </a>
                                 <form action="{{ route('admin.questions.destroy', $question) }}"
-                                      method="POST" class="inline"
-                                      onsubmit="return confirm('Delete this question?');">
+                                      method="POST" class="inline">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit"
+                                    <button type="button"
+                                            data-item-name="{{ $question->question_text }}"
+                                            onclick="confirmDelete(this.form, this.dataset.itemName, 'question')"
                                             class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs transition border border-rose-200">
                                         Delete
                                     </button>

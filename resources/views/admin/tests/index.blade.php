@@ -147,11 +147,12 @@
                                     Edit
                                 </a>
                                 <form action="{{ route('admin.tests.destroy', $test) }}"
-                                      method="POST" class="inline"
-                                      onsubmit="return confirm('Delete this test?');">
+                                      method="POST" class="inline">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit"
+                                    <button type="button"
+                                            data-item-name="{{ $test->title }}"
+                                            onclick="confirmDelete(this.form, this.dataset.itemName, 'test')"
                                             class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs transition border border-rose-200">
                                         Delete
                                     </button>

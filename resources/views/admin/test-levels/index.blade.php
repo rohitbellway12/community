@@ -129,11 +129,12 @@
                                 </button>
                                 <form action="{{ route('admin.test-levels.destroy', $level) }}"
                                       method="POST"
-                                      class="inline"
-                                      onsubmit="return confirm('Delete test level {{ $level->name }}?');">
+                                      class="inline">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit"
+                                    <button type="button"
+                                            data-item-name="{{ $level->name }}"
+                                            onclick="confirmDelete(this.form, this.dataset.itemName, 'test level')"
                                             class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs transition border border-rose-200">
                                         Delete
                                     </button>

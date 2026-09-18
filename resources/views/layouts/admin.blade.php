@@ -1172,6 +1172,32 @@
 
     </div>
 
+    <script>
+        function confirmDelete(form, itemName, itemType) {
+            if (!form) return;
+
+            Swal.fire({
+                title: `Delete ${itemType}?`,
+                text: `Are you sure you want to delete "${itemName}"? This action cannot be undone.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Delete',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#E11D48',
+                cancelButtonColor: '#64748B',
+                reverseButtons: true,
+                customClass: {
+                    popup: 'rounded-3xl p-6 shadow-2xl border border-slate-100',
+                    confirmButton: 'rounded-xl font-bold px-5 py-2.5 shadow-xs',
+                    cancelButton: 'rounded-xl font-bold px-5 py-2.5'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        }
+    </script>
     @stack('scripts')
 </body>
 </html>
