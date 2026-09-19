@@ -21,6 +21,8 @@ class DatabaseSeeder extends Seeder
             VisaServiceItemSeeder::class,
             AdminUserSeeder::class,
             AdminProfileSeeder::class,
+            NotificationSettingSeeder::class,
+            NotificationTemplateSeeder::class,
         ]);
 
     }

@@ -24,6 +24,7 @@
     </style>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="min-h-screen m-0 w-full max-w-none overflow-x-hidden bg-slate-100">
 @php
@@ -345,6 +346,25 @@
                                     >
                                         Edit Profile
                                     </a>
+
+                                    <button
+                                        type="button"
+                                        onclick="confirmAccountDelete()"
+                                        class="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition shadow-sm inline-flex items-center justify-center cursor-pointer"
+                                    >
+                                        Delete Account
+                                    </button>
+
+                                    <form
+                                        id="delete-account-form"
+                                        action="{{ route('profile.destroy') }}"
+                                        method="POST"
+                                        style="display: none;"
+                                    >
+                                        @csrf
+                                        @method('DELETE')
+                                        <input type="hidden" name="password" id="delete-password">
+                                    </form>
                                 @else
                                     @php
                                         $isFollowingThisUser = auth()->check()
@@ -2678,5 +2698,38 @@
     >
     <x-community.share-modal />
 </div>
+
+    {{-- DELETE ACCOUNT SWEETALERT --}}
+    <script>
+        function confirmAccountDelete() {
+            Swal.fire({
+                title: 'Delete Account?',
+                html: 'Enter your password to confirm account deletion. This action cannot be undone.',
+                icon: 'warning',
+                input: 'password',
+                inputLabel: 'Current Password',
+                inputPlaceholder: 'Type your password',
+                inputAttributes: { autocomplete: 'off' },
+                showCancelButton: true,
+                confirmButtonText: 'Delete My Account',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#E11D48',
+                cancelButtonColor: '#64748b',
+                focusConfirm: false,
+                preConfirm: (password) => {
+                    if (!password) {
+                        Swal.showValidationMessage('Password is required');
+                        return false;
+                    }
+                    return password;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('delete-password').value = result.value;
+                    document.getElementById('delete-account-form').submit();
+                }
+            });
+        }
+    </script>
 </body>
 </html>

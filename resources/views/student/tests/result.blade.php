@@ -47,6 +47,7 @@
             $passingPercentage = round(($test->passing_marks / max(1, $test->total_marks)) * 100);
             $accuracy = $attempt->answered_count > 0 ? round(($attempt->correct_count / $attempt->answered_count) * 100, 1) : 0;
             $scoreProgress = min(100, max(0, round(($attempt->score_obtained / max(1, $test->total_marks)) * 100)));
+            $matchedSlab = \App\Models\ResultSlab::getSlabForScore((float)$attempt->score_obtained, $attempt->test_id);
         @endphp
 
         <div class="bg-[#0b1329] text-white p-5 sm:p-8 relative overflow-hidden">
@@ -74,9 +75,20 @@
                     </p>
                 </div>
 
-                {{-- BIG RESULT SEAL --}}
+                {{-- BIG RESULT SEAL / SLAB --}}
                 <div class="w-full md:w-auto shrink-0 flex items-center justify-start md:justify-end">
-                    @if($isPass)
+                    @if($matchedSlab)
+                        <div class="w-full md:w-auto inline-flex items-center gap-3 sm:gap-3.5 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl bg-amber-400/20 border-2 border-amber-400 text-amber-300 shadow-xl shadow-amber-950/50">
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-400 text-[#0b1329] flex items-center justify-center font-black text-xl sm:text-2xl shrink-0 shadow-md">
+                                ★
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <div class="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest text-amber-300">RESULT GRADE / SLAB</div>
+                                <div class="text-lg sm:text-2xl font-black tracking-wider text-white truncate">{{ $matchedSlab->name }}</div>
+                                <div class="text-[10px] text-amber-200/90 font-medium truncate">Range: {{ (float)$matchedSlab->min_marks }} - {{ (float)$matchedSlab->max_marks }} marks</div>
+                            </div>
+                        </div>
+                    @elseif($isPass)
                         <div class="w-full md:w-auto inline-flex items-center gap-3 sm:gap-3.5 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 shadow-xl shadow-emerald-950/50">
                             <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-black text-xl sm:text-2xl shrink-0 shadow-md">
                                 ✓
@@ -178,6 +190,7 @@
                 <span>{{ $test->total_marks }} marks (Max)</span>
             </div>
         </div>
+
 
         {{-- KEY PERFORMANCE METRICS GRID --}}
         <div class="p-4 sm:p-8 border-b border-slate-200/80">

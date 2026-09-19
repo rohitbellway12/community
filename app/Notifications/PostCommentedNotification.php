@@ -4,12 +4,13 @@ namespace App\Notifications;
 
 use App\Models\Post;
 use App\Models\User;
+use App\Traits\ResolvesNotificationMessages;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
 class PostCommentedNotification extends Notification
 {
-    use Queueable;
+    use Queueable, ResolvesNotificationMessages;
 
     public function __construct(
         public User $user,
@@ -29,9 +30,16 @@ class PostCommentedNotification extends Notification
             ? "{$this->user->name} commented on your post in '{$group->name}'."
             : "{$this->user->name} commented on your post.";
 
+        [$title, $message] = $this->resolveMessage('post_commented', 'New Comment', $message, [
+            'user_name'  => $this->user->name,
+            'post_title' => $this->post->title,
+            'group_name' => $group?->name,
+            'comment'    => $this->comment,
+        ]);
+
         return [
             'type' => 'post_commented',
-            'title' => 'New Comment',
+            'title' => $title,
             'message' => $message,
             'user_id' => $this->user->id,
             'user_name' => $this->user->name,

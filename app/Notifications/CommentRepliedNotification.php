@@ -4,12 +4,13 @@ namespace App\Notifications;
 
 use App\Models\Post;
 use App\Models\User;
+use App\Traits\ResolvesNotificationMessages;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
 class CommentRepliedNotification extends Notification
 {
-    use Queueable;
+    use Queueable, ResolvesNotificationMessages;
 
     public function __construct(
         public User $user,
@@ -33,9 +34,16 @@ class CommentRepliedNotification extends Notification
             ? "{$this->user->name} replied to your comment in '{$group->name}'."
             : "{$this->user->name} replied to your comment.";
 
+        [$title, $message] = $this->resolveMessage('comment_replied', 'New Reply', $message, [
+            'user_name'  => $this->user->name,
+            'post_title' => $postModel?->title,
+            'group_name' => $group?->name,
+            'reply'      => $this->reply,
+        ]);
+
         return [
             'type' => 'comment_replied',
-            'title' => 'New Reply',
+            'title' => $title,
             'message' => $message,
             'user_id' => $this->user->id,
             'user_name' => $this->user->name,

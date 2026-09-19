@@ -28,8 +28,12 @@
         </div>
     </div>
 
+    @php
+        $matchedSlab = \App\Models\ResultSlab::getSlabForScore((float)$attempt->score_obtained, $attempt->test_id);
+    @endphp
+
     {{-- INFO GRID --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
             <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Student</div>
             <div class="text-sm font-bold text-slate-900 mt-1.5">{{ $attempt->user?->name ?? 'Unknown' }}</div>
@@ -56,6 +60,26 @@
                     <span class="text-slate-500">PENDING</span>
                 @endif
             </div>
+        </div>
+        {{-- RESULT SLAB (GRADE) --}}
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
+            <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Result Slab / Grade</div>
+            @if($matchedSlab)
+                <div class="mt-1.5 flex items-center gap-2">
+                    <span class="px-3 py-1 rounded-full text-xs font-extrabold border {{ $matchedSlab->badge_class }}">
+                        {{ $matchedSlab->name }}
+                    </span>
+                </div>
+                <div class="text-[10px] text-slate-500 mt-1.5 font-semibold">
+                    Range: <span class="font-mono text-slate-700">{{ (float)$matchedSlab->min_marks }} - {{ (float)$matchedSlab->max_marks }} pts</span>
+                </div>
+                @if($matchedSlab->description)
+                    <div class="text-[10px] text-slate-400 mt-0.5 truncate">{{ $matchedSlab->description }}</div>
+                @endif
+            @else
+                <div class="text-xs font-semibold text-slate-400 mt-2">No slab assigned</div>
+                <div class="text-[10px] text-slate-400 mt-0.5">Score: {{ (float)$attempt->score_obtained }} pts</div>
+            @endif
         </div>
     </div>
 

@@ -8,8 +8,8 @@
 
     <title>@yield('title', 'Admin Dashboard') - REIAC Community</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
@@ -17,24 +17,6 @@
             display: none !important;
         }
     </style>
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        reiac: {
-                            navy: '#0B132B',
-                            slate: '#1C2541',
-                            gold: '#F7B500',
-                            'gold-hover': '#E0A400',
-                            bg: '#F4F6F9'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
 </head>
 
 <body
@@ -591,9 +573,10 @@
                      LANGUAGE TESTS (STEP-BY-STEP WORKFLOW)
                 ===================================================== --}}
                 @php
-                    $isTestMenuOpen = request()->is('*admin/test-levels*') || request()->is('*admin/questions*') || request()->is('*admin/tests*');
+                    $isTestMenuOpen = request()->is('*admin/test-levels*') || request()->is('*admin/questions*') || request()->is('*admin/result-slabs*') || request()->is('*admin/tests*');
                     $sidebarLevelsCount = \App\Models\TestLevel::count();
                     $sidebarQuestionsCount = \App\Models\Question::count();
+                    $sidebarSlabsCount = \App\Models\ResultSlab::count();
                     $sidebarTestsCount = \App\Models\Test::count();
                     $sidebarAttemptsCount = \App\Models\TestAttempt::count();
                 @endphp
@@ -670,7 +653,24 @@
                             </span>
                         </a>
 
-                        {{-- STEP 3: Tests --}}
+                        {{-- STEP 3: Result Slabs --}}
+                        <a
+                            href="{{ route('admin.result-slabs.index') }}"
+                            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors group
+                                   {{ request()->is('*admin/result-slabs*')
+                                        ? 'bg-reiac-slate text-reiac-gold font-bold shadow-xs'
+                                        : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
+                        >
+                            <span class="flex items-center space-x-2.5">
+                                <span class="w-5 h-5 rounded-md text-[10px] font-black flex items-center justify-center {{ request()->is('*admin/result-slabs*') ? 'bg-reiac-gold text-reiac-navy' : 'bg-slate-700 text-slate-300' }}">3</span>
+                                <span>Result Slabs</span>
+                            </span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-slate-300">
+                                {{ $sidebarSlabsCount }}
+                            </span>
+                        </a>
+
+                        {{-- STEP 4: Tests --}}
                         <a
                             href="{{ route('admin.tests.index') }}"
                             class="flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors group
@@ -679,7 +679,7 @@
                                         : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
                         >
                             <span class="flex items-center space-x-2.5">
-                                <span class="w-5 h-5 rounded-md text-[10px] font-black flex items-center justify-center {{ (request()->is('*admin/tests*') && !request()->is('*admin/tests/attempts*')) ? 'bg-reiac-gold text-reiac-navy' : 'bg-slate-700 text-slate-300' }}">3</span>
+                                <span class="w-5 h-5 rounded-md text-[10px] font-black flex items-center justify-center {{ (request()->is('*admin/tests*') && !request()->is('*admin/tests/attempts*')) ? 'bg-reiac-gold text-reiac-navy' : 'bg-slate-700 text-slate-300' }}">4</span>
                                 <span>Create Tests</span>
                             </span>
                             <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-slate-300">
@@ -687,7 +687,7 @@
                             </span>
                         </a>
 
-                        {{-- STEP 4: Submissions --}}
+                        {{-- STEP 5: Submissions --}}
                         <a
                             href="{{ route('admin.tests.attempts.index') }}"
                             class="flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors group
@@ -696,7 +696,7 @@
                                         : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
                         >
                             <span class="flex items-center space-x-2.5">
-                                <span class="w-5 h-5 rounded-md text-[10px] font-black flex items-center justify-center {{ request()->is('*admin/tests/attempts*') ? 'bg-reiac-gold text-reiac-navy' : 'bg-slate-700 text-slate-300' }}">4</span>
+                                <span class="w-5 h-5 rounded-md text-[10px] font-black flex items-center justify-center {{ request()->is('*admin/tests/attempts*') ? 'bg-reiac-gold text-reiac-navy' : 'bg-slate-700 text-slate-300' }}">5</span>
                                 <span>Submissions & Results</span>
                             </span>
                             <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-slate-300">
@@ -725,38 +725,54 @@
 
                     <div class="mt-2 space-y-1 pl-2">
 
-                        {{-- Countries --}}
-                        <a
-                            href="{{ route('admin.countries.index') }}"
-                            class="flex items-center space-x-3 px-3 py-2
-                                   rounded-lg text-sm
-                                   {{ request()->routeIs('admin.countries*')
-                                        ? 'bg-reiac-slate text-reiac-gold font-semibold'
-                                        : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
-                        >
+                         {{-- Countries --}}
+                         <a
+                             href="{{ route('admin.countries.index') }}"
+                             class="flex items-center space-x-3 px-3 py-2
+                                    rounded-lg text-sm
+                                    {{ request()->routeIs('admin.countries*')
+                                         ? 'bg-reiac-slate text-reiac-gold font-semibold'
+                                         : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
+                         >
 
-                            <svg
-                                class="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2
-                                       2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2.5 2.5 0 012 2
-                                       2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064
-                                       M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
-                            </svg>
+                             <svg
+                                 class="w-4 h-4"
+                                 fill="none"
+                                 stroke="currentColor"
+                                 viewBox="0 0 24 24"
+                             >
+                                 <path
+                                     stroke-linecap="round"
+                                     stroke-linejoin="round"
+                                     stroke-width="2"
+                                     d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2
+                                        2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2.5 2.5 0 012 2
+                                        2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064
+                                        M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                 />
+                             </svg>
 
-                            <span>Countries</span>
+                             <span>Countries</span>
 
-                        </a>
+                         </a>
 
-                    </div>
+                         {{-- Notification Templates (push toggle + message editing) --}}
+                       {{--  <a
+                             href="{{ route('admin.notification-templates.index') }}"
+                             class="flex items-center space-x-3 px-3 py-2
+                                    rounded-lg text-sm
+                                    {{ request()->routeIs('admin.notification-templates*')
+                                         ? 'bg-reiac-slate text-reiac-gold font-semibold'
+                                         : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
+                          >
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M11 17h.01M11 13h.01M11 9h.01M4 7v10a2 2 0 002 2h12a2 2 0 002-2V7" />
+                              </svg>
+                              <span>Notification Templates</span>
+                          </a>
+--}}
+                     </div>
 
                 </div>
 
@@ -1173,12 +1189,17 @@
     </div>
 
     <script>
-        function confirmDelete(form, itemName, itemType) {
+        function confirmDelete(form, itemName, itemType, questionCount = 0, testCount = 0) {
             if (!form) return;
+
+            let message = `Are you sure you want to delete "${itemName}"? This action cannot be undone.`;
+            if (questionCount > 0 || testCount > 0) {
+                message += ` This will also permanently delete ${testCount} test(s) and ${questionCount} question(s).`;
+            }
 
             Swal.fire({
                 title: `Delete ${itemType}?`,
-                text: `Are you sure you want to delete "${itemName}"? This action cannot be undone.`,
+                text: message,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Yes, Delete',

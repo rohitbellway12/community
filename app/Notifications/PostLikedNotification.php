@@ -4,12 +4,13 @@ namespace App\Notifications;
 
 use App\Models\Post;
 use App\Models\User;
+use App\Traits\ResolvesNotificationMessages;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
 class PostLikedNotification extends Notification
 {
-    use Queueable;
+    use Queueable, ResolvesNotificationMessages;
 
     public function __construct(
         public User $user,
@@ -28,9 +29,15 @@ class PostLikedNotification extends Notification
             ? "{$this->user->name} liked your post in '{$group->name}'."
             : "{$this->user->name} liked your post.";
 
+        [$title, $message] = $this->resolveMessage('post_liked', 'Post Liked', $message, [
+            'user_name'  => $this->user->name,
+            'post_title' => $this->post->title,
+            'group_name' => $group?->name,
+        ]);
+
         return [
             'type' => 'post_liked',
-            'title' => 'Post Liked',
+            'title' => $title,
             'message' => $message,
             'user_id' => $this->user->id,
             'user_name' => $this->user->name,

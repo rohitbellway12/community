@@ -7,62 +7,145 @@ use App\Models\TestLevel;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class AdminTestLevelController extends Controller
 {
+    /**
+     * Display all test levels.
+     */
     public function index(Request $request): View
     {
-        $search = $request->input('search');
+        $search = trim($request->input('search', ''));
 
-        $query = TestLevel::withCount(['questions', 'tests']);
+        $query = TestLevel::withCount([
+            'questions',
+            'tests',
+        ]);
 
-        if ($search) {
-            $query->where('name', 'like', "%{$search}%")
-                ->orWhere('description', 'like', "%{$search}%");
+        // Search
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%')
+                    ->orWhere('description', 'like', '%' . $search . '%');
+            });
         }
 
-        $levels = $query->orderBy('name')->paginate(15)->withQueryString();
+        $levels = $query
+            ->orderBy('name', 'asc')
+            ->paginate(15)
+            ->withQueryString();
 
         return view('admin.test-levels.index', compact('levels'));
     }
 
+    /**
+     * Store a new test level.
+     */
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:100|unique:test_levels,name',
-            'description' => 'nullable|string|max:500',
-            'status' => 'required|in:active,inactive',
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                'unique:test_levels,name',
+            ],
+            'description' => [
+                'nullable',
+                'string',
+                'max:500',
+            ],
+            'status' => [
+                'required',
+                'in:active,inactive',
+            ],
         ]);
+
+        $validated['name'] = trim($validated['name']);
 
         $validated['slug'] = Str::slug($validated['name']);
 
         TestLevel::create($validated);
 
-        return back()->with('success', 'Test Level created successfully.');
+        return back()->with(
+            'success',
+            'Test Level created successfully.'
+        );
     }
 
-    public function update(Request $request, TestLevel $level): RedirectResponse
-    {
+    /**
+     * Update an existing test level.
+     */
+    public function update(
+        Request $request,
+        TestLevel $level
+    ) {
+        if (! $level->exists) {
+            $id = $request->route('level') ?? $request->route('test_level') ?? $request->route('id');
+            if ($id) {
+                $level = TestLevel::findOrFail($id);
+            }
+        }
+
         $validated = $request->validate([
-            'name' => 'required|string|max:100|unique:test_levels,name,' . $level->id,
-            'description' => 'nullable|string|max:500',
-            'status' => 'required|in:active,inactive',
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                // Ignore current record — no "already taken" error for same name
+                Rule::unique('test_levels', 'name')->ignore($level->id),
+            ],
+            'description' => [
+                'nullable',
+                'string',
+                'max:500',
+            ],
+            'status' => [
+                'required',
+                'in:active,inactive',
+            ],
         ]);
 
-        $validated['slug'] = Str::slug($validated['name']);
+        $validated['name']  = trim($validated['name']);
+        $validated['slug']  = Str::slug($validated['name']);
 
         $level->update($validated);
 
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Test Level updated successfully.',
+                'level'   => $level,
+            ]);
+        }
+
         return back()->with('success', 'Test Level updated successfully.');
     }
+    /**
+     * Toggle active/inactive status.
+     */
+    public function updateStatus(
+        Request $request,
+        TestLevel $level
+    ) {
+        if (! $level->exists) {
+            $id = $request->route('level') ?? $request->route('test_level') ?? $request->route('id');
+            if ($id) {
+                $level = TestLevel::findOrFail($id);
+            }
+        }
 
-    public function updateStatus(Request $request, TestLevel $level)
-    {
-        $newStatus = $level->status === 'active' ? 'inactive' : 'active';
-        $level->update(['status' => $newStatus]);
+        $newStatus = $level->status === 'active'
+            ? 'inactive'
+            : 'active';
 
-        if ($request->wantsJson() || $request->ajax()) {
+        $level->update([
+            'status' => $newStatus,
+        ]);
+
+        if ($request->expectsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
                 'status' => $newStatus,
@@ -70,20 +153,35 @@ class AdminTestLevelController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Level status updated to ' . ucfirst($newStatus));
+        return back()->with(
+            'success',
+            'Level status updated to ' . ucfirst($newStatus)
+        );
     }
 
-    public function destroy(TestLevel $level): RedirectResponse
+    /**
+     * Delete a test level.
+     */
+    public function destroy(Request $request, TestLevel $level): RedirectResponse
     {
-        if ($level->tests()->count() > 0) {
-            return back()->with('error', 'Cannot delete test level that contains tests. Remove or reassign tests first.');
+        if (! $level->exists) {
+            $id = $request->route('level') ?? $request->route('test_level') ?? $request->route('id');
+            if ($id) {
+                $level = TestLevel::findOrFail($id);
+            }
         }
-        if ($level->questions()->count() > 0) {
-            return back()->with('error', 'Cannot delete test level that contains questions. Move questions to another level first.');
-        }
+
+        $testCount = $level->tests()->count();
+        $questionCount = $level->questions()->count();
 
         $level->delete();
 
-        return back()->with('success', 'Test Level deleted successfully.');
+        $message = 'Test Level deleted successfully.';
+
+        if ($testCount > 0 || $questionCount > 0) {
+            $message .= " {$testCount} test(s) and {$questionCount} question(s) were also deleted.";
+        }
+
+        return back()->with('success', $message);
     }
 }

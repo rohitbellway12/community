@@ -14,6 +14,15 @@ export default {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },
+            colors: {
+                reiac: {
+                    navy:       '#0B132B',
+                    slate:      '#1C2541',
+                    gold:       '#F7B500',
+                    'gold-hover': '#E0A400',
+                    bg:         '#F4F6F9',
+                },
+            },
         },
     },
 

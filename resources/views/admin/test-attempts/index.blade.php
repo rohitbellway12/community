@@ -27,6 +27,18 @@
             <h1 class="text-xl font-extrabold text-slate-900">Test Submissions</h1>
             <p class="text-xs text-slate-500 mt-0.5">Review all student submissions, proctoring violations, and results.</p>
         </div>
+
+        <div>
+            <a
+                href="{{ route('admin.tests.attempts.export', request()->query()) }}"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition flex items-center gap-2"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Export to Excel
+            </a>
+        </div>
     </div>
 
     {{-- FILTERS --}}
@@ -114,11 +126,12 @@
             <table class="w-full text-left text-xs">
                 <thead class="bg-slate-50 border-b border-slate-200 text-slate-400 uppercase font-bold tracking-wider">
                     <tr>
+                        <th class="py-3.5 px-4 w-16">S.No.</th>
                         <th class="py-3.5 px-4">Student</th>
                         <th class="py-3.5 px-4">Test</th>
                         <th class="py-3.5 px-4">Level</th>
                         <th class="py-3.5 px-4">Score</th>
-                        <th class="py-3.5 px-4">Result</th>
+                        <th class="py-3.5 px-4">Result / Slab</th>
                         <th class="py-3.5 px-4">Submission</th>
                         <th class="py-3.5 px-4">Switched</th>
                         <th class="py-3.5 px-4">Date</th>
@@ -128,6 +141,11 @@
                 <tbody class="divide-y divide-slate-100 font-medium">
                     @forelse($attempts as $attempt)
                         <tr class="hover:bg-slate-50/60 transition">
+                            <td class="py-3 px-4">
+                                <span class="font-bold text-slate-500 font-mono">
+                                    #{{ $attempt->id }}
+                                </span>
+                            </td>
                             <td class="py-3 px-4">
                                 <div class="font-bold text-slate-900 text-sm">{{ $attempt->user?->name ?? 'Unknown' }}</div>
                                 <div class="text-[11px] text-slate-400">{{ $attempt->user?->email ?? '' }}</div>
@@ -143,7 +161,14 @@
                                 <span class="text-[10px] text-slate-400">/ {{ $attempt->test?->total_marks ?? '?' }}</span>
                             </td>
                             <td class="py-3 px-4">
-                                @if($attempt->result === 'pass')
+                                @php
+                                    $slab = \App\Models\ResultSlab::getSlabForScore((float)$attempt->score_obtained, $attempt->test_id);
+                                @endphp
+                                @if($slab)
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-bold border {{ $slab->badge_class }}">
+                                        {{ $slab->name }}
+                                    </span>
+                                @elseif($attempt->result === 'pass')
                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">PASS</span>
                                 @elseif($attempt->result === 'fail')
                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700">FAIL</span>
@@ -179,7 +204,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="py-8 text-center text-slate-400">
+                            <td colspan="10" class="py-8 text-center text-slate-400">
                                 No submissions found.
                             </td>
                         </tr>

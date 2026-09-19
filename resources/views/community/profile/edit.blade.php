@@ -300,6 +300,55 @@
 
                 {{-- DEDICATED EXTRA SCROLL CLEARANCE SPACER FOR MOBILE BOTTOM NAVIGATION --}}
                 <div class="h-24 sm:h-12 lg:hidden" aria-hidden="true"></div>
+
+                {{-- DELETE ACCOUNT --}}
+                <div class="bg-white rounded-2xl shadow-xs border border-rose-200 p-4 sm:p-6 lg:p-8">
+                    <h2 class="text-xl font-extrabold text-rose-700 mb-2">Delete Account</h2>
+                    <p class="text-xs text-slate-500 mb-4">
+                        Once you delete your account, all of your posts, comments, and profile data will be permanently removed.
+                        This action cannot be undone.
+                    </p>
+
+                    @if($errors->hasBag('userDeletion'))
+                        <div class="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold">
+                            <ul class="list-disc pl-4 space-y-1">
+                                @foreach($errors->getBag('userDeletion')->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
+                    <form
+                        action="{{ route('profile.destroy') }}"
+                        method="POST"
+                        onsubmit="return confirm('Are you sure you want to delete your account? This action cannot be undone.');"
+                    >
+                        @csrf
+                        @method('DELETE')
+
+                        <div class="mb-4">
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                                Current Password
+                                                    <span class="text-rose-500">*</span>
+</label>
+                            <input
+                                type="password"
+                                name="password"
+                                placeholder="Enter your current password"
+                                class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-800 focus:border-rose-400 focus:ring-1 focus:ring-rose-400 outline-none transition"
+                                required
+                            >
+                        </div>
+
+                        <button
+                            type="submit"
+                            class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition shadow-xs"
+                        >
+                            Delete My Account
+                        </button>
+                    </form>
+                </div>
             </main>
         </div>
     </div>

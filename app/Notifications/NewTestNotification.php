@@ -3,12 +3,13 @@
 namespace App\Notifications;
 
 use App\Models\Test;
+use App\Traits\ResolvesNotificationMessages;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
 class NewTestNotification extends Notification
 {
-    use Queueable;
+    use Queueable, ResolvesNotificationMessages;
 
     public function __construct(
         public Test $test
@@ -35,9 +36,17 @@ class NewTestNotification extends Notification
             $message = "New {$levelName} test '{$test->title}' has been created. Duration: {$test->duration_minutes} min.";
         }
 
+        [$title, $message] = $this->resolveMessage('new_test', 'New Test Available', $message, [
+            'test_title'       => $test->title,
+            'level_name'       => $levelName,
+            'duration_minutes' => $test->duration_minutes,
+            'passing_marks'    => $test->passing_marks,
+            'total_marks'      => $test->total_marks,
+        ]);
+
         return [
             'type' => 'new_test',
-            'title' => 'New Test Available',
+            'title' => $title,
             'message' => $message,
             'test_id' => $test->id,
             'test_title' => $test->title,

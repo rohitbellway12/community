@@ -1,0 +1,22 @@
+; ============================================================
+; Laravel Queue Worker — Supervisor Configuration
+; ============================================================
+; Copy this file to:  /etc/supervisor/conf.d/queue-worker.conf
+; Then run:
+;   sudo supervisorctl reread
+;   sudo supervisorctl update
+;   sudo supervisorctl start laravel-queue
+; ============================================================
+
+[program:laravel-queue]
+process_name=%(program_name)s_%(process_num)02d
+command=php /path/to/your/app/artisan queue:work --sleep=3 --tries=3 --max-time=3600
+autostart=true
+autorestart=true
+user=www-data
+numprocs=1
+redirect_stderr=true
+stdout_logfile=/var/log/laravel/queue.log
+stopwaitsecs=3600
+stderr_logfile_maxbytes=10MB
+stdout_logfile_maxbytes=10MB

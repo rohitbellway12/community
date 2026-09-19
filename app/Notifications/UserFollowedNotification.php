@@ -3,12 +3,13 @@
 namespace App\Notifications;
 
 use App\Models\User;
+use App\Traits\ResolvesNotificationMessages;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 
 class UserFollowedNotification extends Notification
 {
-    use Queueable;
+    use Queueable, ResolvesNotificationMessages;
 
     public function __construct(
         public User $follower
@@ -26,10 +27,17 @@ class UserFollowedNotification extends Notification
             ? route('community.profile', $profile->username)
             : route('community.profile', $this->follower->id);
 
+        $message = "{$this->follower->name} started following you.";
+
+        [$title, $message] = $this->resolveMessage('user_followed', 'New Follower', $message, [
+            'follower_name' => $this->follower->name,
+            'username'      => $profile?->username,
+        ]);
+
         return [
             'type' => 'user_followed',
-            'title' => 'New Follower',
-            'message' => "{$this->follower->name} started following you.",
+            'title' => $title,
+            'message' => $message,
             'user_id' => $this->follower->id,
             'user_name' => $this->follower->name,
             'user_avatar' => $profile?->avatar,

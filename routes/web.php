@@ -366,21 +366,40 @@ Route::prefix('community')->group(function () {
             Route::put('/guidelines/{guideline}', [AdminGuidelineController::class, 'update'])->name('guidelines.update');
             Route::patch('/guidelines/{guideline}/status', [AdminGuidelineController::class, 'updateStatus'])->name('guidelines.updateStatus');
             Route::delete('/guidelines/{guideline}', [AdminGuidelineController::class, 'destroy'])->name('guidelines.destroy');
-            // Banners
-            
-            Route::get('/banners', [AdminBannerController::class, 'index'])->name('banners.index');
-            Route::post('/banners', [AdminBannerController::class, 'store'])->name('banners.store');
-            Route::put('/banners/{banner}', [AdminBannerController::class, 'update'])->name('banners.update');
-            Route::patch('/banners/{banner}/status', [AdminBannerController::class, 'updateStatus'])->name('banners.updateStatus');
-            Route::delete('/banners/{banner}', [AdminBannerController::class, 'destroy'])->name('banners.destroy');
+             // Banners
+             
+             Route::get('/banners', [AdminBannerController::class, 'index'])->name('banners.index');
+             Route::post('/banners', [AdminBannerController::class, 'store'])->name('banners.store');
+             Route::put('/banners/{banner}', [AdminBannerController::class, 'update'])->name('banners.update');
+             Route::patch('/banners/{banner}/status', [AdminBannerController::class, 'updateStatus'])->name('banners.updateStatus');
+             Route::delete('/banners/{banner}', [AdminBannerController::class, 'destroy'])->name('banners.destroy');
+
+            // Notification Templates (combined: push toggles + message editing + Firebase settings)
+            Route::get('/notification-templates', [\App\Http\Controllers\Admin\AdminNotificationTemplateController::class, 'index'])->name('notification-templates.index');
+            Route::post('/notification-templates/bulk-update', [\App\Http\Controllers\Admin\AdminNotificationTemplateController::class, 'updateAll'])->name('notification-templates.bulk-update');
+            Route::post('/notification-templates/firebase-update', [\App\Http\Controllers\Admin\AdminNotificationTemplateController::class, 'updateFirebase'])->name('notification-templates.firebase-update');
+
+            // Legacy redirects
+            Route::get('/notification-settings', fn () => redirect()->route('admin.notification-templates.index'))->name('notification-settings.index');
+            Route::get('/firebase-settings', fn () => redirect()->route('admin.notification-templates.index'))->name('firebase-settings.edit');
 
             // Test Levels
             Route::patch('/test-levels/{level}/status', [\App\Http\Controllers\Admin\AdminTestLevelController::class, 'updateStatus'])->name('test-levels.updateStatus');
-            Route::resource('test-levels', \App\Http\Controllers\Admin\AdminTestLevelController::class);
+            Route::resource('test-levels', \App\Http\Controllers\Admin\AdminTestLevelController::class)->parameters([
+                'test-levels' => 'level',
+            ]);
 
             // Questions
+            Route::get('/questions/sample-template', [\App\Http\Controllers\Admin\AdminQuestionController::class, 'sampleTemplate'])->name('questions.sampleTemplate');
+            Route::post('/questions/import', [\App\Http\Controllers\Admin\AdminQuestionController::class, 'import'])->name('questions.import');
             Route::patch('/questions/{question}/status', [\App\Http\Controllers\Admin\AdminQuestionController::class, 'updateStatus'])->name('questions.updateStatus');
             Route::resource('questions', \App\Http\Controllers\Admin\AdminQuestionController::class);
+
+            // Result Slabs
+            Route::patch('/result-slabs/{slab}/status', [\App\Http\Controllers\Admin\AdminResultSlabController::class, 'updateStatus'])->name('result-slabs.updateStatus');
+            Route::resource('result-slabs', \App\Http\Controllers\Admin\AdminResultSlabController::class)->parameters([
+                'result-slabs' => 'slab',
+            ]);
 
             // Tests
 
@@ -388,6 +407,7 @@ Route::prefix('community')->group(function () {
 
             Route::prefix('tests')->name('tests.')->group(function () {
                 Route::get('/attempts', [\App\Http\Controllers\Admin\AdminTestAttemptController::class, 'index'])->name('attempts.index');
+                Route::get('/attempts/export', [\App\Http\Controllers\Admin\AdminTestAttemptController::class, 'export'])->name('attempts.export');
                 Route::get('/attempts/{attempt}', [\App\Http\Controllers\Admin\AdminTestAttemptController::class, 'show'])->name('attempts.show');
             });
 

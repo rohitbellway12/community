@@ -147,6 +147,20 @@ class AdminQuestionController extends Controller
             ->with('success', 'Question updated successfully.');
     }
 
+    public function show(Question $question): RedirectResponse
+    {
+        return redirect()->route('admin.questions.edit', $question);
+    }
+
+    public function destroy(Question $question): RedirectResponse
+    {
+        $question->options()->delete();
+        $question->delete();
+
+        return redirect()->route('admin.questions.index')
+            ->with('success', 'Question deleted successfully.');
+    }
+
     public function updateStatus(Request $request, Question $question)
     {
         $newStatus = $question->status === 'active' ? 'inactive' : 'active';
@@ -164,11 +178,41 @@ class AdminQuestionController extends Controller
             ->with('success', 'Question status updated to ' . ucfirst($newStatus));
     }
 
-    public function destroy(Question $question): RedirectResponse
+    /**
+     * Download sample Excel/CSV template for questions import.
+     */
+    public function sampleTemplate(Request $request, \App\Services\QuestionImportService $importService)
     {
-        $question->delete();
+        $format = $request->query('format', 'xlsx');
+        return $importService->downloadSampleTemplate($format);
+    }
 
-        return redirect()->route('admin.questions.index')
-            ->with('success', 'Question deleted successfully.');
+    /**
+     * Bulk import questions from CSV / XLSX file.
+     */
+    public function import(Request $request, \App\Services\QuestionImportService $importService): RedirectResponse
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt,xlsx,xls|max:10240',
+            'test_level_id' => 'nullable|exists:test_levels,id',
+        ]);
+
+        $defaultLevelId = $request->input('test_level_id') ? (int)$request->input('test_level_id') : null;
+        $result = $importService->import($request->file('file'), $defaultLevelId);
+
+        if (!$result['success']) {
+            return back()->with('error', $result['errors'][0] ?? 'Import failed. Please check file format.');
+        }
+
+        $msg = "Successfully imported {$result['imported']} question(s).";
+        if ($result['skipped'] > 0) {
+            $msg .= " ({$result['skipped']} row(s) skipped).";
+        }
+
+        if (!empty($result['errors'])) {
+            return back()->with('success', $msg)->with('import_errors', array_slice($result['errors'], 0, 10));
+        }
+
+        return back()->with('success', $msg);
     }
 }
