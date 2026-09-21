@@ -199,22 +199,33 @@ class UserProfileController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | Profile Activity Progress Bar (Set by Admin)
+        |--------------------------------------------------------------------------
+        */
+        $activityProgress = app(\App\Services\ProfileActivityService::class)->calculateProgress($user);
+
+        /*
+        |--------------------------------------------------------------------------
         | Public Profile View
         |--------------------------------------------------------------------------
         */
+
+        $profileUser = $user;
 
         return view(
             'community.profile.show',
             compact(
                 'profile',
                 'user',
+                'profileUser',
                 'posts',
                 'comments',
                 'activities',
                 'profileStats',
                 'topContributors',
                 'testStats',
-                'testAttempts'
+                'testAttempts',
+                'activityProgress'
             )
         );
     }

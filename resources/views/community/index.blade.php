@@ -10,6 +10,8 @@
     'categories' => collect(),
     'tags' => collect(),
     'activeBanner' => null,
+    'activeEvent' => null,
+    'eventTopUsers' => collect(),
     'liveTest' => null,
 ])
 

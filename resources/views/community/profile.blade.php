@@ -4,6 +4,8 @@
 ])
 
 @php
+    $profileUser = $profileUser ?? $user ?? auth()->user();
+    $user = $user ?? $profileUser;
     $activeTab = request('tab', 'posts');
 @endphp
 

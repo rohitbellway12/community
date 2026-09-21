@@ -473,6 +473,37 @@ class PostController extends Controller
     }
 
     /**
+     * List all posts bookmarked/saved by the authenticated user.
+     */
+    public function saved(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $perPage = min($request->integer('per_page', 15), 50);
+
+        $posts = Post::query()
+            ->whereHas('savedBy', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })
+            ->with([
+                'user.profile.country',
+                'category',
+                'media',
+                'tags',
+                'likes'   => fn ($q) => $q->where('user_id', $user->id),
+                'savedBy' => fn ($q) => $q->where('user_id', $user->id),
+            ])
+            ->withCount(['likes', 'comments', 'shares'])
+            ->latest()
+            ->paginate($perPage);
+
+        return $this->successResponse(
+            PostResource::collection($posts)->response()->getData(true),
+            'Saved posts retrieved successfully.'
+        );
+    }
+
+    /**
      * Share a post.
      */
     public function share(Request $request, Post $post): JsonResponse

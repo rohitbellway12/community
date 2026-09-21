@@ -38,10 +38,10 @@ class AdminDashboardController extends Controller
         $todayRegistrations = User::whereRaw("DATE(CONVERT_TZ(created_at, '+00:00', '+09:00')) = ?", [$kstToday])->count();
         $todayPosts         = Post::whereRaw("DATE(CONVERT_TZ(created_at, '+00:00', '+09:00')) = ?", [$kstToday])->count();
 
-        $todayUserUpdates    = DB::table('users')   ->whereRaw("DATE(CONVERT_TZ(updated_at, '+00:00', '+09:00')) = ?", [$kstToday])->pluck('id');
-        $todayPostAuthors    = DB::table('posts')   ->whereRaw("DATE(CONVERT_TZ(created_at, '+00:00', '+09:00')) = ?", [$kstToday])->pluck('user_id');
-        $todayCommentAuthors = DB::table('comments')->whereRaw("DATE(CONVERT_TZ(created_at, '+00:00', '+09:00')) = ?", [$kstToday])->pluck('user_id');
-        $todayActiveUsers    = $todayUserUpdates->merge($todayPostAuthors)->merge($todayCommentAuthors)->unique()->count();
+        // Active users today: users who visited pages or were active today in KST
+        $todayVisits    = DB::table('user_visits')->whereRaw("DATE(CONVERT_TZ(created_at, '+00:00', '+09:00')) = ?", [$kstToday])->pluck('user_id');
+        $todayLastSeens = DB::table('users')->whereNotNull('last_seen_at')->whereRaw("DATE(CONVERT_TZ(last_seen_at, '+00:00', '+09:00')) = ?", [$kstToday])->pluck('id');
+        $todayActiveUsers = $todayVisits->merge($todayLastSeens)->unique()->count();
 
         // Active today (legacy name kept for compatibility)
         $activeToday = $todayActiveUsers;
@@ -121,18 +121,21 @@ class AdminDashboardController extends Controller
         // SQL expression: shift stored UTC timestamp into KST before grouping
         $kstCreated = "CONVERT_TZ(created_at, '+00:00', '+09:00')";
         $kstUpdated = "CONVERT_TZ(updated_at, '+00:00', '+09:00')";
+        $kstLastSeen = "CONVERT_TZ(last_seen_at, '+00:00', '+09:00')";
 
         if ($filter === 'monthly') {
             $startKst = now($KST)->subMonths(11)->startOfMonth();
             $endKst   = now($KST)->endOfMonth();
             $groupByCreated = "DATE_FORMAT({$kstCreated}, '%Y-%m')";
             $groupByUpdated = "DATE_FORMAT({$kstUpdated}, '%Y-%m')";
+            $groupByLastSeen = "DATE_FORMAT({$kstLastSeen}, '%Y-%m')";
             $intervalType = 'month';
         } elseif ($filter === 'yearly') {
             $startKst = now($KST)->subYears(4)->startOfYear();
             $endKst   = now($KST)->endOfYear();
             $groupByCreated = "YEAR({$kstCreated})";
             $groupByUpdated = "YEAR({$kstUpdated})";
+            $groupByLastSeen = "YEAR({$kstLastSeen})";
             $intervalType = 'year';
         } elseif ($filter === 'custom' && $request->filled('start_date') && $request->filled('end_date')) {
             try {
@@ -152,10 +155,12 @@ class AdminDashboardController extends Controller
                 $endKst   = $endKst->copy()->endOfMonth();
                 $groupByCreated = "DATE_FORMAT({$kstCreated}, '%Y-%m')";
                 $groupByUpdated = "DATE_FORMAT({$kstUpdated}, '%Y-%m')";
+                $groupByLastSeen = "DATE_FORMAT({$kstLastSeen}, '%Y-%m')";
                 $intervalType = 'month';
             } else {
                 $groupByCreated = "DATE({$kstCreated})";
                 $groupByUpdated = "DATE({$kstUpdated})";
+                $groupByLastSeen = "DATE({$kstLastSeen})";
                 $intervalType = 'day';
             }
         } else {
@@ -165,6 +170,7 @@ class AdminDashboardController extends Controller
             $endKst   = now($KST)->endOfDay();
             $groupByCreated = "DATE({$kstCreated})";
             $groupByUpdated = "DATE({$kstUpdated})";
+            $groupByLastSeen = "DATE({$kstLastSeen})";
             $intervalType = 'day';
         }
 
@@ -186,20 +192,17 @@ class AdminDashboardController extends Controller
             ->groupBy('period_key')
             ->pluck('aggregate', 'period_key');
 
-        // 3. Active Users (Users who updated profile, created posts or commented)
-        $userUpdates = DB::table('users')
-            ->whereBetween('updated_at', [$utcStart, $utcEnd])
-            ->selectRaw("{$groupByUpdated} as period_key, id as user_id");
-
-        $postActivity = DB::table('posts')
+        // 3. Active Users (Users who visit pages / have active presence)
+        $visitActivity = DB::table('user_visits')
             ->whereBetween('created_at', [$utcStart, $utcEnd])
             ->selectRaw("{$groupByCreated} as period_key, user_id");
 
-        $commentActivity = DB::table('comments')
-            ->whereBetween('created_at', [$utcStart, $utcEnd])
-            ->selectRaw("{$groupByCreated} as period_key, user_id");
+        $lastSeenActivity = DB::table('users')
+            ->whereNotNull('last_seen_at')
+            ->whereBetween('last_seen_at', [$utcStart, $utcEnd])
+            ->selectRaw("{$groupByLastSeen} as period_key, id as user_id");
 
-        $union = $userUpdates->union($postActivity)->union($commentActivity);
+        $union = $visitActivity->union($lastSeenActivity);
 
         $activeUsers = DB::query()->fromSub($union, 't')
             ->selectRaw('period_key, COUNT(DISTINCT user_id) as aggregate')

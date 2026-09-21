@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\RememberCommunityUrl;
+use App\Http\Middleware\UpdateUserLastSeen;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Auth\Middleware\RedirectIfAuthenticated;
 use Illuminate\Foundation\Application;
@@ -21,8 +22,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'guest' => RedirectIfAuthenticated::class,
             'admin' => AdminMiddleware::class,
         ]);
-         $middleware->web(append: [
+        $middleware->web(append: [
             RememberCommunityUrl::class,
+            UpdateUserLastSeen::class,
+        ]);
+        $middleware->api(append: [
+            UpdateUserLastSeen::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

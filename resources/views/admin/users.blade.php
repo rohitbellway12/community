@@ -145,6 +145,7 @@
                         <th class="py-3.5 px-4">User Details</th>
                         <th class="py-3.5 px-4">Role</th>
                         <th class="py-3.5 px-4">Location</th>
+                        <th class="py-3.5 px-4 text-center">Device</th>
                         <th class="py-3.5 px-4 text-center">Activity</th>
                         <th class="py-3.5 px-4 text-center">Status Toggle</th>
                         <th class="py-3.5 px-4 text-right">Actions</th>
@@ -158,26 +159,38 @@
                             $userRole = is_object($user->role) ? $user->role->value : ($user->role ?? 'user');
                             $avatarUrl = $user->profile?->avatar ? asset('storage/' . $user->profile->avatar) : 'https://ui-avatars.com/api/?name='.urlencode($user->name);
                             $coverUrl = $user->profile?->cover_image ? asset('storage/' . $user->profile->cover_image) : null;
+                            $isOnline = $user->isOnline();
+                            $onlineText = $user->onlineStatusText();
                         @endphp
                         <tr class="hover:bg-slate-50/60 transition">
                             {{-- User Info --}}
                             <td class="py-3.5 px-4">
                                 <div class="flex items-center space-x-3">
-                                    <div class="relative shrink-0">
+                                    <div class="relative shrink-0" title="{{ $onlineText }}">
                                         <img src="{{ $avatarUrl }}"
                                              class="w-9 h-9 rounded-full object-cover border border-slate-200 shadow-2xs"
                                              alt="{{ $user->name }}">
-                                        <span class="w-2.5 h-2.5 rounded-full absolute -bottom-0.5 -right-0.5 border-2 border-white {{ $userStatus === 'active' ? 'bg-emerald-500' : 'bg-rose-500' }}"></span>
+                                        {{-- Presence Dot: Green for Online, Red for Offline --}}
+                                        <span class="w-2.5 h-2.5 rounded-full absolute -bottom-0.5 -right-0.5 border-2 border-white {{ $isOnline ? 'bg-emerald-500 shadow-xs' : 'bg-rose-500' }}"
+                                              title="{{ $onlineText }}"></span>
                                     </div>
                                     <div class="min-w-0">
                                         <div class="font-bold text-slate-900 truncate flex items-center gap-1.5">
-                                            {{ $user->name }}
-                                        </div>
-                                        <div class="text-[11px] text-slate-400 font-medium truncate">
-                                            {{ $user->email }}
-                                            @if($user->profile?->username)
-                                                <span class="text-indigo-600 ml-1">@ {{ $user->profile->username }}</span>
+                                            <span>{{ $user->name }}</span>
+                                            @if($isOnline)
+                                                <span class="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                    Online
+                                                </span>
                                             @endif
+                                        </div>
+                                        <div class="text-[11px] text-slate-400 font-medium truncate flex items-center gap-1.5">
+                                            <span>{{ $user->email }}</span>
+                                            @if($user->profile?->username)
+                                                <span class="text-indigo-600">@ {{ $user->profile->username }}</span>
+                                            @endif
+                                        </div>
+                                        <div class="text-[10px] {{ $isOnline ? 'text-emerald-600 font-semibold' : 'text-slate-400' }} truncate">
+                                            {{ $onlineText }}
                                         </div>
                                     </div>
                                 </div>
@@ -201,6 +214,17 @@
                                         <span class="text-sm">{{ $user->profile->country->flag }}</span>
                                     @endif
                                     <span>{{ $user->profile?->location ?? ($user->profile?->country?->name ?? 'Not specified') }}</span>
+                                </div>
+                            </td>
+
+                            {{-- Device --}}
+                            <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                                <div class="flex items-center justify-center gap-1">
+                                    <span class="text-sm">{{ $user->deviceIcon() }}</span>
+                                    <span class="text-[10px] font-semibold text-slate-600">{{ $user->deviceTypeLabel() }}</span>
+                                </div>
+                                <div class="text-[9px] text-slate-400 truncate max-w-[100px] mx-auto mt-0.5">
+                                    {{ $user->deviceInfo() ?: '—' }}
                                 </div>
                             </td>
 
@@ -252,6 +276,13 @@
                                                 country_id: '{{ $user->profile?->country_id ?? '' }}',
                                                 role: '{{ $userRole }}',
                                                 status: '{{ $userStatus }}',
+                                                isOnline: {{ $isOnline ? 'true' : 'false' }},
+                                                onlineText: '{{ addslashes($onlineText) }}',
+                                                lastSeenAt: '{{ $user->last_seen_at ? $user->last_seen_at->format('d M Y, h:i A') : 'Never' }}',
+                                                deviceType: '{{ addslashes($user->deviceTypeLabel()) }}',
+                                                deviceIcon: '{{ $user->deviceIcon() }}',
+                                                deviceInfo: '{{ addslashes($user->deviceInfo()) }}',
+                                                ipAddress: '{{ $user->ip_address ?? '—' }}',
                                                 createdAt: '{{ $user->created_at ? $user->created_at->format('d M Y, h:i A') : 'N/A' }}',
                                                 updatedAt: '{{ $user->updated_at ? $user->updated_at->format('d M Y, h:i A') : 'N/A' }}',
                                                 avatar: '{{ $avatarUrl }}',
@@ -278,6 +309,13 @@
                                                 country_id: '{{ $user->profile?->country_id ?? '' }}',
                                                 role: '{{ $userRole }}',
                                                 status: '{{ $userStatus }}',
+                                                isOnline: {{ $isOnline ? 'true' : 'false' }},
+                                                onlineText: '{{ addslashes($onlineText) }}',
+                                                lastSeenAt: '{{ $user->last_seen_at ? $user->last_seen_at->format('d M Y, h:i A') : 'Never' }}',
+                                                deviceType: '{{ addslashes($user->deviceTypeLabel()) }}',
+                                                deviceIcon: '{{ $user->deviceIcon() }}',
+                                                deviceInfo: '{{ addslashes($user->deviceInfo()) }}',
+                                                ipAddress: '{{ $user->ip_address ?? '—' }}',
                                                 createdAt: '{{ $user->created_at ? $user->created_at->format('d M Y, h:i A') : 'N/A' }}',
                                                 updatedAt: '{{ $user->updated_at ? $user->updated_at->format('d M Y, h:i A') : 'N/A' }}',
                                                 avatar: '{{ $avatarUrl }}',
@@ -442,6 +480,13 @@
                                         <span class="w-1.5 h-1.5 rounded-full" :class="currentUser.status === 'active' ? 'bg-emerald-500' : 'bg-rose-500'"></span>
                                         <span class="capitalize" x-text="currentUser.status"></span>
                                     </span>
+
+                                    {{-- Online Presence Pill --}}
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md border flex items-center space-x-1"
+                                          :class="currentUser.isOnline ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'">
+                                        <span class="w-1.5 h-1.5 rounded-full" :class="currentUser.isOnline ? 'bg-emerald-500' : 'bg-rose-500'"></span>
+                                        <span x-text="currentUser.isOnline ? 'Online' : 'Offline'"></span>
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -456,9 +501,13 @@
                                 <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Comments</span>
                                 <span class="text-xs font-black text-slate-800" x-text="currentUser.commentsCount || '0'"></span>
                             </div>
-                            <div class="px-2.5 text-center">
+                            <div class="px-2.5 border-r border-slate-100 text-center">
                                 <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Joined</span>
                                 <span class="text-[11px] font-bold text-slate-700 whitespace-nowrap" x-text="currentUser.createdAt"></span>
+                            </div>
+                            <div class="px-2.5 text-center">
+                                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Last Seen</span>
+                                <span class="text-[11px] font-bold whitespace-nowrap" :class="currentUser.isOnline ? 'text-emerald-600' : 'text-slate-600'" x-text="currentUser.lastSeenAt || 'Never'"></span>
                             </div>
                         </div>
                     </div>
@@ -539,6 +588,32 @@
                             <button type="button" @click="isEditing = true" class="px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition">
                                 Edit Details
                             </button>
+                        </div>
+
+                        {{-- Device Info Card --}}
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-2.5">
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-1.5">
+                                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                <span>Device & Session</span>
+                            </span>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Device</div>
+                                    <div class="text-xs font-bold text-slate-800 mt-0.5" x-text="currentUser.deviceIcon + ' ' + (currentUser.deviceType || 'Desktop')"></div>
+                                </div>
+                                <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">OS / Browser</div>
+                                    <div class="text-xs font-bold text-slate-800 mt-0.5 truncate" x-text="currentUser.deviceInfo || '—'"></div>
+                                </div>
+                                <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">IP Address</div>
+                                    <div class="text-xs font-bold text-slate-800 mt-0.5 font-mono" x-text="currentUser.ipAddress || '—'"></div>
+                                </div>
+                                <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Last Active</div>
+                                    <div class="text-xs font-bold mt-0.5" :class="currentUser.isOnline ? 'text-emerald-600' : 'text-slate-600'" x-text="currentUser.lastSeenAt || 'Never'"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

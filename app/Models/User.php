@@ -11,6 +11,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable
 {
@@ -25,6 +26,12 @@ class User extends Authenticatable
         'password',
         'role',
         'status',
+        'last_seen_at',
+        'referral_code',
+        'device_type',
+        'device_os',
+        'browser',
+        'ip_address',
     ];
 
     /**
@@ -45,6 +52,8 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => UserRole::class,
             'status' => UserStatus::class,
+            'last_seen_at' => 'datetime',
+            'ip_address' => 'string',
         ];
     }
 
@@ -249,5 +258,108 @@ public function activeGroups(): BelongsToMany
             ->orderByDesc('comments_count')
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * Determine if the user is currently online (visited within specified minutes).
+     */
+    public function isOnline(int $minutes = 5): bool
+    {
+        return $this->last_seen_at !== null && $this->last_seen_at->gte(now()->subMinutes($minutes));
+    }
+
+    /**
+     * Get a human-readable online status description.
+     */
+    public function onlineStatusText(int $minutes = 5): string
+    {
+        if ($this->isOnline($minutes)) {
+            return 'Online';
+        }
+
+        if ($this->last_seen_at) {
+            return 'Offline • Last seen ' . $this->last_seen_at->diffForHumans();
+        }
+
+        return 'Offline • Never seen';
+    }
+
+    /**
+     * Get device type label with icon.
+     */
+    public function deviceTypeIcon(): string
+    {
+        return match ($this->device_type) {
+            'Mobile' => '📱',
+            'Tablet' => '📋',
+            default => '💻',
+        };
+    }
+
+    /**
+     * Get formatted device info string.
+     */
+    public function deviceInfo(): string
+    {
+        $parts = [];
+        if ($this->device_os) {
+            $parts[] = $this->device_os;
+        }
+        if ($this->browser) {
+            $parts[] = '(' . $this->browser . ')';
+        }
+        return implode(' ', $parts);
+    }
+
+    /**
+     * Get device type label.
+     */
+    public function deviceTypeLabel(): string
+    {
+        return $this->device_type ?? 'Desktop';
+    }
+
+    /**
+     * Get device icon HTML.
+     */
+    public function deviceIcon(): string
+    {
+        return match ($this->device_type) {
+            'Mobile' => '📱',
+            'Tablet' => '📋',
+            default => '💻',
+        };
+    }
+
+    /**
+     * Daily visits relationship.
+     */
+    public function visits(): HasMany
+    {
+        return $this->hasMany(UserVisit::class);
+    }
+
+    /**
+     * Referrals this user gave (users who joined using this user's code).
+     */
+    public function referralsGiven(): HasMany
+    {
+        return $this->hasMany(Referral::class, 'referrer_id');
+    }
+
+    /**
+     * Referral record for this user (the code they used when signing up).
+     */
+    public function referredBy()
+    {
+        return $this->hasOne(Referral::class, 'referred_id');
+    }
+
+    /**
+     * Count of users this user has successfully referred.
+     */
+    public function getReferredCountAttribute(): int
+    {
+        return $this->referralsGiven()->count();
     }
 }

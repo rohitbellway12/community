@@ -7,6 +7,7 @@
     'notificationsCount' => 0,
     'testStats' => null,
     'testAttempts' => null,
+    'activityProgress' => null,
 ])
 
 <!DOCTYPE html>
@@ -30,7 +31,11 @@
 @php
     use App\Models\Follow;
 
-    $isOwnProfile = auth()->check() && (int) auth()->id() === (int) $user->id;
+    $user = $user ?? $profileUser ?? auth()->user();
+    $profileUser = $profileUser ?? $user;
+    $profile = $profile ?? $user?->profile ?? null;
+
+    $isOwnProfile = auth()->check() && (int) auth()->id() === (int) ($user?->id ?? 0);
 
     $avatarUrl = $profile->avatar
         ? asset('storage/' . $profile->avatar)
@@ -518,6 +523,98 @@
                             </div>
                         </div>
 
+                        {{-- =========================================================================
+                             PROFILE COMPLETION & ACTIVITY PROGRESS BAR (SET BY ADMIN)
+                             ========================================================================= --}}
+                        @if(isset($activityProgress) && !empty($activityProgress['total_count']))
+                            <div class="mt-6 pt-6 border-t border-slate-100" x-data="{ checklistOpen: false }">
+                                <div class="bg-gradient-to-br from-slate-50 to-indigo-50/40 p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2.5">
+                                        <div class="flex items-center gap-2.5">
+                                            <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+                                            </div>
+                                            <div>
+                                                <div class="flex items-center gap-2">
+                                                    <h3 class="text-xs sm:text-sm font-black text-slate-900">
+                                                        {{ $isOwnProfile ? 'Your Profile Completion' : 'Member Activity Strength' }}
+                                                    </h3>
+                                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black {{ $activityProgress['percentage'] >= 100 ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-indigo-100 text-indigo-700 border border-indigo-200' }}">
+                                                        {{ $activityProgress['percentage'] }}%
+                                                    </span>
+                                                </div>
+                                                <p class="text-[11px] text-slate-500 font-medium mt-0.5">
+                                                    {{ $activityProgress['completed_count'] }} of {{ $activityProgress['total_count'] }} activities completed
+                                                    @if($activityProgress['percentage'] < 100 && $isOwnProfile)
+                                                        • Complete remaining tasks to unlock full community trust!
+                                                    @endif
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <button type="button"
+                                                @click="checklistOpen = !checklistOpen"
+                                                class="self-start sm:self-auto text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition">
+                                            <span x-text="checklistOpen ? 'Hide Tasks' : 'View Checklist'"></span>
+                                            <svg class="w-3.5 h-3.5 transform transition-transform" :class="checklistOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                        </button>
+                                    </div>
+
+                                    {{-- PROGRESS BAR --}}
+                                    <div class="w-full bg-slate-200/80 rounded-full h-3 overflow-hidden p-0.5 shadow-inner">
+                                        <div class="h-full rounded-full transition-all duration-700 ease-out {{ $activityProgress['percentage'] >= 100 ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : ($activityProgress['percentage'] >= 50 ? 'bg-gradient-to-r from-amber-400 to-emerald-500' : 'bg-gradient-to-r from-indigo-500 to-indigo-600') }}"
+                                             style="width: {{ $activityProgress['percentage'] }}%"></div>
+                                    </div>
+
+                                    {{-- EXPANDABLE CHECKLIST --}}
+                                    <div x-show="checklistOpen"
+                                         x-collapse
+                                         class="mt-4 pt-4 border-t border-slate-200/70 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                        @foreach($activityProgress['activities'] as $act)
+                                            <div class="flex items-center justify-between p-3 rounded-xl border transition {{ $act['is_completed'] ? 'bg-white/90 border-emerald-200 shadow-2xs' : 'bg-white border-slate-200 hover:border-indigo-200' }}">
+                                                <div class="flex items-center gap-2.5 min-w-0 pr-2">
+                                                    @if($act['is_completed'])
+                                                        <div class="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                                                            <svg class="w-3 h-3 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                                        </div>
+                                                    @else
+                                                        <div class="w-5 h-5 rounded-full border-2 border-slate-300 flex items-center justify-center shrink-0">
+                                                            <div class="w-1.5 h-1.5 rounded-full bg-slate-300"></div>
+                                                        </div>
+                                                    @endif
+                                                    <div class="min-w-0">
+                                                        <div class="text-xs font-bold text-slate-800 truncate {{ $act['is_completed'] ? 'line-through text-slate-500' : '' }}">
+                                                            {{ $act['title'] }}
+                                                        </div>
+                                                        <div class="text-[10px] text-slate-400 font-medium truncate">
+                                                            +{{ $act['points'] }}% • {{ $act['description'] }}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="shrink-0">
+                                                    @if($act['is_completed'])
+                                                        <span class="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                                                            Done
+                                                        </span>
+                                                    @elseif($isOwnProfile && !empty($act['action_url']))
+                                                        <a href="{{ url($act['action_url']) }}"
+                                                           class="text-[10px] font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-2.5 py-1 rounded-lg shadow-xs transition inline-block">
+                                                            {{ $act['action_label'] ?: 'Do it' }}
+                                                        </a>
+                                                    @else
+                                                        <span class="text-[10px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">
+                                                            Pending
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
                         <div class="profile-stats grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-center mt-6 pt-6 border-t border-slate-100">
                             <div class="profile-stat p-3.5 rounded-xl bg-slate-50 border border-slate-100/80 min-w-0">
                                 <div class="text-lg font-extrabold text-[#0b1329]">
@@ -938,9 +1035,9 @@
                                                             url: @js(route('community.posts.show', $post)),
                                                             text: @js(\Illuminate\Support\Str::limit(strip_tags($post->content ?? $post->body ?? ''), 200)),
                                                             image: @js($post->media?->first() ? asset('storage/' . $post->media->first()->file_path) : null),
-                                                            authorName: @js($post->user?->name ?? $profileUser->name ?? 'User'),
-                                                            authorUsername: @js($post->user?->profile?->username ? '@' . $post->user->profile->username : ($profileUser->profile?->username ? '@' . $profileUser->profile->username : '')),
-                                                            authorAvatar: @js($post->user?->profile?->avatar ? asset('storage/' . $post->user->profile->avatar) : ($profileUser->profile?->avatar ? asset('storage/' . $profileUser->profile->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode($profileUser->name ?? 'User') . '&background=0c1b33&color=fff')),
+                                                            authorName: @js($post->user?->name ?? $user?->name ?? 'User'),
+                                                            authorUsername: @js($post->user?->profile?->username ? '@' . $post->user->profile->username : ($user?->profile?->username ? '@' . $user->profile->username : '')),
+                                                            authorAvatar: @js($post->user?->profile?->avatar ? asset('storage/' . $post->user->profile->avatar) : ($user?->profile?->avatar ? asset('storage/' . $user->profile->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode($user?->name ?? 'User') . '&background=0c1b33&color=fff')),
                                                             category: @js($post->category?->name ?? ''),
                                                             shareEndpoint: @js(route('community.posts.share', $post))
                                                         }

@@ -79,6 +79,18 @@ class AdminNotificationTemplateController extends Controller
             'is_enabled'       => ['boolean'],
         ]);
 
+        if (!empty($validated['credentials_json'])) {
+            $json = json_decode(trim($validated['credentials_json']), true);
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($json)) {
+                return back()->withInput()->with('error', 'Invalid Service Account JSON format. Please paste valid JSON downloaded from Firebase Console.');
+            }
+
+            // Auto-fill project_id from JSON if not explicitly provided
+            if (empty($validated['project_id']) && !empty($json['project_id'])) {
+                $validated['project_id'] = $json['project_id'];
+            }
+        }
+
         $firebase = FirebaseSetting::firstOrCreate([]);
 
         $firebase->update($validated);

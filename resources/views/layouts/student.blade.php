@@ -37,7 +37,7 @@
 
     {{-- STUDENT HEADER (HIDDEN DURING ACTIVE EXAMS) --}}
     @unless(View::hasSection('hide_header'))
-    <header class="bg-reiac-navy text-white border-b border-slate-800 sticky top-0 z-40 shadow-xs">
+    <header class="bg-reiac-navy text-white border-b border-slate-800 sticky top-0 z-40 shadow-xs print:hidden">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <a href="{{ route('community.index') }}" class="flex items-center gap-2 text-white hover:text-reiac-gold transition">
@@ -76,7 +76,7 @@
 
     {{-- FOOTER (HIDDEN DURING ACTIVE EXAMS) --}}
     @unless(View::hasSection('hide_header'))
-    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400 print:hidden">
         <p>&copy; {{ date('Y') }} REIAC Community Test Portal. All rights reserved.</p>
     </footer>
     @endunless

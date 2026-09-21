@@ -21,15 +21,17 @@ class UserStat extends Model
         'shares_count',
         'followers_count',
         'following_count',
+        'referred_count',
     ];
 
     protected $casts = [
-        'posts_count' => 'integer',
-        'comments_count' => 'integer',
-        'likes_received_count' => 'integer',
-        'shares_count' => 'integer',
-        'followers_count' => 'integer',
-        'following_count' => 'integer',
+        'posts_count'         => 'integer',
+        'comments_count'      => 'integer',
+        'likes_received_count'=> 'integer',
+        'shares_count'        => 'integer',
+        'followers_count'     => 'integer',
+        'following_count'     => 'integer',
+        'referred_count'      => 'integer',
     ];
 
     public function user()

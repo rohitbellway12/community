@@ -48,6 +48,7 @@ class CommunityController extends Controller
 
         return view('community.profile', [
             'user' => $user,
+            'profileUser' => $user,
             'posts' => $posts,
             'likesReceivedCount' => $likesReceivedCount,
             'sharesCount' => 0,

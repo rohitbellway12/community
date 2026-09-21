@@ -5,9 +5,10 @@ namespace App\Http\Controllers\Api\V1;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
-use App\Models\DeviceToken;
 use App\Models\Profile;
+use App\Models\Referral;
 use App\Models\User;
+use App\Models\UserStat;
 use App\Traits\ApiResponse;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
@@ -32,18 +33,25 @@ class AuthController extends Controller
     public function register(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name'        => ['required', 'string', 'max:255'],
-            'email'       => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
-            'password'    => ['required', 'confirmed', Password::defaults()],
-            'country_id'  => ['required', 'exists:countries,id'],
-            'device_name' => ['nullable', 'string', 'max:255'],
-            'fcm_token'   => ['nullable', 'string'],
+            'name'          => ['required', 'string', 'max:255'],
+            'email'         => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
+            'password'      => ['required', 'confirmed', Password::defaults()],
+            'country_id'    => ['required', 'exists:countries,id'],
+            'device_name'   => ['nullable', 'string', 'max:255'],
+            'fcm_token'     => ['nullable', 'string'],
+            'referral_code' => ['nullable', 'string', 'max:15', 'exists:users,referral_code'],
         ]);
 
+        // Auto-generate a unique referral code: REIAC + 5 digits
+        do {
+            $code = 'REIAC' . str_pad(random_int(0, 99999), 5, '0', STR_PAD_LEFT);
+        } while (User::where('referral_code', $code)->exists());
+
         $user = User::create([
-            'name'     => $validated['name'],
-            'email'    => $validated['email'],
-            'password' => Hash::make($validated['password']),
+            'name'          => $validated['name'],
+            'email'         => $validated['email'],
+            'password'      => Hash::make($validated['password']),
+            'referral_code' => $code,
         ]);
 
         $username = Str::slug($validated['name']) . '-' . strtolower(Str::random(5));
@@ -55,6 +63,26 @@ class AuthController extends Controller
             'joined_at'  => now(),
         ]);
 
+        // Initialize user stats (with referred_count = 0)
+        UserStat::create(['user_id' => $user->id]);
+
+        // Process referral if a code was provided
+        if (!empty($validated['referral_code'])) {
+            $referrer = User::where('referral_code', $validated['referral_code'])->first();
+            if ($referrer && $referrer->id !== $user->id) {
+                Referral::create([
+                    'referrer_id' => $referrer->id,
+                    'referred_id' => $user->id,
+                ]);
+
+                // Increment the referrer's referred_count in user_stats
+                UserStat::updateOrCreate(
+                    ['user_id' => $referrer->id],
+                    []
+                )->increment('referred_count');
+            }
+        }
+
         event(new Registered($user));
 
         $deviceName = $validated['device_name'] ?? 'mobile-app';
@@ -62,12 +90,11 @@ class AuthController extends Controller
 
         $user->load(['profile.country']);
 
-        $this->saveDeviceToken($user, $validated['fcm_token'] ?? null);
-
         return $this->successResponse([
-            'user'         => new UserResource($user),
-            'access_token' => $token,
-            'token_type'   => 'Bearer',
+            'user'          => new UserResource($user),
+            'access_token'  => $token,
+            'token_type'    => 'Bearer',
+            'referral_code' => $user->referral_code,
         ], 'Registration successful.', 201);
     }
 
@@ -123,8 +150,6 @@ class AuthController extends Controller
         $token = $user->createToken($deviceName)->plainTextToken;
 
         $user->load(['profile.country']);
-
-        $this->saveDeviceToken($user, $request->input('fcm_token'));
 
         return $this->successResponse([
             'user'         => new UserResource($user),
@@ -321,29 +346,5 @@ class AuthController extends Controller
         return $this->successResponse([
             'user' => new UserResource($user),
         ], 'Password updated successfully.');
-    }
-
-    /**
-     * Save or rotate the user's FCM device token.
-     */
-    protected function saveDeviceToken($user, ?string $fcmToken): void
-    {
-        if (!$fcmToken) {
-            return;
-        }
-
-        try {
-            DeviceToken::updateOrCreate(
-                ['token' => $fcmToken],
-                [
-                    'user_id'     => $user->id,
-                    'device_type' => 'android',
-                    'is_active'   => true,
-                    'last_used_at'=> now(),
-                ]
-            );
-        } catch (\Throwable) {
-            // Silently ignore token save failures — must not block login/register.
-        }
     }
 }

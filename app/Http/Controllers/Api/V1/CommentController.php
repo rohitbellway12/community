@@ -115,13 +115,13 @@ class CommentController extends Controller
             */
             if (!$parentComment) {
                 if ((int) $post->user_id !== (int) $user->id) {
-                    $post->user->notify(
+                    $post->user?->notify(
                         new PostCommentedNotification($user, $post, $comment->content)
                     );
                 }
             } else {
-                if ($parentComment->user_id !== $user->id) {
-                    $parentComment->user->notify(
+                if ((int) $parentComment->user_id !== (int) $user->id) {
+                    $parentComment->user?->notify(
                         new CommentRepliedNotification(
                             $user,
                             $post,
@@ -132,10 +132,10 @@ class CommentController extends Controller
                 }
 
                 if (
-                    $post->user_id !== $user->id
+                    (int) $post->user_id !== (int) $user->id
                     && (int) $post->user_id !== (int) $parentComment->user_id
                 ) {
-                    $post->user->notify(
+                    $post->user?->notify(
                         new PostCommentedNotification($user, $post, $comment->content)
                     );
                 }

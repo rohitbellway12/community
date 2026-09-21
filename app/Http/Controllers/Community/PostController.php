@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Banner;
 use App\Models\Category;
 use App\Models\Comment;
+use App\Models\Event;
 use App\Models\Group;
 use App\Models\Like;
 use App\Models\Post;
@@ -276,6 +277,8 @@ public function index(Request $request)
     }
 
     $activeBanner = Banner::active()->latest()->first();
+    $activeEvent = Event::running()->orderByDesc('sort_order')->first();
+    $eventTopUsers = $activeEvent ? $activeEvent->getTopUsers(5) : collect();
 
     /*
     |--------------------------------------------------------------------------
@@ -305,6 +308,8 @@ public function index(Request $request)
         'profileStats',
         'user',
         'activeBanner',
+        'activeEvent',
+        'eventTopUsers',
         'liveTest'
     ));
 }

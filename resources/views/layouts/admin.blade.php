@@ -222,7 +222,7 @@
                     $sidebarTotalUsers = \App\Models\User::count();
                     $sidebarActiveUsers = \App\Models\User::where('status', 'active')->count();
                     $sidebarBlockedUsers = \App\Models\User::where('status', 'blocked')->count();
-                    $isUserManagementActive = request()->routeIs('admin.users*') || request()->is('*admin/users*');
+                    $isUserManagementActive = request()->routeIs('admin.users*') || request()->is('*admin/users*') || request()->routeIs('admin.profile-activities*');
                 @endphp
                 <div x-data="{ open: {{ $isUserManagementActive ? 'true' : 'true' }} }">
 
@@ -338,6 +338,26 @@
                                     0
                                 </span>
                             @endif
+                        </a>
+
+                        {{-- Profile Activities & Progress Bar --}}
+                        <a
+                            href="{{ route('admin.profile-activities.index') }}"
+                            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors group
+                                   {{ request()->routeIs('admin.profile-activities*')
+                                        ? 'bg-reiac-slate text-reiac-gold font-bold shadow-xs'
+                                        : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
+                        >
+                            <span class="flex items-center space-x-3">
+                                <svg class="w-4 h-4 shrink-0 {{ request()->routeIs('admin.profile-activities*') ? 'text-reiac-gold' : 'text-indigo-400 group-hover:text-white' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                                <span>Profile Activities</span>
+                            </span>
+
+                            <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                Bar
+                            </span>
                         </a>
 
                     </div>
@@ -563,6 +583,22 @@
                             <span>Banners</span>
                         </a>
 
+                        {{-- Events & Referral Contests --}}
+                        <a
+                            href="{{ route('admin.events.index') }}"
+                            class="flex items-center space-x-3 px-3 py-2
+                                   rounded-lg text-sm
+                                   {{ request()->routeIs('admin.events*')
+                                        ? 'bg-reiac-slate text-reiac-gold font-semibold'
+                                        : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                            </svg>
+                            <span>Events & Contests</span>
+                        </a>
+
 
                     </div>
 
@@ -757,7 +793,7 @@
                          </a>
 
                          {{-- Notification Templates (push toggle + message editing) --}}
-                       {{--  <a
+                         <a
                              href="{{ route('admin.notification-templates.index') }}"
                              class="flex items-center space-x-3 px-3 py-2
                                     rounded-lg text-sm
@@ -771,7 +807,7 @@
                               </svg>
                               <span>Notification Templates</span>
                           </a>
---}}
+
                      </div>
 
                 </div>

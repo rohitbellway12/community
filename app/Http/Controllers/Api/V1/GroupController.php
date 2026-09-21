@@ -38,6 +38,12 @@ class GroupController extends Controller
             ->when($search->isNotEmpty(), function ($query) use ($search) {
                 $query->where('name', 'like', '%' . $search . '%');
             })
+            ->when($request->boolean('joined') && $user, function ($query) use ($user) {
+                $query->whereHas('users', function ($uq) use ($user) {
+                    $uq->where('users.id', $user->id)
+                       ->where('group_user.status', 'active');
+                });
+            })
             ->latest()
             ->paginate(12)
             ->withQueryString();

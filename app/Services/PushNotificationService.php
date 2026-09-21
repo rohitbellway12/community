@@ -19,6 +19,7 @@ class PushNotificationService
         });
 
         return match ($key) {
+            'is_enabled'       => $settings->is_enabled ?? false,
             'project_id'       => $settings->project_id       ?: config('fcm.project_id'),
             'credentials_json' => $settings->credentials_json ?: config('fcm.credentials_json'),
             'server_key'       => $settings->server_key       ?: config('fcm.server_key'),
@@ -27,6 +28,11 @@ class PushNotificationService
             'default_color'    => $settings->default_color    ?: config('fcm.default_color', '#0D8ABC'),
             default             => $default,
         };
+    }
+
+    public function isEnabled(): bool
+    {
+        return (bool) $this->config('is_enabled', false);
     }
 
     protected function projectId(): string
@@ -53,6 +59,10 @@ class PushNotificationService
         string $body,
         array $data = []
     ): bool {
+        if (!$this->isEnabled()) {
+            return false;
+        }
+
         $stringData = $this->stringifyData(array_merge([
             'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
         ], $data));
@@ -188,12 +198,14 @@ class PushNotificationService
             'assertion'  => $jwt,
         ]);
 
-        if ($response->failed() || !$response->has('access_token')) {
+        $token = $response->json('access_token');
+
+        if ($response->failed() || empty($token)) {
             Log::warning('FCM token exchange failed: ' . $response->body());
             return null;
         }
 
-        return $response->json('access_token');
+        return $token;
     }
 
     /**

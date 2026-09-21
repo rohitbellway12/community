@@ -2,6 +2,49 @@
     'notificationsCount' => 0,
 ])
 
+<style>
+    .language-switcher {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .language-btn {
+        border: 1px solid #c89b2a;
+        background: transparent;
+        color: #c89b2a;
+        padding: 6px 14px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+    .language-btn:hover,
+    .language-btn.active {
+        background: #c89b2a;
+        color: #fff;
+    }
+    #google_translate_element {
+        position: absolute;
+        left: -9999px;
+        top: -9999px;
+        height: 0;
+        overflow: hidden;
+    }
+    .goog-te-banner-frame,
+    iframe.skiptranslate {
+        display: none !important;
+        height: 0 !important;
+    }
+    body {
+        top: 0 !important;
+    }
+    .skiptranslate,
+    .goog-te-gadget,
+    .goog-logo-link {
+        display: none !important;
+    }
+</style>
+
 @php
     $authUser = auth()->user();
 
@@ -1107,6 +1150,14 @@
 
                 @endauth
 
+                <!--
+                <div class="language-switcher">
+                    <button type="button" class="language-btn" onclick="changeLanguage('en', this)">EN</button>
+                    <button type="button" class="language-btn" onclick="changeLanguage('ko', this)">한국어</button>
+                </div>
+                <div id="google_translate_element"></div>
+                -->
+
             </div>
         </div>
     </div>
@@ -1567,4 +1618,49 @@
         </a>
     @endauth
 
+    <script>
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'en',
+                includedLanguages: 'en,ko',
+                autoDisplay: false
+            }, 'google_translate_element');
+        }
+
+        function triggerTranslate(lang) {
+            const combo = document.querySelector('.goog-te-combo');
+            if (!combo) return false;
+            combo.value = lang;
+            combo.dispatchEvent(new Event('change', { bubbles: true }));
+            return true;
+        }
+
+        function changeLanguage(lang, btn) {
+            document.querySelectorAll('.language-btn').forEach(function (b) {
+                b.classList.remove('active');
+            });
+            btn.classList.add('active');
+
+            var count = 0;
+            var timer = setInterval(function () {
+                var done = triggerTranslate(lang);
+                hideGoogleBar();
+                count++;
+                if (done || count > 20) clearInterval(timer);
+            }, 200);
+        }
+
+        function hideGoogleBar() {
+            document.body.style.top = '0px';
+            var banners = document.querySelectorAll('.goog-te-banner-frame, iframe.skiptranslate');
+            for (var i = 0; i < banners.length; i++) {
+                banners[i].style.display = 'none';
+                banners[i].style.height = '0';
+            }
+        }
+
+        setInterval(hideGoogleBar, 300);
+    </script>
+
+    <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 </div>

@@ -7,6 +7,8 @@ use App\Http\Controllers\Admin\AdminGroupController;
 use App\Http\Controllers\Admin\AdminReportController;
 use App\Http\Controllers\Admin\AdminGuidelineController;
 use App\Http\Controllers\Admin\AdminBannerController;
+use App\Http\Controllers\Admin\AdminEventController;
+use App\Http\Controllers\Community\EventWebController;
 use App\Http\Controllers\Admin\CountryController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\Community\CommunityController;
@@ -30,6 +32,8 @@ Route::get('/dashboard', function () {
 Route::get('/admin/{any?}', function ($any = null) {
     return redirect('/community/admin' . ($any ? '/' . $any : '/dashboard'));
 })->where('any', '.*');
+
+Route::get('/events/{slug}', [EventWebController::class, 'show'])->name('events.show');
 
 Route::prefix('community')->group(function () {
     require __DIR__ . '/auth.php';
@@ -100,6 +104,9 @@ Route::prefix('community')->group(function () {
         '/guidelines',
         [CommunityController::class, 'guidelines']
     )->name('community.guidelines');
+
+    Route::get('/events/{slug}', [EventWebController::class, 'show'])
+        ->name('community.events.show');
 
     /*
     |--------------------------------------------------------------------------
@@ -289,6 +296,13 @@ Route::prefix('community')->group(function () {
                 [AdminUserController::class, 'updateStatus']
             )->name('users.updateStatus');
 
+            // Profile Activities & Progress Bar Settings
+            Route::get('/profile-activities', [\App\Http\Controllers\Admin\AdminProfileActivityController::class, 'index'])->name('profile-activities.index');
+            Route::post('/profile-activities', [\App\Http\Controllers\Admin\AdminProfileActivityController::class, 'store'])->name('profile-activities.store');
+            Route::put('/profile-activities/{activity}', [\App\Http\Controllers\Admin\AdminProfileActivityController::class, 'update'])->name('profile-activities.update');
+            Route::patch('/profile-activities/{activity}/toggle-status', [\App\Http\Controllers\Admin\AdminProfileActivityController::class, 'toggleStatus'])->name('profile-activities.toggleStatus');
+            Route::delete('/profile-activities/{activity}', [\App\Http\Controllers\Admin\AdminProfileActivityController::class, 'destroy'])->name('profile-activities.destroy');
+
             // Posts
     
             Route::get(
@@ -373,6 +387,14 @@ Route::prefix('community')->group(function () {
              Route::put('/banners/{banner}', [AdminBannerController::class, 'update'])->name('banners.update');
              Route::patch('/banners/{banner}/status', [AdminBannerController::class, 'updateStatus'])->name('banners.updateStatus');
              Route::delete('/banners/{banner}', [AdminBannerController::class, 'destroy'])->name('banners.destroy');
+
+             // Events & Referral Contests
+             Route::get('/events', [AdminEventController::class, 'index'])->name('events.index');
+             Route::post('/events', [AdminEventController::class, 'store'])->name('events.store');
+             Route::put('/events/{event}', [AdminEventController::class, 'update'])->name('events.update');
+             Route::patch('/events/{event}/status', [AdminEventController::class, 'updateStatus'])->name('events.updateStatus');
+             Route::delete('/events/{event}', [AdminEventController::class, 'destroy'])->name('events.destroy');
+             Route::get('/events/{event}/leaderboard', [AdminEventController::class, 'leaderboard'])->name('events.leaderboard');
 
             // Notification Templates (combined: push toggles + message editing + Firebase settings)
             Route::get('/notification-templates', [\App\Http\Controllers\Admin\AdminNotificationTemplateController::class, 'index'])->name('notification-templates.index');
