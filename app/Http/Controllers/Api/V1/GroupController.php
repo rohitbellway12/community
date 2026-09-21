@@ -640,7 +640,10 @@ class GroupController extends Controller
      */
     public function posts(Request $request, Group $group): JsonResponse
     {
-        $this->authorizeView($request, $group);
+        $authView = $this->authorizeView($request, $group);
+        if ($authView !== null) {
+            return $authView;
+        }
 
         $user    = $request->user();
         $isOwner = (int) $group->owner_id === (int) ($user ? $user->id : 0);
@@ -678,13 +681,13 @@ class GroupController extends Controller
     /**
      * Check group view access (private groups require active membership).
      */
-    protected function authorizeView(Request $request, Group $group): void
+    protected function authorizeView(Request $request, Group $group): JsonResponse|null
     {
         if ($group->visibility === 'private') {
             $user = $request->user();
 
             if (!$user) {
-                abort(403, 'This group is private.');
+                return $this->errorResponse('This group is private. Please login and request to join.', 403);
             }
 
             $isMember = (int) $group->owner_id === (int) $user->id
@@ -692,9 +695,11 @@ class GroupController extends Controller
                 || in_array($user->role?->value ?? (string) $user->role, ['admin', 'super_admin'], true);
 
             if (!$isMember) {
-                abort(403, 'Only active members can view this private group.');
+                return $this->errorResponse('Only active members can view this private group.', 403);
             }
         }
+
+        return null;
     }
 
     /**

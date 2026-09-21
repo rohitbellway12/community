@@ -34,7 +34,7 @@ class TagController extends Controller
             });
         }
 
-        match ($sort) {
+        $query = match ($sort) {
             'alphabetical' => $query->orderBy('name', 'asc'),
             'latest'       => $query->latest('id'),
             default        => $query->orderByDesc('posts_count')->orderBy('name', 'asc'),

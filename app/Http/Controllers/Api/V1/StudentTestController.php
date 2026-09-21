@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\PostResource;
 use App\Models\AttemptAnswer;
 use App\Models\QuestionOption;
 use App\Models\Test;
 use App\Models\TestAttempt;
 use App\Traits\ApiResponse;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -290,16 +292,20 @@ class StudentTestController extends Controller
         $this->authorizeAttempt($request, $test, $attempt);
 
         if ($attempt->status === 'completed') {
-            return $this->errorResponse('This examination attempt has already been submitted.', 400, [
-                'status' => 'completed',
-            ]);
+            throw new HttpResponseException(response()->json([
+                'message' => 'This examination attempt has already been submitted.',
+                'errors' => ['attempt' => ['This examination attempt has already been submitted.'],
+                'status' => 'completed'],
+            ], 400));
         }
 
         if ($attempt->isTimedOut()) {
             $attempt->gradeAndComplete(null, 'timeout');
-            return $this->errorResponse('Allocated examination time has expired. Responses have been auto-submitted.', 400, [
-                'status' => 'completed',
-            ]);
+            throw new HttpResponseException(response()->json([
+                'message' => 'Allocated examination time has expired. Responses have been auto-submitted.',
+                'errors' => ['attempt' => ['Allocated examination time has expired. Responses have been auto-submitted.'],
+                'status' => 'completed'],
+            ], 400));
         }
 
         $test->load(['questions.options', 'testLevel']);
@@ -678,15 +684,24 @@ class StudentTestController extends Controller
     protected function validateTestAvailability(Test $test, bool $allowClosed = false): void
     {
         if ($test->status !== 'published') {
-            abort(404, 'Examination not found.');
+            throw new HttpResponseException(response()->json([
+                'message' => 'Examination not found.',
+                'errors' => ['test' => ['Examination not found.']],
+            ], 404));
         }
 
         if ($test->testLevel && $test->testLevel->status !== 'active') {
-            abort(403, 'This examination level is currently inactive.');
+            throw new HttpResponseException(response()->json([
+                'message' => 'This examination level is currently inactive.',
+                'errors' => ['test_level' => ['This examination level is currently inactive.']],
+            ], 403));
         }
 
         if (!$allowClosed && !$test->isOpen()) {
-            abort(403, 'This examination is currently not open or has expired.');
+            throw new HttpResponseException(response()->json([
+                'message' => 'This examination is currently not open or has expired.',
+                'errors' => ['test' => ['This examination is currently not open or has expired.']],
+            ], 403));
         }
     }
 
@@ -698,15 +713,24 @@ class StudentTestController extends Controller
         $user = $request->user();
 
         if ((int) $attempt->user_id !== (int) $user->id) {
-            abort(403, 'Unauthorized access to this examination attempt.');
+            throw new HttpResponseException(response()->json([
+                'message' => 'Unauthorized access to this examination attempt.',
+                'errors' => ['attempt' => ['Unauthorized access to this examination attempt.']],
+            ], 403));
         }
 
         if ((int) $attempt->test_id !== (int) $test->id) {
-            abort(400, 'Attempt does not belong to this test.');
+            throw new HttpResponseException(response()->json([
+                'message' => 'Attempt does not belong to this test.',
+                'errors' => ['attempt' => ['Attempt does not belong to this test.']],
+            ], 400));
         }
 
         if ($test->isExpired()) {
-            abort(403, 'This examination has expired.');
+            throw new HttpResponseException(response()->json([
+                'message' => 'This examination has expired.',
+                'errors' => ['test' => ['This examination has expired.']],
+            ], 403));
         }
     }
 }

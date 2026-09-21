@@ -26,7 +26,10 @@ $collection = [
 
 // Helper: create a request item
 function req($name, $method, $endpoint, $auth = false, $body = null, $extraHeaders = []) {
-    $headers = [["key" => "Content-Type", "value" => "application/json", "type" => "text"]];
+    $headers = [
+        ["key" => "Accept", "value" => "application/json", "type" => "text"],
+        ["key" => "Content-Type", "value" => "application/json", "type" => "text"],
+    ];
     if ($auth) {
         $headers[] = ["key" => "Authorization", "value" => "Bearer {{token}}", "type" => "text"];
     }

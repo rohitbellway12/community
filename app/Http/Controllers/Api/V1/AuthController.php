@@ -40,6 +40,14 @@ class AuthController extends Controller
             'device_name'   => ['nullable', 'string', 'max:255'],
             'fcm_token'     => ['nullable', 'string'],
             'referral_code' => ['nullable', 'string', 'max:15', 'exists:users,referral_code'],
+        ], [
+            'email.unique' => 'This email is already registered. Please use a different email or try logging in.',
+            'email.required' => 'Email address is required.',
+            'email.email' => 'Please enter a valid email address.',
+            'password.required' => 'Password is required.',
+            'password.confirmed' => 'Password confirmation does not match.',
+            'country_id.required' => 'Please select your country.',
+            'country_id.exists' => 'Selected country is invalid.',
         ]);
 
         // Auto-generate a unique referral code: REIAC + 5 digits
@@ -124,14 +132,14 @@ class AuthController extends Controller
 
         if (!$user) {
             RateLimiter::hit($throttleKey);
-            return $this->errorResponse('No account found with this email address.', 401, [
+            return $this->errorResponse('No account found with this email address. Please register first.', 401, [
                 'email' => ['No account found with this email address.'],
             ]);
         }
 
         if (!Hash::check($request->password, $user->password)) {
             RateLimiter::hit($throttleKey);
-            return $this->errorResponse('Incorrect password entered.', 401, [
+            return $this->errorResponse('Incorrect password entered. Please try again.', 401, [
                 'password' => ['Incorrect password entered.'],
             ]);
         }
