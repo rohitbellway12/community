@@ -2,7 +2,7 @@
     "info": {
         "name": "REIAC Community API",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-        "_postman_id": "6ab1222b42505",
+        "_postman_id": "6ab125a0ef181",
         "description": "Complete API Reference - 82 endpoints organized by group",
         "protocolProfileBehavior": {
             "disableBodyPruning": true
@@ -44,7 +44,7 @@
                                 },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\"name\":\"Test User\",\"email\":\"test@example.com\",\"password\":\"password123\",\"password_confirmation\":\"password123\",\"country_id\":1,\"device_name\":\"Mobile\",\"fcm_token\":\"fcm_token\"}",
+                                    "raw": "{\"name\":\"Test User\",\"email\":\"test@example.com\",\"password\":\"password123\",\"password_confirmation\":\"password123\",\"country_id\":1,\"device_name\":\"Mobile\"}",
                                     "options": []
                                 }
                             },
@@ -79,7 +79,7 @@
                                 },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\"email\":\"test@example.com\",\"password\":\"password123\",\"device_name\":\"Mobile\",\"fcm_token\":\"fcm_token\"}",
+                                    "raw": "{\"email\":\"test@example.com\",\"password\":\"password123\",\"device_name\":\"Mobile\"}",
                                     "options": []
                                 }
                             },
@@ -1002,7 +1002,7 @@
                                 },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\"fcm_token\":\"token\"}",
+                                    "raw": "{}",
                                     "options": []
                                 }
                             },

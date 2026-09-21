@@ -95,7 +95,7 @@ Route::prefix('v1')->group(function () {
     // USER PRESENCE & DEVICE
     // ============================================================
 
-    // Heartbeat - Mark User Online + Save Device Info + FCM Token
+    // Heartbeat - Mark User Online + Save Device Info
     Route::middleware('auth:sanctum')->post('ping', function (\Illuminate\Http\Request $request) {
         $user = $request->user('sanctum');
 
@@ -107,19 +107,6 @@ Route::prefix('v1')->group(function () {
                 'browser'      => $request->header('X-Browser') ?: $request->input('browser'),
                 'ip_address'   => $request->ip(),
             ]);
-
-            // Save FCM Token (if sent with ping)
-            if ($request->filled('fcm_token')) {
-                \App\Models\DeviceToken::updateOrCreate(
-                    ['token' => $request->fcm_token],
-                    [
-                        'user_id'     => $user->id,
-                        'device_type' => $request->header('X-Device-Type') ?: 'android',
-                        'is_active'   => true,
-                        'last_used_at' => now(),
-                    ]
-                );
-            }
         }
 
         return response()->json([

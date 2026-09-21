@@ -67,8 +67,8 @@ $guestFolder = [
         [
             "name" => "🔑 Authentication",
             "item" => [
-                req("Register", "POST", "/auth/register", false, '{"name":"Test User","email":"test@example.com","password":"password123","password_confirmation":"password123","country_id":1,"device_name":"Mobile","fcm_token":"fcm_token"}'),
-                req("Login", "POST", "/auth/login", false, '{"email":"test@example.com","password":"password123","device_name":"Mobile","fcm_token":"fcm_token"}'),
+                req("Register", "POST", "/auth/register", false, '{"name":"Test User","email":"test@example.com","password":"password123","password_confirmation":"password123","country_id":1,"device_name":"Mobile"}'),
+                req("Login", "POST", "/auth/login", false, '{"email":"test@example.com","password":"password123","device_name":"Mobile"}'),
                 req("Forgot Password", "POST", "/auth/forgot-password", false, '{"email":"test@example.com"}'),
                 req("Verify OTP", "POST", "/auth/verify-otp", false, '{"email":"test@example.com","otp":"123456"}'),
                 req("Reset Password", "POST", "/auth/reset-password", false, '{"email":"test@example.com","password":"new123","password_confirmation":"new123","reset_token":"abc"}'),
@@ -158,7 +158,7 @@ $authFolder = [
         [
             "name" => "📡 User Presence & Device",
             "item" => [
-                req("Ping (Heartbeat)", "POST", "/ping", true, '{"fcm_token":"token"}', ["X-Device-Type: Mobile", "X-Device-OS: Android 14", "X-Browser: Chrome"]),
+                req("Ping (Heartbeat)", "POST", "/ping", true, '{}', ["X-Device-Type: Mobile", "X-Device-OS: Android 14", "X-Browser: Chrome"]),
                 req("Register Device", "POST", "/device", true, '{"device_name":"Mobile","device_type":"Mobile","device_os":"Android 14","browser":"Chrome","app_version":"1.0.4"}'),
                 req("Get Device Info", "GET", "/device", true),
                 req("Register FCM Token", "POST", "/device-tokens", true, '{"fcm_token":"fcm_token_here","device_type":"android","app_version":"1.0.4"}'),

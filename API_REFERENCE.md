@@ -12,9 +12,12 @@
 **POST** /auth/register
 **Auth:** ❌ No Auth Required
 
+> **Note:** Send FCM token separately via `POST /device-tokens` after registration. Do NOT send fcm_token here.
+
 ### Headers:
 ```
 Content-Type: application/json
+Accept: application/json
 ```
 
 ### Body (JSON):
@@ -25,9 +28,7 @@ Content-Type: application/json
     "password": "password123",
     "password_confirmation": "password123",
     "country_id": 1,
-    "device_name": "Samsung Galaxy S24",
-    "fcm_token": "fcm_token_here_optional",
-    "referral_code": "REIAC12345"
+    "device_name": "Samsung Galaxy S24"
 }
 ```
 
@@ -35,7 +36,8 @@ Content-Type: application/json
 ```bash
 curl -X POST http://localhost/community/api/v1/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"name":"Rahul Sharma","email":"rahul@example.com","password":"password123","password_confirmation":"password123","country_id":1,"device_name":"Samsung Galaxy S24","fcm_token":"fcm_token_here"}'
+  -H "Accept: application/json" \
+  -d '{"name":"Rahul Sharma","email":"rahul@example.com","password":"password123","password_confirmation":"password123","country_id":1,"device_name":"Samsung Galaxy S24"}'
 ```
 
 ### Response:
@@ -58,9 +60,12 @@ curl -X POST http://localhost/community/api/v1/auth/register \
 **POST** /auth/login
 **Auth:** ❌ No Auth Required
 
+> **Note:** FCM token is NOT needed here. Send it via `POST /device-tokens` separately.
+
 ### Headers:
 ```
 Content-Type: application/json
+Accept: application/json
 ```
 
 ### Body (JSON):
@@ -68,8 +73,7 @@ Content-Type: application/json
 {
     "email": "rahul@example.com",
     "password": "password123",
-    "device_name": "Samsung Galaxy S24",
-    "fcm_token": "fcm_token_here"
+    "device_name": "Samsung Galaxy S24"
 }
 ```
 
@@ -77,7 +81,8 @@ Content-Type: application/json
 ```bash
 curl -X POST http://localhost/community/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"rahul@example.com","password":"password123","device_name":"Samsung Galaxy S24","fcm_token":"fcm_token_here"}'
+  -H "Accept: application/json" \
+  -d '{"email":"rahul@example.com","password":"password123","device_name":"Samsung Galaxy S24"}'
 ```
 
 ---
@@ -246,22 +251,21 @@ curl -X POST http://localhost/community/api/v1/auth/reset-password \
 ## 10. Ping (Heartbeat - Mark Online)
 **POST** /ping
 **Auth:** ✅ Bearer Token Required
-**Description:** Updates last_seen_at, device info, IP address, and optionally FCM token
+**Description:** Updates last_seen_at, device info, and IP address only. Send FCM token via `POST /device-tokens` instead.
 
 ### Headers:
 ```
 Authorization: Bearer <YOUR_TOKEN>
 Content-Type: application/json
+Accept: application/json
 X-Device-Type: Mobile
 X-Device-OS: Android 14
 X-Browser: Chrome
 ```
 
-### Body (JSON) - FCM Token optional:
+### Body (JSON):
 ```json
-{
-    "fcm_token": "fcm_token_here_optional"
-}
+{}
 ```
 
 ### Curl:
@@ -269,10 +273,11 @@ X-Browser: Chrome
 curl -X POST http://localhost/community/api/v1/ping \
   -H "Authorization: Bearer <YOUR_TOKEN>" \
   -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
   -H "X-Device-Type: Mobile" \
   -H "X-Device-OS: Android 14" \
   -H "X-Browser: Chrome" \
-  -d '{"fcm_token":"fcm_token_here"}'
+  -d '{}'
 ```
 
 ---

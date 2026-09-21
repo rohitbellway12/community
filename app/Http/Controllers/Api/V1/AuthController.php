@@ -38,7 +38,6 @@ class AuthController extends Controller
             'password'      => ['required', 'confirmed', Password::defaults()],
             'country_id'    => ['required', 'exists:countries,id'],
             'device_name'   => ['nullable', 'string', 'max:255'],
-            'fcm_token'     => ['nullable', 'string'],
             'referral_code' => ['nullable', 'string', 'max:15', 'exists:users,referral_code'],
         ], [
             'email.unique' => 'This email is already registered. Please use a different email or try logging in.',
@@ -115,7 +114,6 @@ class AuthController extends Controller
             'email'       => ['required', 'string', 'email'],
             'password'    => ['required', 'string'],
             'device_name' => ['nullable', 'string', 'max:255'],
-            'fcm_token'   => ['nullable', 'string'],
         ]);
 
         $throttleKey = Str::transliterate(Str::lower($request->input('email')) . '|' . $request->ip());
