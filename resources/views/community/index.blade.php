@@ -2405,6 +2405,7 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                     submitButton.innerHTML = 'Posting...';
                 }
 
+                try {
                     const formData = new FormData(form);
                     const modalEl = document.querySelector('[x-show="openModal"]');
                     if (modalEl?.__x?.$data?.files && modalEl.__x.$data.files.length > 0) {

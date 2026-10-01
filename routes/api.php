@@ -51,11 +51,11 @@ Route::prefix('v1')->group(function () {
 
     // Posts (Public Read)
     Route::get('posts', [PostController::class, 'index'])->name('api.v1.posts.index');
-    Route::get('posts/{post}', [PostController::class, 'show'])->name('api.v1.posts.show');
+    Route::get('posts/{post}', [PostController::class, 'show'])->whereNumber('post')->name('api.v1.posts.show');
 
     // Post Comments (Public Read)
-    Route::get('posts/{post}/comments', [CommentController::class, 'index'])->name('api.v1.posts.comments.index');
-    Route::get('comments/{comment}/replies', [CommentController::class, 'replies'])->name('api.v1.comments.replies');
+    Route::get('posts/{post}/comments', [CommentController::class, 'index'])->whereNumber('post')->name('api.v1.posts.comments.index');
+    Route::get('comments/{comment}/replies', [CommentController::class, 'replies'])->whereNumber('comment')->name('api.v1.comments.replies');
 
     // User Profiles (Public)
     Route::get('users/{id_or_username}', [UserProfileController::class, 'show'])->name('api.v1.users.show');

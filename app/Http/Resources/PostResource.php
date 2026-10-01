@@ -10,6 +10,25 @@ class PostResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $currentUserId = $request->user('sanctum')?->id
+            ?? $request->user()?->id
+            ?? auth('sanctum')->id()
+            ?? auth()->id();
+
+        $isLiked = false;
+        if ($currentUserId) {
+            $isLiked = $this->relationLoaded('likes')
+                ? $this->likes->contains('user_id', $currentUserId)
+                : $this->likes()->where('user_id', $currentUserId)->exists();
+        }
+
+        $isSaved = false;
+        if ($currentUserId) {
+            $isSaved = $this->relationLoaded('savedBy')
+                ? $this->savedBy->contains('user_id', $currentUserId)
+                : $this->savedBy()->where('user_id', $currentUserId)->exists();
+        }
+
         return [
             'id'             => $this->id,
             'title'          => $this->title,
@@ -31,8 +50,8 @@ class PostResource extends JsonResource
                 'likes'    => (int) $this->likes_count,
                 'shares'   => (int) $this->shares_count,
             ],
-            'is_liked'      => $this->whenLoaded('likes', fn ($likes) => $likes->contains('user_id', auth()->id())),
-            'is_saved'      => $this->whenLoaded('savedBy', fn ($savedBy) => $savedBy->contains('user_id', auth()->id())),
+            'is_liked'      => (bool) $isLiked,
+            'is_saved'      => (bool) $isSaved,
             'created_at'    => $this->created_at?->toIso8601String(),
             'updated_at'    => $this->updated_at?->toIso8601String(),
         ];

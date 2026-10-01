@@ -34,7 +34,7 @@ class PostController extends Controller
         $tagSlug    = $request->input('tag');
         $groupSlug  = $request->input('group');
         $search     = $request->string('search')->trim();
-        $user       = $request->user();
+        $user       = $request->user('sanctum') ?? $request->user();
 
         $postsQuery = Post::query()
             ->where('status', PostStatus::PUBLISHED->value)
@@ -43,6 +43,8 @@ class PostController extends Controller
                 'category',
                 'media',
                 'tags',
+                'likes'   => fn ($q) => $user ? $q->where('user_id', $user->id) : $q->whereRaw('1 = 0'),
+                'savedBy' => fn ($q) => $user ? $q->where('user_id', $user->id) : $q->whereRaw('1 = 0'),
             ])
             ->withCount(['likes', 'comments', 'shares']);
 
@@ -148,7 +150,9 @@ class PostController extends Controller
      */
     public function show(Request $request, Post $post): JsonResponse
     {
-        if (!(new \App\Policies\PostPolicy)->view($request->user(), $post)) {
+        $user = $request->user('sanctum') ?? $request->user();
+
+        if (!(new \App\Policies\PostPolicy)->view($user, $post)) {
             return $this->errorResponse('This discussion is private.', 403);
         }
 
@@ -171,8 +175,8 @@ class PostController extends Controller
                         },
                     ]);
             },
-            'likes'   => fn ($q) => $q->when($request->user(), fn ($qq) => $qq->where('user_id', $request->user()->id)),
-            'savedBy' => fn ($q) => $q->when($request->user(), fn ($qq) => $qq->where('user_id', $request->user()->id)),
+            'likes'   => fn ($q) => $user ? $q->where('user_id', $user->id) : $q->whereRaw('1 = 0'),
+            'savedBy' => fn ($q) => $user ? $q->where('user_id', $user->id) : $q->whereRaw('1 = 0'),
         ]);
 
         $post->loadCount(['likes', 'comments', 'shares']);

@@ -17,6 +17,18 @@ class CommentResource extends JsonResource
                 : asset('storage/' . ltrim($user->profile->avatar, '/')))
             : 'https://ui-avatars.com/api/?name=' . urlencode($user?->name ?? 'User') . '&background=0c1b33&color=fff';
 
+        $currentUserId = $request->user('sanctum')?->id
+            ?? $request->user()?->id
+            ?? auth('sanctum')->id()
+            ?? auth()->id();
+
+        $isLiked = false;
+        if ($currentUserId) {
+            $isLiked = $this->relationLoaded('likes')
+                ? $this->likes->contains('user_id', $currentUserId)
+                : $this->likes()->where('user_id', $currentUserId)->exists();
+        }
+
         return [
             'id'                  => $this->id,
             'content'             => $this->content,
@@ -30,7 +42,7 @@ class CommentResource extends JsonResource
             ],
             'replies'             => CommentResource::collection($this->whenLoaded('replies')),
             'likes_count'         => (int) $this->likes_count,
-            'is_liked'            => $this->whenLoaded('likes', fn ($likes) => $likes->contains('user_id', auth()->id())),
+            'is_liked'            => (bool) $isLiked,
             'created_at'          => $this->created_at?->toIso8601String(),
             'updated_at'          => $this->updated_at?->toIso8601String(),
         ];
