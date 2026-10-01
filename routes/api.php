@@ -60,6 +60,8 @@ Route::prefix('v1')->group(function () {
     // User Profiles (Public)
     Route::get('users/{id_or_username}', [UserProfileController::class, 'show'])->name('api.v1.users.show');
     Route::get('users/{id_or_username}/posts', [UserProfileController::class, 'posts'])->name('api.v1.users.posts');
+    Route::get('users/{user}/followers', [FollowController::class, 'followers'])->name('api.v1.users.followers');
+    Route::get('users/{user}/following', [FollowController::class, 'following'])->name('api.v1.users.following');
 
     // Groups (Public Read)
     Route::get('groups', [GroupController::class, 'index'])->name('api.v1.groups.index');
@@ -67,7 +69,7 @@ Route::prefix('v1')->group(function () {
 
     // Tests (Public Read)
     Route::get('tests', [StudentTestController::class, 'index'])->name('api.v1.tests.index');
-    Route::get('tests/{test}', [StudentTestController::class, 'show'])->name('api.v1.tests.show');
+    Route::get('tests/{test}', [StudentTestController::class, 'show'])->whereNumber('test')->name('api.v1.tests.show');
 
     // ============================================================
     // AUTHENTICATION

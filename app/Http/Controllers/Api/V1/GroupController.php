@@ -30,7 +30,7 @@ class GroupController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $user   = $request->user();
+        $user   = $request->user('sanctum') ?? $request->user();
         $search = $request->string('search')->trim();
 
         $groups = Group::query()
@@ -39,9 +39,12 @@ class GroupController extends Controller
                 $query->where('name', 'like', '%' . $search . '%');
             })
             ->when($request->boolean('joined') && $user, function ($query) use ($user) {
-                $query->whereHas('users', function ($uq) use ($user) {
-                    $uq->where('users.id', $user->id)
-                       ->where('group_user.status', 'active');
+                $query->where(function ($q) use ($user) {
+                    $q->where('owner_id', $user->id)
+                      ->orWhereHas('users', function ($uq) use ($user) {
+                          $uq->where('users.id', $user->id)
+                             ->where('group_user.status', 'active');
+                      });
                 });
             })
             ->latest()
@@ -54,14 +57,16 @@ class GroupController extends Controller
             $membership = $userId
                 ? $group->users()
                     ->where('user_id', $userId)
-                    ->wherePivot('status', 'active')
                     ->first()
                 : null;
 
-            $group->is_owner          = (int) $group->owner_id === (int) $userId;
-            $group->is_member         = $membership !== null;
-            $group->membership_role   = $membership?->pivot->role ?? null;
-            $group->membership_status = $membership?->pivot->status ?? null;
+            $isOwner = (int) $group->owner_id === (int) $userId;
+            $isActiveMember = $membership && ($membership->pivot->status === 'active');
+
+            $group->is_owner          = $isOwner;
+            $group->is_member         = $isOwner || $isActiveMember;
+            $group->membership_role   = $isOwner ? 'owner' : ($membership?->pivot->role ?? null);
+            $group->membership_status = $isOwner ? 'active' : ($membership?->pivot->status ?? null);
 
             $group->load('owner:id,name,email');
 
@@ -90,7 +95,7 @@ class GroupController extends Controller
      */
     public function show(Request $request, Group $group): JsonResponse
     {
-        $user = $request->user();
+        $user = $request->user('sanctum') ?? $request->user();
 
         $group->loadCount('users');
         $group->load('owner.profile.country', 'posts:id,group_id,title,slug');
@@ -101,7 +106,9 @@ class GroupController extends Controller
                 ->first()
             : null;
 
-        $isMember = $membership && $membership->pivot->status === 'active';
+        $isOwner = (int) $group->owner_id === (int) ($user ? $user->id : 0);
+        $isActiveMember = $membership && ($membership->pivot->status === 'active');
+        $isMember = $isOwner || $isActiveMember;
 
         $data = $group->toArray() + [
             'owner'             => $group->owner ? [
@@ -117,10 +124,10 @@ class GroupController extends Controller
                     'code' => $group->owner->profile->country->code,
                 ] : null,
             ] : null,
-            'is_owner'          => (int) $group->owner_id === (int) ($user ? $user->id : 0),
+            'is_owner'          => $isOwner,
             'is_member'         => $isMember,
-            'membership_role'   => $membership?->pivot->role ?? null,
-            'membership_status' => $membership?->pivot->status ?? null,
+            'membership_role'   => $isOwner ? 'owner' : ($membership?->pivot->role ?? null),
+            'membership_status' => $isOwner ? 'active' : ($membership?->pivot->status ?? null),
             'pending_members_count'    => $pendingCount = ($user && (int) $group->owner_id === (int) $user->id)
                 ? $group->users()->wherePivot('status', 'pending')->count()
                 : 0,

@@ -23,6 +23,8 @@ class CommentController extends Controller
      */
     public function index(Request $request, Post $post): JsonResponse
     {
+        $user = $request->user('sanctum') ?? $request->user();
+
         $comments = $post->comments()
             ->whereNull('parent_id')
             ->where('status', 'active')
@@ -34,7 +36,7 @@ class CommentController extends Controller
                         ->take(4)
                         ->with('user.profile');
                 },
-                'likes'   => fn ($q) => $q->when($request->user(), fn ($qq) => $qq->where('user_id', $request->user()->id)),
+                'likes'   => fn ($q) => $user ? $q->where('user_id', $user->id) : $q->whereRaw('1 = 0'),
             ])
             ->latest()
             ->withCount('likes')
@@ -208,9 +210,7 @@ class CommentController extends Controller
      */
     public function replies(Request $request, Comment $comment): JsonResponse
     {
-        if ($request->user() === null) {
-            return $this->errorResponse('Authentication required.', 401);
-        }
+        $user = $request->user('sanctum') ?? $request->user();
 
         $comment->loadMissing('post.group');
 
@@ -219,7 +219,10 @@ class CommentController extends Controller
             || ($post->group && $post->group->visibility === 'private');
 
         if ($isPrivate) {
-            $user = $request->user();
+            if (!$user) {
+                return $this->errorResponse('Authentication required.', 401);
+            }
+
             $canView = (int) $post->user_id === (int) $user->id
                 || ($post->group && (int) $post->group->owner_id === (int) $user->id)
                 || ($post->group && $post->group->users()->where('users.id', $user->id)->wherePivot('status', 'active')->exists())
@@ -234,7 +237,7 @@ class CommentController extends Controller
             ->where('status', 'active')
             ->with([
                 'user.profile',
-                'likes' => fn ($q) => $q->where('user_id', $request->user()->id),
+                'likes' => fn ($q) => $user ? $q->where('user_id', $user->id) : $q->whereRaw('1 = 0'),
             ])
             ->withCount('likes')
             ->oldest()
