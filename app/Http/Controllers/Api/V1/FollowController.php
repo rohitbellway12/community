@@ -56,6 +56,32 @@ class FollowController extends Controller
     }
 
     /**
+     * List the authenticated user's own followers directly from Bearer token.
+     */
+    public function myFollowers(Request $request): JsonResponse
+    {
+        $user = $request->user('sanctum') ?? $request->user();
+        if (!$user) {
+            return $this->errorResponse('Unauthenticated.', 401);
+        }
+
+        return $this->followers($request, $user);
+    }
+
+    /**
+     * List the authenticated user's own following list directly from Bearer token.
+     */
+    public function myFollowing(Request $request): JsonResponse
+    {
+        $user = $request->user('sanctum') ?? $request->user();
+        if (!$user) {
+            return $this->errorResponse('Unauthenticated.', 401);
+        }
+
+        return $this->following($request, $user);
+    }
+
+    /**
      * Current user's follow status + counts for a target user.
      */
     public function status(Request $request, User $user): JsonResponse

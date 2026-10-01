@@ -177,6 +177,8 @@ Route::prefix('v1')->group(function () {
     // ============================================================
 
     Route::middleware('auth:sanctum')->group(function () {
+        Route::get('user/followers', [FollowController::class, 'myFollowers'])->name('api.v1.user.followers');
+        Route::get('user/following', [FollowController::class, 'myFollowing'])->name('api.v1.user.following');
         Route::get('users/{user}/follow/status', [FollowController::class, 'status'])->name('api.v1.users.follow.status');
         Route::post('users/{user}/follow', [FollowController::class, 'store'])->name('api.v1.users.follow');
         Route::delete('users/{user}/follow', [FollowController::class, 'destroy'])->name('api.v1.users.unfollow');
