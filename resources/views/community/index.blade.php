@@ -208,6 +208,58 @@
         </div>
     </div>
 
+    {{-- CONTEST / EVENT BANNER WITH TOP 5 USERS LEADERBOARD --}}
+    @if(!empty($activeEvent))
+        <div class="max-w-[1520px] mx-auto px-4 lg:px-6 pt-4 -mb-1">
+            <div class="relative rounded-2xl overflow-hidden border border-amber-400/40 bg-gradient-to-r from-[#0b1329] via-indigo-950 to-slate-900 text-white p-4 sm:p-5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center gap-3.5 min-w-0">
+                    <div class="w-11 h-11 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-xl shadow-md shrink-0">
+                        🏆
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950">
+                                Active Contest
+                            </span>
+                            <span class="text-xs text-amber-300 font-bold">
+                                Ends {{ $activeEvent->end_at->diffForHumans() }}
+                            </span>
+                        </div>
+                        <h3 class="text-base sm:text-lg font-black text-white truncate mt-0.5">
+                            {{ $activeEvent->title }}
+                        </h3>
+                    </div>
+                </div>
+
+                {{-- TOP 5 LEADERBOARD PILLS --}}
+                @if(isset($eventTopUsers) && $eventTopUsers->isNotEmpty())
+                    <div class="flex items-center gap-2 overflow-x-auto py-1 [&::-webkit-scrollbar]:hidden shrink-0">
+                        <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 shrink-0 mr-1">
+                            Top 5:
+                        </span>
+                        @foreach($eventTopUsers->take(5) as $idx => $tUser)
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/10 border border-white/10 backdrop-blur-xs shrink-0 text-xs">
+                                <span class="w-4 h-4 rounded-full flex items-center justify-center font-black text-[9px] {{ $idx === 0 ? 'bg-amber-400 text-slate-950' : ($idx === 1 ? 'bg-slate-300 text-slate-900' : ($idx === 2 ? 'bg-amber-700 text-white' : 'bg-slate-800 text-slate-300')) }}">
+                                    {{ $idx + 1 }}
+                                </span>
+                                <span class="font-bold text-slate-100 max-w-[80px] truncate">{{ $tUser->name }}</span>
+                                <span class="text-[10px] font-black text-amber-300">{{ number_format($tUser->event_score) }} pts</span>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+
+                <div class="flex items-center gap-2 shrink-0">
+                    <a href="{{ route('community.events.show', $activeEvent->slug) }}"
+                       class="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs transition shadow-sm inline-flex items-center gap-1.5 cursor-pointer">
+                        <span>Rules & Rankings</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    @endif
+
     {{-- TOP PROMOTIONAL / ANNOUNCEMENT BANNER --}}
     @if(!empty($activeBanner))
         <div

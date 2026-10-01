@@ -524,6 +524,45 @@
                         </div>
 
                         {{-- =========================================================================
+                             REFERRAL CODE & SHARE LINK (OWN PROFILE ONLY)
+                             ========================================================================= --}}
+                        @if($isOwnProfile && !empty($user->referral_code))
+                            <div class="mt-4 p-4 rounded-2xl bg-amber-50/70 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                                 x-data="{ copiedCode: false, copiedLink: false }">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
+                                        🎁
+                                    </div>
+                                    <div>
+                                        <div class="text-xs font-black text-slate-900 flex items-center gap-2">
+                                            <span>Your Referral Code:</span>
+                                            <span class="font-mono bg-white px-2 py-0.5 rounded-lg border border-amber-300 text-amber-800 tracking-wider font-bold select-all">{{ $user->referral_code }}</span>
+                                        </div>
+                                        <div class="text-[11px] text-slate-500 font-medium mt-0.5">
+                                            Share your code or link with friends to earn contest referral points.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <button type="button"
+                                            @click="navigator.clipboard.writeText('{{ $user->referral_code }}'); copiedCode = true; setTimeout(() => copiedCode = false, 2000)"
+                                            class="px-3 py-1.5 rounded-xl border border-amber-300 bg-white hover:bg-amber-100 text-amber-900 font-bold text-xs transition cursor-pointer">
+                                        <span x-show="!copiedCode">Copy Code</span>
+                                        <span x-show="copiedCode" class="text-emerald-700 font-bold">✓ Copied</span>
+                                    </button>
+
+                                    <button type="button"
+                                            @click="navigator.clipboard.writeText('{{ url('/community/register?ref=' . $user->referral_code) }}'); copiedLink = true; setTimeout(() => copiedLink = false, 2000)"
+                                            class="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs transition cursor-pointer shadow-xs">
+                                        <span x-show="!copiedLink">Share Link</span>
+                                        <span x-show="copiedLink" class="text-white">✓ Link Copied</span>
+                                    </button>
+                                </div>
+                            </div>
+                        @endif
+
+                        {{-- =========================================================================
                              PROFILE COMPLETION & ACTIVITY PROGRESS BAR (SET BY ADMIN)
                              ========================================================================= --}}
                         @if(isset($activityProgress) && !empty($activityProgress['total_count']))
@@ -651,9 +690,9 @@
 
                             <div class="profile-stat p-3.5 rounded-xl bg-slate-50 border border-slate-100/80 min-w-0">
                                 <div class="text-lg font-extrabold text-[#0b1329]">
-                                    {{ number_format($profileStats['shares'] ?? 0) }}
+                                    {{ number_format($profileStats['referred'] ?? $user->stat?->referred_count ?? $user->referred_count ?? 0) }}
                                 </div>
-                                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Shares</div>
+                                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">Referred</div>
                             </div>
                         </div>
 

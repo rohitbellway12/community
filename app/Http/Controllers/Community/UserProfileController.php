@@ -157,6 +157,8 @@ class UserProfileController extends Controller
                     ->where('user_id', $user->id)
                     ->whereNull('posts.deleted_at');
             })->count(),
+
+            'referred' => (int) ($user->stat?->referred_count ?? $user->referred_count ?? 0),
         ];
 
         /*
