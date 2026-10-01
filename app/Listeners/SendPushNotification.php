@@ -42,7 +42,7 @@ class SendPushNotification
 
         $pushData = $this->buildPushData($data);
 
-        SendPushNotificationJob::dispatch(
+        SendPushNotificationJob::dispatchAfterResponse(
             $notifiable->id,
             $tokens,
             $title,
