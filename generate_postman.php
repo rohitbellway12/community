@@ -5,22 +5,23 @@ $collection = [
     "info" => [
         "name" => "REIAC Community API",
         "schema" => "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-        "_postman_id" => uniqid(),
-        "description" => "Complete API Reference - 82 endpoints organized by group",
+        "_postman_id" => "c355115a-fb02-4aa7-829c-eaec07a329ce",
+        "description" => "Complete API Reference - All 88 endpoints organized by group for Web and Mobile App",
         "protocolProfileBehavior" => ["disableBodyPruning" => true],
     ],
     "item" => [],
     "variable" => [
-        ["id" => "baseUrl", "name" => "baseUrl", "value" => $baseUrl, "type" => "string"],
-        ["id" => "token", "name" => "token", "value" => "<YOUR_TOKEN>", "type" => "string"],
-        ["id" => "post_id", "name" => "post_id", "value" => "1", "type" => "string"],
-        ["id" => "comment_id", "name" => "comment_id", "value" => "1", "type" => "string"],
-        ["id" => "user_id", "name" => "user_id", "value" => "2", "type" => "string"],
-        ["id" => "follower_id", "name" => "follower_id", "value" => "3", "type" => "string"],
-        ["id" => "group_id", "name" => "group_id", "value" => "1", "type" => "string"],
-        ["id" => "test_id", "name" => "test_id", "value" => "1", "type" => "string"],
-        ["id" => "attempt_id", "name" => "attempt_id", "value" => "1", "type" => "string"],
-        ["id" => "slug", "name" => "slug", "value" => "my-event", "type" => "string"],
+        ["id" => "baseUrl", "key" => "baseUrl", "value" => $baseUrl, "type" => "string"],
+        ["id" => "token", "key" => "token", "value" => "<YOUR_TOKEN>", "type" => "string"],
+        ["id" => "post_id", "key" => "post_id", "value" => "1", "type" => "string"],
+        ["id" => "comment_id", "key" => "comment_id", "value" => "1", "type" => "string"],
+        ["id" => "user_id", "key" => "user_id", "value" => "2", "type" => "string"],
+        ["id" => "follower_id", "key" => "follower_id", "value" => "3", "type" => "string"],
+        ["id" => "group_id", "key" => "group_id", "value" => "1", "type" => "string"],
+        ["id" => "test_id", "key" => "test_id", "value" => "1", "type" => "string"],
+        ["id" => "attempt_id", "key" => "attempt_id", "value" => "1", "type" => "string"],
+        ["id" => "slug", "key" => "slug", "value" => "my-event", "type" => "string"],
+        ["id" => "id_or_username", "key" => "id_or_username", "value" => "admin", "type" => "string"],
     ],
 ];
 
@@ -51,7 +52,7 @@ function req($name, $method, $endpoint, $auth = false, $body = null, $extraHeade
         ],
         "response" => [],
     ];
-    if ($body) {
+    if ($body !== null) {
         $item["request"]["body"] = ["mode" => "raw", "raw" => $body, "options" => []];
     }
     return $item;
@@ -71,7 +72,7 @@ $guestFolder = [
                 req("Login", "POST", "/auth/login", false, '{"email":"test@example.com","password":"password123","device_name":"Mobile"}'),
                 req("Forgot Password", "POST", "/auth/forgot-password", false, '{"email":"test@example.com"}'),
                 req("Verify OTP", "POST", "/auth/verify-otp", false, '{"email":"test@example.com","otp":"123456"}'),
-                req("Reset Password", "POST", "/auth/reset-password", false, '{"email":"test@example.com","password":"new123","password_confirmation":"new123","reset_token":"abc"}'),
+                req("Reset Password", "POST", "/auth/reset-password", false, '{"email":"test@example.com","password":"newpassword123","password_confirmation":"newpassword123","reset_token":"abc"}'),
             ],
         ],
         // Public Data
@@ -108,6 +109,8 @@ $guestFolder = [
             "item" => [
                 req("Get User Profile", "GET", "/users/{id_or_username}"),
                 req("Get User Posts", "GET", "/users/{id_or_username}/posts"),
+                req("Get User Followers", "GET", "/users/{user_id}/followers"),
+                req("Get User Following", "GET", "/users/{user_id}/following"),
             ],
         ],
         // Groups (Public)
@@ -150,7 +153,7 @@ $authFolder = [
             "item" => [
                 req("Get My Profile", "GET", "/auth/me", true),
                 req("Logout", "POST", "/auth/logout", true),
-                req("Change Password", "POST", "/auth/change-password", true, '{"current_password":"old","password":"new123","password_confirmation":"new123"}'),
+                req("Change Password", "POST", "/auth/change-password", true, '{"current_password":"oldpassword","password":"newpassword123","password_confirmation":"newpassword123"}'),
                 req("Delete Account", "DELETE", "/auth/delete-account", true, '{"password":"password123"}'),
             ],
         ],
@@ -171,12 +174,12 @@ $authFolder = [
             "name" => "📝 Posts",
             "item" => [
                 req("Get Saved Posts", "GET", "/posts/saved", true),
-                req("Create Post", "POST", "/posts", true, '{"title":"My Post","content":"Hello World","category_id":1}'),
-                req("Update Post", "PUT", "/posts/{post_id}", true, '{"title":"Updated","content":"Updated"}'),
+                req("Create Post", "POST", "/posts", true, '{"title":"My Discussion Post","content":"Hello Community! This is my post.","category_id":1,"tags":[1,2],"visibility":"public"}'),
+                req("Update Post", "PUT", "/posts/{post_id}", true, '{"title":"Updated Title","content":"Updated content."}'),
                 req("Delete Post", "DELETE", "/posts/{post_id}", true),
                 req("Like Post", "POST", "/posts/{post_id}/like", true),
                 req("Save Post", "POST", "/posts/{post_id}/save", true),
-                req("Share Post", "POST", "/posts/{post_id}/share", true, '{"message":"Check this!"}'),
+                req("Share Post", "POST", "/posts/{post_id}/share", true, '{"message":"Check this discussion!"}'),
                 req("Mark Solved", "POST", "/posts/{post_id}/mark-solved", true),
             ],
         ],
@@ -184,8 +187,8 @@ $authFolder = [
         [
             "name" => "💬 Comments",
             "item" => [
-                req("Create Comment", "POST", "/posts/{post_id}/comments", true, '{"body":"Nice post!"}'),
-                req("Update Comment", "PUT", "/comments/{comment_id}", true, '{"body":"Updated comment"}'),
+                req("Create Comment", "POST", "/posts/{post_id}/comments", true, '{"content":"This is a comment.","parent_id":null}'),
+                req("Update Comment", "PUT", "/comments/{comment_id}", true, '{"content":"Updated comment content."}'),
                 req("Delete Comment", "DELETE", "/comments/{comment_id}", true),
                 req("Like Comment", "POST", "/comments/{comment_id}/like", true),
             ],
@@ -205,7 +208,7 @@ $authFolder = [
         [
             "name" => "👤 Profile & Activity",
             "item" => [
-                req("Update Profile", "POST", "/profile/update", true, '{"name":"New Name","username":"newname","bio":"Bio","location":"Mumbai","country_id":1}'),
+                req("Update Profile", "POST", "/profile/update", true, '{"name":"User Name","username":"username123","bio":"Community Member","location":"Seoul, Korea","country_id":1}'),
                 req("Profile Activities", "GET", "/profile/activities", true),
                 req("User Activity", "GET", "/user/activity", true),
             ],
@@ -214,13 +217,15 @@ $authFolder = [
         [
             "name" => "🚩 Reports",
             "item" => [
-                req("Report Content", "POST", "/reports", true, '{"reportable_type":"App\\Models\\Post","reportable_id":1,"reason":"Spam","description":"Spam"}'),
+                req("Report Content", "POST", "/reports", true, '{"reportable_type":"App\\Models\\Post","reportable_id":1,"reason":"Spam","description":"Spam discussion"}'),
             ],
         ],
         // Follow
         [
             "name" => "👥 Follow",
             "item" => [
+                req("Get My Followers", "GET", "/user/followers", true),
+                req("Get My Following", "GET", "/user/following", true),
                 req("Follow Status", "GET", "/users/{user_id}/follow/status", true),
                 req("Follow User", "POST", "/users/{user_id}/follow", true),
                 req("Unfollow User", "DELETE", "/users/{user_id}/follow", true),
@@ -231,8 +236,8 @@ $authFolder = [
         [
             "name" => "👥 Groups",
             "item" => [
-                req("Create Group", "POST", "/groups", true, '{"name":"My Group","description":"Test","category_id":1}'),
-                req("Update Group", "PUT", "/groups/{group_id}", true, '{"name":"Updated Group"}'),
+                req("Create Group", "POST", "/groups", true, '{"name":"Study Group","description":"Group for exams and studies","visibility":"public","members":[2,3]}'),
+                req("Update Group", "PUT", "/groups/{group_id}", true, '{"name":"Updated Study Group","description":"Updated description","visibility":"public"}'),
                 req("Delete Group", "DELETE", "/groups/{group_id}", true),
                 req("Join Group", "POST", "/groups/{group_id}/join", true),
                 req("Leave Group", "DELETE", "/groups/{group_id}/leave", true),
@@ -241,11 +246,11 @@ $authFolder = [
                 req("Get Members", "GET", "/groups/{group_id}/members", true),
                 req("Get Requests", "GET", "/groups/{group_id}/requests", true),
                 req("Get Invitations", "GET", "/groups/{group_id}/invitations", true),
-                req("Create Group Post", "POST", "/groups/{group_id}/posts", true, '{"title":"Announcement","content":"Welcome!"}'),
+                req("Create Group Post", "POST", "/groups/{group_id}/posts", true, '{"title":"Announcement","content":"Welcome members!"}'),
                 req("Accept Request", "POST", "/groups/{group_id}/requests/{user_id}/accept", true),
                 req("Reject Request", "POST", "/groups/{group_id}/requests/{user_id}/reject", true),
-                req("Accept Invitation", "POST", "/groups/{group_id}/invitations/accept", true, '{"invitation_id":1}'),
-                req("Reject Invitation", "POST", "/groups/{group_id}/invitations/reject", true, '{"invitation_id":1}'),
+                req("Accept Invitation", "POST", "/groups/{group_id}/invitations/accept", true),
+                req("Reject Invitation", "POST", "/groups/{group_id}/invitations/reject", true),
             ],
         ],
         // Events (Auth)
@@ -269,7 +274,7 @@ $authFolder = [
                 req("My Attempts", "GET", "/tests/my-attempts", true),
                 req("Start Test", "POST", "/tests/{test_id}/start", true),
                 req("Take Test", "GET", "/tests/{test_id}/attempts/{attempt_id}", true),
-                req("Save Answer", "POST", "/tests/{test_id}/attempts/{attempt_id}/answer", true, '{"question_id":1,"answer_id":2}'),
+                req("Save Answer", "POST", "/tests/{test_id}/attempts/{attempt_id}/answer", true, '{"question_id":1,"selected_option_id":2}'),
                 req("Clear Answer", "POST", "/tests/{test_id}/attempts/{attempt_id}/clear-answer", true, '{"question_id":1}'),
                 req("Mark for Review", "POST", "/tests/{test_id}/attempts/{attempt_id}/mark-review", true, '{"question_id":1}'),
                 req("Submit Test", "POST", "/tests/{test_id}/attempts/{attempt_id}/submit", true),
@@ -283,12 +288,11 @@ $collection["item"] = [$guestFolder, $authFolder];
 
 $json = json_encode($collection, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
-$filename = __DIR__ . '/postman_collection.json';
+$filename = __DIR__ . '/REIAC Community API.postman_collection.json';
 file_put_contents($filename, $json);
 
-echo "Postman collection created: $filename\n";
+echo "Postman collection generated: $filename\n";
 
-// Count total endpoints
 function countEndpoints($items) {
     $count = 0;
     foreach ($items as $item) {
@@ -302,5 +306,3 @@ function countEndpoints($items) {
 }
 
 echo "Total endpoints: " . countEndpoints($collection["item"]) . "\n";
-echo "Total folders: " . count($collection["item"]) . "\n";
-echo "Import in Postman: File → Import → Select this JSON file\n";
