@@ -171,14 +171,21 @@
 
                     <span class="ms-2 text-xs font-medium text-slate-600">
                         I agree to the
-
-                        <button
-                            type="button"
-                            onclick="openTermsModal()"
-                            class="text-indigo-600 hover:underline font-bold focus:outline-none"
+                        <a
+                            href="{{ route('community.terms') }}"
+                            target="_blank"
+                            class="text-indigo-600 hover:underline font-bold"
                         >
-                            Terms & Conditions and Privacy Policy
-                        </button>.
+                            Terms & Conditions
+                        </a>
+                        and
+                        <a
+                            href="{{ route('community.privacy') }}"
+                            target="_blank"
+                            class="text-indigo-600 hover:underline font-bold"
+                        >
+                            Privacy Policy
+                        </a>.
                     </span>
                 </label>
             </div>

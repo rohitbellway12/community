@@ -35,6 +35,7 @@ Route::get('/admin/{any?}', function ($any = null) {
 
 Route::get('/events/{slug}', [EventWebController::class, 'show'])->name('events.show');
 
+
 Route::prefix('community')->group(function () {
     require __DIR__ . '/auth.php';
 
@@ -104,6 +105,17 @@ Route::prefix('community')->group(function () {
         '/guidelines',
         [CommunityController::class, 'guidelines']
     )->name('community.guidelines');
+
+    Route::get(
+        '/privacy-policy',
+        [CommunityController::class, 'privacyPolicy']
+    )->name('community.privacy');
+
+    Route::get(
+        '/terms-and-conditions',
+        [CommunityController::class, 'terms']
+    )->name('community.terms');
+
 
     Route::get('/events/{slug}', [EventWebController::class, 'show'])
         ->name('community.events.show');

@@ -398,4 +398,16 @@
     </div>
 @endguest
 
+    {{-- Footer Links --}}
+    <div class="px-2 py-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-[11px] font-semibold text-slate-400">
+        <a href="{{ route('community.guidelines') }}" class="hover:text-amber-600 transition">Guidelines</a>
+        <span>&bull;</span>
+        <a href="{{ route('community.privacy') }}" class="hover:text-amber-600 transition">Privacy Policy</a>
+        <span>&bull;</span>
+        <a href="{{ route('community.terms') }}" class="hover:text-amber-600 transition">Terms & Conditions</a>
+        <div class="w-full text-center text-[10px] text-slate-400 font-normal mt-1">
+            &copy; {{ date('Y') }} REIAC Community &bull; Bellway Infotech
+        </div>
+    </div>
+
 </aside>

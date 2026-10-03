@@ -283,6 +283,7 @@ class PostController extends Controller
 
                     $post->media()->create([
                         'file_path'  => $filePath,
+                        'type'       => $isVideo ? 'video' : 'image',
                         'file_type'  => $isVideo ? 'video' : 'image',
                         'file_size'  => $file->getSize(),
                         'mime_type'  => $mimeType,
@@ -373,6 +374,7 @@ class PostController extends Controller
 
                     $post->media()->create([
                         'file_path'  => $filePath,
+                        'type'       => $isVideo ? 'video' : 'image',
                         'file_type'  => $isVideo ? 'video' : 'image',
                         'file_size'  => $file->getSize(),
                         'mime_type'  => $mimeType,

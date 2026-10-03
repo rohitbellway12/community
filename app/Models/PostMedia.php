@@ -22,6 +22,16 @@ class PostMedia extends Model
         'sort_order',
     ];
 
+    public function setFileTypeAttribute($value): void
+    {
+        $this->attributes['type'] = $value;
+    }
+
+    public function getFileTypeAttribute(): ?string
+    {
+        return $this->attributes['type'] ?? 'image';
+    }
+
     public function post()
     {
         return $this->belongsTo(Post::class);

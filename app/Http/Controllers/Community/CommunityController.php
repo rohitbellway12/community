@@ -200,6 +200,38 @@ class CommunityController extends Controller
         ]);
     }
 
+    public function privacyPolicy(): View
+    {
+        $topContributors = User::getTopContributors(5);
+        $categories = \App\Models\Category::where('status', 1)->orderBy('sort_order')->take(8)->get();
+        $tags = \App\Models\Tag::take(10)->get();
+        $trendingTopics = \App\Models\Category::withCount('posts')->orderByDesc('posts_count')->take(5)->get();
+
+        return view('community.privacy-policy', [
+            'user' => auth()->user(),
+            'topContributors' => $topContributors,
+            'categories' => $categories,
+            'tags' => $tags,
+            'trendingTopics' => $trendingTopics,
+        ]);
+    }
+
+    public function terms(): View
+    {
+        $topContributors = User::getTopContributors(5);
+        $categories = \App\Models\Category::where('status', 1)->orderBy('sort_order')->take(8)->get();
+        $tags = \App\Models\Tag::take(10)->get();
+        $trendingTopics = \App\Models\Category::withCount('posts')->orderByDesc('posts_count')->take(5)->get();
+
+        return view('community.terms-and-conditions', [
+            'user' => auth()->user(),
+            'topContributors' => $topContributors,
+            'categories' => $categories,
+            'tags' => $tags,
+            'trendingTopics' => $trendingTopics,
+        ]);
+    }
+
     public function like(Request $request, Post $post): JsonResponse
     {
         if ($request->user() === null) {
