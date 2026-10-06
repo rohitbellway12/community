@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Follow;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Str;
@@ -29,6 +30,21 @@ class PostResource extends JsonResource
                 : $this->savedBy()->where('user_id', $currentUserId)->exists();
         }
 
+        $isFollowing = false;
+        if ($currentUserId && $this->user_id) {
+            if ((int) $currentUserId !== (int) $this->user_id) {
+                $followingIds = $request->attributes->get('auth_following_ids');
+                if ($followingIds === null) {
+                    $followingIds = Follow::where('follower_id', $currentUserId)
+                        ->pluck('following_id')
+                        ->flip()
+                        ->toArray();
+                    $request->attributes->set('auth_following_ids', $followingIds);
+                }
+                $isFollowing = isset($followingIds[$this->user_id]);
+            }
+        }
+
         return [
             'id'             => $this->id,
             'title'          => $this->title,
@@ -52,6 +68,7 @@ class PostResource extends JsonResource
             ],
             'is_liked'      => (bool) $isLiked,
             'is_saved'      => (bool) $isSaved,
+            'is_following'  => (bool) $isFollowing,
             'created_at'    => $this->created_at?->toIso8601String(),
             'updated_at'    => $this->updated_at?->toIso8601String(),
         ];

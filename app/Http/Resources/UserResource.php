@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Follow;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -32,6 +33,29 @@ class UserResource extends JsonResource
                 : asset('storage/' . $profile->cover_image);
         }
 
+        $currentUserId = $request->user('sanctum')?->id
+            ?? $request->user()?->id
+            ?? auth('sanctum')->id()
+            ?? auth()->id();
+
+        $isFollowing = false;
+        $isSelf = false;
+
+        if ($currentUserId) {
+            $isSelf = (int) $currentUserId === (int) $this->id;
+            if (!$isSelf) {
+                $followingIds = $request->attributes->get('auth_following_ids');
+                if ($followingIds === null) {
+                    $followingIds = Follow::where('follower_id', $currentUserId)
+                        ->pluck('following_id')
+                        ->flip()
+                        ->toArray();
+                    $request->attributes->set('auth_following_ids', $followingIds);
+                }
+                $isFollowing = isset($followingIds[$this->id]);
+            }
+        }
+
         return [
             'id'             => $this->id,
             'name'           => $this->name,
@@ -39,6 +63,8 @@ class UserResource extends JsonResource
             'referral_code'  => $this->referral_code,
             'role'           => $this->role?->value ?? (string) $this->role,
             'status'         => $this->status?->value ?? (string) $this->status,
+            'is_self'        => (bool) $isSelf,
+            'is_following'   => (bool) $isFollowing,
             'email_verified' => !is_null($this->email_verified_at),
             'device'         => [
                 'device_type' => $this->device_type,
