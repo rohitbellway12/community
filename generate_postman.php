@@ -22,6 +22,8 @@ $collection = [
         ["id" => "attempt_id", "key" => "attempt_id", "value" => "1", "type" => "string"],
         ["id" => "slug", "key" => "slug", "value" => "my-event", "type" => "string"],
         ["id" => "id_or_username", "key" => "id_or_username", "value" => "admin", "type" => "string"],
+        ["id" => "notification_id", "key" => "notification_id", "value" => "1", "type" => "string"],
+        ["id" => "device_token_id", "key" => "device_token_id", "value" => "1", "type" => "string"],
     ],
 ];
 
@@ -38,6 +40,17 @@ function req($name, $method, $endpoint, $auth = false, $body = null, $extraHeade
         $parts = explode(": ", $h, 2);
         $headers[] = ["key" => $parts[0], "value" => $parts[1] ?? '', "type" => "text"];
     }
+
+    $urlParts = parse_url($endpoint);
+    $pathSegments = explode("/", ltrim($urlParts['path'] ?? '', "/"));
+    $queryParams = [];
+    if (!empty($urlParts['query'])) {
+        parse_str($urlParts['query'], $parsed);
+        foreach ($parsed as $k => $v) {
+            $queryParams[] = ["key" => $k, "value" => (string)$v];
+        }
+    }
+
     $item = [
         "name" => $name,
         "request" => [
@@ -46,8 +59,8 @@ function req($name, $method, $endpoint, $auth = false, $body = null, $extraHeade
             "url" => [
                 "raw" => "{{baseUrl}}" . $endpoint,
                 "host" => ["{{baseUrl}}"],
-                "path" => explode("/", ltrim($endpoint, "/")),
-                "query" => [],
+                "path" => $pathSegments,
+                "query" => $queryParams,
             ],
         ],
         "response" => [],
@@ -166,7 +179,7 @@ $authFolder = [
                 req("Get Device Info", "GET", "/device", true),
                 req("Register FCM Token", "POST", "/device-tokens", true, '{"fcm_token":"fcm_token_here","device_type":"android","app_version":"1.0.4"}'),
                 req("Get Device Tokens", "GET", "/device-tokens", true),
-                req("Delete Device Token", "DELETE", "/device-tokens/{token}", true),
+                req("Delete Device Token", "DELETE", "/device-tokens/{device_token_id}", true),
             ],
         ],
         // Posts
@@ -175,7 +188,8 @@ $authFolder = [
             "item" => [
                 req("Get Saved Posts", "GET", "/posts/saved", true),
                 req("Create Post", "POST", "/posts", true, '{"title":"My Discussion Post","content":"Hello Community! This is my post.","category_id":1,"tags":[1,2],"visibility":"public"}'),
-                req("Update Post", "PUT", "/posts/{post_id}", true, '{"title":"Updated Title","content":"Updated content."}'),
+                req("Create Post in Group", "POST", "/posts", true, '{"title":"Group Announcement","content":"Welcome to the group!","category_id":1,"group_id":1,"visibility":"public"}'),
+                req("Update Post", "PUT", "/posts/{post_id}", true, '{"title":"Updated Title","content":"Updated content.","category_id":1}'),
                 req("Delete Post", "DELETE", "/posts/{post_id}", true),
                 req("Like Post", "POST", "/posts/{post_id}/like", true),
                 req("Save Post", "POST", "/posts/{post_id}/save", true),
@@ -199,9 +213,9 @@ $authFolder = [
             "item" => [
                 req("Get Notifications", "GET", "/notifications", true),
                 req("Unread Count", "GET", "/notifications/unread-count", true),
-                req("Mark Notification Read", "PUT", "/notifications/{id}/read", true),
+                req("Mark Notification Read", "PUT", "/notifications/{notification_id}/read", true),
                 req("Mark All Read", "PUT", "/notifications/read-all", true),
-                req("Delete Notification", "DELETE", "/notifications/{id}", true),
+                req("Delete Notification", "DELETE", "/notifications/{notification_id}", true),
             ],
         ],
         // Profile & Activity
@@ -217,7 +231,7 @@ $authFolder = [
         [
             "name" => "🚩 Reports",
             "item" => [
-                req("Report Content", "POST", "/reports", true, '{"reportable_type":"App\\Models\\Post","reportable_id":1,"reason":"Spam","description":"Spam discussion"}'),
+                req("Report Content", "POST", "/reports", true, '{"type":"post","id":1,"reason":"Spam","description":"Spam discussion"}'),
             ],
         ],
         // Follow
@@ -236,17 +250,18 @@ $authFolder = [
         [
             "name" => "👥 Groups",
             "item" => [
+                req("Get My Joined Groups", "GET", "/groups?joined=1", true),
                 req("Create Group", "POST", "/groups", true, '{"name":"Study Group","description":"Group for exams and studies","visibility":"public","members":[2,3]}'),
                 req("Update Group", "PUT", "/groups/{group_id}", true, '{"name":"Updated Study Group","description":"Updated description","visibility":"public"}'),
                 req("Delete Group", "DELETE", "/groups/{group_id}", true),
                 req("Join Group", "POST", "/groups/{group_id}/join", true),
                 req("Leave Group", "DELETE", "/groups/{group_id}/leave", true),
-                req("Invite Member", "POST", "/groups/{group_id}/invite", true, '{"user_id":3}'),
+                req("Invite Member", "POST", "/groups/{group_id}/invite", true, '{"members":[3]}'),
                 req("Remove Member", "DELETE", "/groups/{group_id}/members/{user_id}", true),
                 req("Get Members", "GET", "/groups/{group_id}/members", true),
                 req("Get Requests", "GET", "/groups/{group_id}/requests", true),
                 req("Get Invitations", "GET", "/groups/{group_id}/invitations", true),
-                req("Create Group Post", "POST", "/groups/{group_id}/posts", true, '{"title":"Announcement","content":"Welcome members!"}'),
+                req("Get Group Posts", "GET", "/groups/{group_id}/posts", true),
                 req("Accept Request", "POST", "/groups/{group_id}/requests/{user_id}/accept", true),
                 req("Reject Request", "POST", "/groups/{group_id}/requests/{user_id}/reject", true),
                 req("Accept Invitation", "POST", "/groups/{group_id}/invitations/accept", true),

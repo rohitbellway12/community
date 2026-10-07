@@ -206,8 +206,8 @@ Route::prefix('v1')->group(function () {
         Route::get('groups/{group}/requests', [GroupController::class, 'requests'])->name('api.v1.groups.requests.index');
         Route::get('groups/{group}/invitations', [GroupController::class, 'invitations'])->name('api.v1.groups.invitations.index');
 
-        // Group Posts
-        Route::post('groups/{group}/posts', [GroupController::class, 'posts'])->name('api.v1.groups.posts');
+        // Group Posts (List posts in group)
+        Route::match(['get', 'post'], 'groups/{group}/posts', [GroupController::class, 'posts'])->name('api.v1.groups.posts');
 
         // Requests & Invitations
         Route::post('groups/{group}/requests/{targetUser}/accept', [GroupController::class, 'acceptRequest'])->name('api.v1.groups.requests.accept');

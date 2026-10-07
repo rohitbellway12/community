@@ -1238,13 +1238,13 @@
                                     }
                                 ],
                                 "url": {
-                                    "raw": "{{baseUrl}}/device-tokens/{token}",
+                                    "raw": "{{baseUrl}}/device-tokens/{device_token_id}",
                                     "host": [
                                         "{{baseUrl}}"
                                     ],
                                     "path": [
                                         "device-tokens",
-                                        "{token}"
+                                        "{device_token_id}"
                                     ],
                                     "query": []
                                 }
@@ -1331,6 +1331,45 @@
                             "response": []
                         },
                         {
+                            "name": "Create Post in Group",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Accept",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/posts",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "posts"
+                                    ],
+                                    "query": []
+                                },
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\"title\":\"Group Announcement\",\"content\":\"Welcome to the group!\",\"category_id\":1,\"group_id\":1,\"visibility\":\"public\"}",
+                                    "options": []
+                                }
+                            },
+                            "response": []
+                        },
+                        {
                             "name": "Update Post",
                             "request": {
                                 "method": "PUT",
@@ -1364,7 +1403,7 @@
                                 },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\"title\":\"Updated Title\",\"content\":\"Updated content.\"}",
+                                    "raw": "{\"title\":\"Updated Title\",\"content\":\"Updated content.\",\"category_id\":1}",
                                     "options": []
                                 }
                             },
@@ -1807,13 +1846,13 @@
                                     }
                                 ],
                                 "url": {
-                                    "raw": "{{baseUrl}}/notifications/{id}/read",
+                                    "raw": "{{baseUrl}}/notifications/{notification_id}/read",
                                     "host": [
                                         "{{baseUrl}}"
                                     ],
                                     "path": [
                                         "notifications",
-                                        "{id}",
+                                        "{notification_id}",
                                         "read"
                                     ],
                                     "query": []
@@ -1878,13 +1917,13 @@
                                     }
                                 ],
                                 "url": {
-                                    "raw": "{{baseUrl}}/notifications/{id}",
+                                    "raw": "{{baseUrl}}/notifications/{notification_id}",
                                     "host": [
                                         "{{baseUrl}}"
                                     ],
                                     "path": [
                                         "notifications",
-                                        "{id}"
+                                        "{notification_id}"
                                     ],
                                     "query": []
                                 }
@@ -2044,7 +2083,7 @@
                                 },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\"reportable_type\":\"App\\Models\\Post\",\"reportable_id\":1,\"reason\":\"Spam\",\"description\":\"Spam discussion\"}",
+                                    "raw": "{\"type\":\"post\",\"id\":1,\"reason\":\"Spam\",\"description\":\"Spam discussion\"}",
                                     "options": []
                                 }
                             },
@@ -2277,6 +2316,45 @@
                     "name": "👥 Groups",
                     "item": [
                         {
+                            "name": "Get My Joined Groups",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Accept",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json",
+                                        "type": "text"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/groups?joined=1",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "groups"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "joined",
+                                            "value": "1"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
                             "name": "Create Group",
                             "request": {
                                 "method": "POST",
@@ -2497,7 +2575,7 @@
                                 },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\"user_id\":3}",
+                                    "raw": "{\"members\":[3]}",
                                     "options": []
                                 }
                             },
@@ -2649,9 +2727,9 @@
                             "response": []
                         },
                         {
-                            "name": "Create Group Post",
+                            "name": "Get Group Posts",
                             "request": {
-                                "method": "POST",
+                                "method": "GET",
                                 "header": [
                                     {
                                         "key": "Accept",
@@ -2680,11 +2758,6 @@
                                         "posts"
                                     ],
                                     "query": []
-                                },
-                                "body": {
-                                    "mode": "raw",
-                                    "raw": "{\"title\":\"Announcement\",\"content\":\"Welcome members!\"}",
-                                    "options": []
                                 }
                             },
                             "response": []
@@ -3307,6 +3380,18 @@
             "id": "id_or_username",
             "key": "id_or_username",
             "value": "admin",
+            "type": "string"
+        },
+        {
+            "id": "notification_id",
+            "key": "notification_id",
+            "value": "1",
+            "type": "string"
+        },
+        {
+            "id": "device_token_id",
+            "key": "device_token_id",
+            "value": "1",
             "type": "string"
         }
     ]
