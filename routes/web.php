@@ -446,6 +446,10 @@ Route::prefix('community')->group(function () {
             });
 
             Route::resource('tests', \App\Http\Controllers\Admin\AdminTestController::class);
+
+            // Documents & Resources (Universal Format & External Links)
+            Route::get('documents/{document}/download', [\App\Http\Controllers\Admin\AdminDocumentController::class, 'download'])->name('documents.download');
+            Route::resource('documents', \App\Http\Controllers\Admin\AdminDocumentController::class);
         });
 
     Route::middleware('auth')->group(function () {

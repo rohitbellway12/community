@@ -8,7 +8,98 @@
 @endphp
 
 @section('content')
-<div class="p-3 sm:p-6 lg:p-8 max-w-[960px] w-full mx-auto" x-data="{ agreed: false, isStarting: false }">
+<div class="p-3 sm:p-6 lg:p-8 max-w-[960px] w-full mx-auto" x-data="{
+    agreed: false,
+    isStarting: false,
+    requirePhoto: {{ $test->require_camera_photo ? 'true' : 'false' }},
+    photoData: '',
+    cameraActive: false,
+    cameraError: '',
+    videoStream: null,
+    useUploadFallback: false,
+
+    async startCamera() {
+        this.cameraError = '';
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' } });
+            this.videoStream = stream;
+            const videoEl = this.$refs.video;
+            if (videoEl) {
+                videoEl.srcObject = stream;
+                videoEl.play();
+                this.cameraActive = true;
+            }
+        } catch (err) {
+            console.error('Camera access error:', err);
+            this.cameraError = 'Camera access was denied or is not supported. You can upload your photo using the file picker below.';
+            this.useUploadFallback = true;
+            this.cameraActive = false;
+        }
+    },
+
+    capturePhoto() {
+        if (!this.cameraActive) return;
+        const video = this.$refs.video;
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        this.photoData = canvas.toDataURL('image/jpeg', 0.9);
+        this.stopCamera();
+    },
+
+    retakePhoto() {
+        this.photoData = '';
+        this.startCamera();
+    },
+
+    stopCamera() {
+        if (this.videoStream) {
+            this.videoStream.getTracks().forEach(track => track.stop());
+            this.videoStream = null;
+        }
+        this.cameraActive = false;
+    },
+
+    handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const maxDim = 800;
+                let w = img.width;
+                let h = img.height;
+                if (w > maxDim || h > maxDim) {
+                    if (w > h) {
+                        h = Math.round((h * maxDim) / w);
+                        w = maxDim;
+                    } else {
+                        w = Math.round((w * maxDim) / h);
+                        h = maxDim;
+                    }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                this.photoData = canvas.toDataURL('image/jpeg', 0.85);
+                this.stopCamera();
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    },
+
+    canSubmit() {
+        if (!this.agreed || this.isStarting) return false;
+        if (this.requirePhoto && !this.photoData) return false;
+        return true;
+    }
+}" x-init="if (requirePhoto) { startCamera(); }">
 
     {{-- ALERT MESSAGES --}}
     @if(session('error'))
@@ -319,8 +410,102 @@
                 </div>
             </div>
         @else
-            {{-- CASE 3: FRESH STUDENT (DECLARATION & "I AM READY TO BEGIN") --}}
+            {{-- CASE 3: FRESH STUDENT (PHOTO VERIFICATION + DECLARATION & "I AM READY TO BEGIN") --}}
             <div class="p-4 sm:p-6 bg-slate-50 border-t border-slate-200">
+
+                @if($test->require_camera_photo)
+                    {{-- MANDATORY IDENTITY VERIFICATION PHOTO CONTAINER --}}
+                    <div class="mb-6 p-4 sm:p-5 rounded-2xl bg-white border-2 border-amber-300 shadow-xs">
+                        <div class="flex items-center justify-between gap-3 mb-3 pb-3 border-b border-slate-100">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-8 h-8 rounded-lg bg-amber-400 text-[#0b1329] flex items-center justify-center font-black text-sm shrink-0">
+                                    📷
+                                </div>
+                                <div>
+                                    <h4 class="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wide">Candidate Identity Photo Verification</h4>
+                                    <p class="text-[11px] text-slate-500">A clear face snapshot is mandatory before beginning this examination for proctoring & certificate records.</p>
+                                </div>
+                            </div>
+                            <div>
+                                <template x-if="photoData">
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                        ✓ Photo Attached
+                                    </span>
+                                </template>
+                                <template x-if="!photoData">
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black bg-rose-100 text-rose-800 border border-rose-300">
+                                        ● Required
+                                    </span>
+                                </template>
+                            </div>
+                        </div>
+
+                        {{-- CAMERA & PREVIEW DISPLAY --}}
+                        <div class="flex flex-col md:flex-row items-center gap-5">
+                            {{-- Live Video Stream / Preview Box --}}
+                            <div class="relative w-full max-w-[280px] aspect-4/3 bg-slate-900 rounded-xl overflow-hidden shadow-inner flex items-center justify-center border border-slate-700">
+                                <video x-ref="video" autoplay playsinline muted class="w-full h-full object-cover" x-show="cameraActive && !photoData"></video>
+                                <img :src="photoData" alt="Captured Candidate Photo" class="w-full h-full object-cover" x-show="photoData">
+
+                                <template x-if="!cameraActive && !photoData">
+                                    <div class="text-center p-4">
+                                        <div class="text-3xl mb-1">👤</div>
+                                        <p class="text-[11px] text-slate-400 font-medium">Camera not initialized</p>
+                                    </div>
+                                </template>
+
+                                {{-- Face alignment guide overlay --}}
+                                <div class="absolute inset-0 pointer-events-none border-2 border-dashed border-amber-400/50 rounded-full m-3" x-show="cameraActive && !photoData"></div>
+                            </div>
+
+                            {{-- Controls --}}
+                            <div class="flex-1 w-full flex flex-col justify-center gap-2.5">
+                                <template x-if="cameraActive && !photoData">
+                                    <div>
+                                        <button type="button" @click="capturePhoto()" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-amber-400 hover:bg-amber-500 text-[#0b1329] font-black text-xs uppercase tracking-wider rounded-xl shadow-xs transition">
+                                            <span>📸 Capture Face Snapshot</span>
+                                        </button>
+                                        <p class="text-[11px] text-slate-500 mt-1.5">Look directly at the webcam and ensure your face is clearly visible.</p>
+                                    </div>
+                                </template>
+
+                                <template x-if="photoData">
+                                    <div>
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <button type="button" @click="retakePhoto()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs rounded-xl transition">
+                                                <span>🔄 Retake Snapshot</span>
+                                            </button>
+                                            <span class="text-xs font-semibold text-emerald-700">Photo successfully verified & attached!</span>
+                                        </div>
+                                        <p class="text-[11px] text-slate-500 mt-1">This photo will appear on your examination record and final Certificate of Achievement.</p>
+                                    </div>
+                                </template>
+
+                                <template x-if="!cameraActive && !photoData">
+                                    <div class="flex flex-wrap gap-2">
+                                        <button type="button" @click="startCamera()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-[#0b1329] hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition">
+                                            <span>📹 Start Webcam</span>
+                                        </button>
+                                    </div>
+                                </template>
+
+                                {{-- Camera error or fallback notice --}}
+                                <template x-if="cameraError">
+                                    <div class="p-2.5 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-[11px] font-medium">
+                                        <span x-text="cameraError"></span>
+                                    </div>
+                                </template>
+
+                                {{-- Manual File Upload Fallback --}}
+                                <div class="pt-2 border-t border-slate-100">
+                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Or upload photo / selfie:</label>
+                                    <input type="file" accept="image/*" @change="handleFileUpload($event)" class="text-xs text-slate-600 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
                 <label class="flex items-start gap-2.5 sm:gap-3 cursor-pointer select-none">
                     <input type="checkbox"
                            x-model="agreed"
@@ -336,11 +521,13 @@
                         ← Exit to Test Portal
                     </a>
 
-                    <form action="{{ route('tests.student.start', $test) }}" method="POST" @submit="isStarting = true" class="w-full sm:w-auto">
+                    <form action="{{ route('tests.student.start', $test) }}" method="POST" enctype="multipart/form-data" @submit="isStarting = true" class="w-full sm:w-auto">
                         @csrf
+                        <input type="hidden" name="candidate_photo_base64" :value="photoData">
+
                         <button type="submit"
-                                :disabled="!agreed || isStarting"
-                                :class="{ 'opacity-50 cursor-not-allowed bg-slate-400': !agreed || isStarting, 'bg-[#0b1329] hover:bg-slate-900 shadow-md': agreed && !isStarting }"
+                                :disabled="!canSubmit()"
+                                :class="{ 'opacity-50 cursor-not-allowed bg-slate-400': !canSubmit(), 'bg-[#0b1329] hover:bg-slate-900 shadow-md': canSubmit() }"
                                 class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 rounded-xl text-white font-extrabold text-xs uppercase tracking-wider transition cursor-pointer text-center">
                             <template x-if="isStarting">
                                 <span class="inline-flex items-center gap-2">

@@ -1,0 +1,723 @@
+{
+    "info": {
+        "name": "REIAC Online Tests API",
+        "_postman_id": "e8f3b190-2784-45aa-b80c-7b2496a71e11",
+        "description": "Complete and Dedicated Postman Collection for the Online Test Module (Mobile App & Web). Includes Test Discovery, Pre-test Camera Photo Verification, Interactive Exam Engine, Submission, Scorecard, and Certificate of Achievement APIs.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "🔑 1. Authentication (Helper)",
+            "item": [
+                {
+                    "name": "Student Login",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData && jsonData.data && jsonData.data.token) {",
+                                    "    pm.collectionVariables.set('token', jsonData.data.token);",
+                                    "    console.log('Bearer Token updated successfully in collection variables!');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\",\n    \"device_name\": \"Mobile\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "login"
+                            ]
+                        },
+                        "description": "Authenticates the student and automatically updates the {{token}} collection variable for all subsequent requests."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Helper endpoint to obtain Sanctum Bearer token for running test APIs."
+        },
+        {
+            "name": "📋 2. Test Discovery & Instructions",
+            "item": [
+                {
+                    "name": "List All Available Tests",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/tests",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "tests"
+                            ]
+                        },
+                        "description": "Returns all published, non-expired tests. Filters targeted tests automatically so students only see tests for which they are eligible (all, group, or user). Response includes `require_camera_photo`, `target_type`, and `agency_name`."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "List Tests Filtered by Level",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/tests?test_level_id=1",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "tests"
+                            ],
+                            "query": [
+                                {
+                                    "key": "test_level_id",
+                                    "value": "1",
+                                    "description": "ID of specific Test Level"
+                                }
+                            ]
+                        },
+                        "description": "Filters test catalog by specific proficiency level."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Test Details & Instructions",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/tests/{{test_id}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "tests",
+                                "{{test_id}}"
+                            ]
+                        },
+                        "description": "Fetches complete instructions, metrics (duration, total marks, passing cutoff), student attempt status, and flags: `require_camera_photo`, `agency_name`, `controller_name`, `director_name`."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Endpoints to browse tests, check rules, and view admittance details."
+        },
+        {
+            "name": "⚡ 3. Start Exam & Camera Photo Verification",
+            "item": [
+                {
+                    "name": "Start Test (Option A: Image File Upload - Multipart)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData && jsonData.data && jsonData.data.attempt_id) {",
+                                    "    pm.collectionVariables.set('attempt_id', jsonData.data.attempt_id);",
+                                    "    console.log('Attempt ID set to: ' + jsonData.data.attempt_id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "candidate_photo",
+                                    "type": "file",
+                                    "src": [],
+                                    "description": "Clear candidate selfie or webcam photo file (JPEG/PNG)"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/tests/{{test_id}}/start",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "tests",
+                                "{{test_id}}",
+                                "start"
+                            ]
+                        },
+                        "description": "Initiates test session by uploading candidate photo as multipart form-data. Stores image in public storage and links to attempt. Automatically updates {{attempt_id}}."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Start Test (Option B: Base64 Webcam Snapshot - JSON)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData && jsonData.data && jsonData.data.attempt_id) {",
+                                    "    pm.collectionVariables.set('attempt_id', jsonData.data.attempt_id);",
+                                    "    console.log('Attempt ID set to: ' + jsonData.data.attempt_id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"candidate_photo_base64\": \"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP...\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/tests/{{test_id}}/start",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "tests",
+                                "{{test_id}}",
+                                "start"
+                            ]
+                        },
+                        "description": "Initiates test session by passing captured webcam snapshot as base64 Data URL. Ideal for Flutter camera preview / HTML5 canvas snapshots."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Start Test (Option C: Standard - If Photo Not Required)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData && jsonData.data && jsonData.data.attempt_id) {",
+                                    "    pm.collectionVariables.set('attempt_id', jsonData.data.attempt_id);",
+                                    "    console.log('Attempt ID set to: ' + jsonData.data.attempt_id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/tests/{{test_id}}/start",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "tests",
+                                "{{test_id}}",
+                                "start"
+                            ]
+                        },
+                        "description": "Starts test when `require_camera_photo` is false, or resumes ongoing active session."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "APIs to begin test session with pre-test identity capture."
+        },
+        {
+            "name": "✍️ 4. Active Examination Engine",
+            "item": [
+                {
+                    "name": "Take Test / Get Questions & State",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/tests/{{test_id}}/attempts/{{attempt_id}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "tests",
+                                "{{test_id}}",
+                                "attempts",
+                                "{{attempt_id}}"
+                            ]
+                        },
+                        "description": "Returns full list of test questions, MCQ options, allowed until timestamp, remaining seconds, and student's current saved responses."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Save / Update Question Answer",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"question_id\": {{question_id}},\n    \"selected_option_id\": {{selected_option_id}}\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/tests/{{test_id}}/attempts/{{attempt_id}}/answer",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "tests",
+                                "{{test_id}}",
+                                "attempts",
+                                "{{attempt_id}}",
+                                "answer"
+                            ]
+                        },
+                        "description": "Saves student's answer in real-time as they navigate questions (Auto-save)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Clear Selected Answer",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"question_id\": {{question_id}}\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/tests/{{test_id}}/attempts/{{attempt_id}}/clear-answer",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "tests",
+                                "{{test_id}}",
+                                "attempts",
+                                "{{attempt_id}}",
+                                "clear-answer"
+                            ]
+                        },
+                        "description": "Clears response for a question if student wants to deselect an option."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Toggle Mark for Review",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"question_id\": {{question_id}}\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/tests/{{test_id}}/attempts/{{attempt_id}}/mark-review",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "tests",
+                                "{{test_id}}",
+                                "attempts",
+                                "{{attempt_id}}",
+                                "mark-review"
+                            ]
+                        },
+                        "description": "Toggles question flag for review on the question palette."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Submit Examination",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"submission_type\": \"manual\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/tests/{{test_id}}/attempts/{{attempt_id}}/submit",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "tests",
+                                "{{test_id}}",
+                                "attempts",
+                                "{{attempt_id}}",
+                                "submit"
+                            ]
+                        },
+                        "description": "Submits the exam, calculates final score, accuracy, pass/fail result, and generates certificate credentials."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Live exam interaction endpoints during active testing."
+        },
+        {
+            "name": "🏆 5. Results, Certificate & History",
+            "item": [
+                {
+                    "name": "Get Scorecard & Certificate Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/tests/{{test_id}}/attempts/{{attempt_id}}/result",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "tests",
+                                "{{test_id}}",
+                                "attempts",
+                                "{{attempt_id}}",
+                                "result"
+                            ]
+                        },
+                        "description": "Returns full test evaluation, scorecard analytics, detailed answers & explanations, and Certificate details including `candidate_photo_url`, `agency_name`, `controller_name`, `director_name`, and `certificate_url`."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "My Previous Test Attempts History",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/tests/my-attempts",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "tests",
+                                "my-attempts"
+                            ]
+                        },
+                        "description": "Fetches chronological list of all previous tests attempted by the logged-in student with scores and status."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Endpoints to view post-exam analytics, scorecards, certificates, and attempt history."
+        },
+        {
+            "name": "📁 6. Documents & Resources (Universal Format & Links)",
+            "item": [
+                {
+                    "name": "List All Documents & Resources",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/documents",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "documents"
+                            ]
+                        },
+                        "description": "Fetches all published documents and resources with pagination, categories list, file URLs, badges, and clickable external links. Supports search (?search=grammar) and category filtering (?category=Study+Materials)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Single Document Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/documents/{{document_id}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "documents",
+                                "{{document_id}}"
+                            ]
+                        },
+                        "description": "Returns full details for a specific document including file metadata, formatted size, and link_url."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Download Document File",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/documents/{{document_id}}/download",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "documents",
+                                "{{document_id}}",
+                                "download"
+                            ]
+                        },
+                        "description": "Downloads the attached file stream (PPT, PDF, Word, Excel, HWP, image, video, etc.) or redirects to external link."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Endpoints for students and mobile app users to browse, download, and open study documents and external links."
+        }
+    ],
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost/community/api/v1",
+            "type": "string"
+        },
+        {
+            "key": "token",
+            "value": "PASTE_YOUR_BEARER_TOKEN_HERE",
+            "type": "string"
+        },
+        {
+            "key": "test_id",
+            "value": "4",
+            "type": "string"
+        },
+        {
+            "key": "attempt_id",
+            "value": "1",
+            "type": "string"
+        },
+        {
+            "key": "question_id",
+            "value": "1",
+            "type": "string"
+        },
+        {
+            "key": "selected_option_id",
+            "value": "1",
+            "type": "string"
+        },
+        {
+            "key": "document_id",
+            "value": "1",
+            "type": "string"
+        }
+    ]
+}

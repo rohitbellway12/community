@@ -744,6 +744,32 @@
 
                 </div>
 
+                {{-- ====================================================
+                     DOCUMENTS & RESOURCES
+                ===================================================== --}}
+                @php
+                    $isDocsActive = request()->is('*admin/documents*');
+                    $sidebarDocsCount = \App\Models\Document::count();
+                @endphp
+                <div>
+                    <a
+                        href="{{ route('admin.documents.index') }}"
+                        class="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors
+                               {{ $isDocsActive
+                                    ? 'bg-reiac-gold text-reiac-navy font-bold shadow-xs'
+                                    : 'text-slate-300 hover:bg-reiac-slate hover:text-white' }}"
+                    >
+                        <span class="flex items-center space-x-3">
+                            <svg class="w-5 h-5 {{ $isDocsActive ? 'text-reiac-navy' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                            <span>Documents & Resources</span>
+                        </span>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {{ $isDocsActive ? 'bg-reiac-navy/20 text-reiac-navy' : 'bg-white/10 text-slate-300' }}">
+                            {{ $sidebarDocsCount }}
+                        </span>
+                    </a>
+                </div>
 
                 {{-- ====================================================
                      SETTINGS

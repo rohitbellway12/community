@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Storage;
 
 class StudentTestController extends Controller
 {
@@ -45,6 +46,11 @@ class StudentTestController extends Controller
 
         $userAttempts = collect();
         if ($user) {
+            // Filter tests to only those the student has permission to access
+            $tests = $tests->filter(function ($test) use ($user) {
+                return $test->canUserAccess($user);
+            })->values();
+
             $userAttempts = TestAttempt::where('user_id', $user->id)
                 ->whereIn('test_id', $tests->pluck('id'))
                 ->latest('created_at')
@@ -108,7 +114,7 @@ class StudentTestController extends Controller
         return view('student.tests.show', compact('test', 'activeAttempt', 'completedAttemptsCount', 'latestAttempt'));
     }
 
-    public function start(Test $test): RedirectResponse
+    public function start(Request $request, Test $test): RedirectResponse
     {
         $this->authorizeStudent($test);
 
@@ -135,6 +141,15 @@ class StudentTestController extends Controller
             }
             return redirect()->route('tests.student.take', ['test' => $test, 'attempt' => $activeAttempt])
                 ->with('info', 'Resumed ongoing examination session.');
+        }
+
+        // Photo requirement verification
+        $candidatePhotoPath = null;
+        if ($test->require_camera_photo) {
+            $candidatePhotoPath = $this->handleCandidatePhoto($request);
+            if (!$candidatePhotoPath) {
+                return back()->with('error', 'Candidate face verification is mandatory. Please capture or upload your real-time photo before starting.');
+            }
         }
 
         // Check max attempts
@@ -167,6 +182,7 @@ class StudentTestController extends Controller
             'user_id' => $userId,
             'test_id' => $test->id,
             'attempt_number' => $userAttemptsCount + 1,
+            'candidate_photo' => $candidatePhotoPath,
             'started_at' => now(),
             'allowed_until' => now()->addMinutes($test->duration_minutes),
             'total_questions' => $test->questions->count(),
@@ -425,6 +441,10 @@ class StudentTestController extends Controller
             abort(403, 'Please login to take a test.');
         }
 
+        if (!$test->canUserAccess(auth()->user())) {
+            abort(403, 'You do not have permission to access this examination.');
+        }
+
         if ($test->status !== 'published') {
             abort(404, 'Test not found.');
         }
@@ -436,6 +456,28 @@ class StudentTestController extends Controller
         if (!$allowClosedView && !$test->isOpen()) {
             abort(403, 'This test is not currently available.');
         }
+    }
+
+    protected function handleCandidatePhoto(Request $request): ?string
+    {
+        if ($request->hasFile('candidate_photo') && $request->file('candidate_photo')->isValid()) {
+            return $request->file('candidate_photo')->store('test-attempts/photos', 'public');
+        }
+
+        $base64 = $request->input('candidate_photo_base64') ?? $request->input('candidate_photo');
+        if ($base64 && is_string($base64) && str_starts_with($base64, 'data:image/')) {
+            $parts = explode(',', $base64);
+            if (count($parts) === 2) {
+                $data = base64_decode($parts[1]);
+                if ($data !== false) {
+                    $filename = 'test-attempts/photos/' . uniqid('photo_') . '_' . time() . '.jpg';
+                    Storage::disk('public')->put($filename, $data);
+                    return $filename;
+                }
+            }
+        }
+
+        return null;
     }
 
     private function authorizeAttempt(TestAttempt $attempt, bool $requireActive = true): void

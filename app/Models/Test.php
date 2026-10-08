@@ -29,6 +29,13 @@ class Test extends Model
         'max_attempts',
         'tab_switch_limit',
         'status',
+        'target_type',
+        'target_group_id',
+        'target_user_id',
+        'require_camera_photo',
+        'agency_name',
+        'controller_name',
+        'director_name',
     ];
 
     protected $casts = [
@@ -41,6 +48,8 @@ class Test extends Model
         'status' => 'string',
         'open_date' => 'date',
         'close_date' => 'date',
+        'target_type' => 'string',
+        'require_camera_photo' => 'boolean',
     ];
 
     public function getOpenTimeAttribute($value): ?Carbon
@@ -58,6 +67,16 @@ class Test extends Model
         return $this->belongsTo(TestLevel::class);
     }
 
+    public function targetGroup(): BelongsTo
+    {
+        return $this->belongsTo(Group::class, 'target_group_id');
+    }
+
+    public function targetUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'target_user_id');
+    }
+
     public function questions(): BelongsToMany
     {
         return $this->belongsToMany(Question::class, 'test_questions', 'test_id', 'question_id')
@@ -68,6 +87,33 @@ class Test extends Model
     public function attempts(): HasMany
     {
         return $this->hasMany(TestAttempt::class);
+    }
+
+    public function canUserAccess($user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        if ($this->target_type === 'group') {
+            if (!$this->target_group_id) {
+                return true;
+            }
+            $group = $this->targetGroup;
+            if (!$group) {
+                return true;
+            }
+            if ((int) $group->owner_id === (int) $user->id) {
+                return true;
+            }
+            return $group->users()->where('users.id', $user->id)->wherePivot('status', 'active')->exists();
+        }
+
+        if ($this->target_type === 'user') {
+            return (int) $this->target_user_id === (int) $user->id;
+        }
+
+        return true;
     }
 
     public function isExpired(): bool
@@ -125,6 +171,10 @@ class Test extends Model
         }
 
         if (!$user) {
+            return false;
+        }
+
+        if (!$this->canUserAccess($user)) {
             return false;
         }
 

@@ -12,6 +12,7 @@ use App\Traits\ApiResponse;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class StudentTestController extends Controller
 {
@@ -57,6 +58,10 @@ class StudentTestController extends Controller
 
         $userAttempts = collect();
         if ($user) {
+            $tests = $tests->filter(function ($test) use ($user) {
+                return $test->canUserAccess($user);
+            })->values();
+
             $userAttempts = TestAttempt::where('user_id', $user->id)
                 ->whereIn('test_id', $tests->pluck('id'))
                 ->latest('created_at')
@@ -84,6 +89,9 @@ class StudentTestController extends Controller
                 'passing_marks'          => (int) $test->passing_marks,
                 'total_questions'        => (int) $test->questions_count,
                 'max_attempts'           => (int) $test->max_attempts,
+                'require_camera_photo'   => (bool) $test->require_camera_photo,
+                'target_type'            => $test->target_type,
+                'agency_name'            => $test->agency_name,
                 'is_open'                => $test->isOpen(),
                 'open_date'              => $test->open_date?->toDateString(),
                 'close_date'             => $test->close_date?->toDateString(),
@@ -172,11 +180,16 @@ class StudentTestController extends Controller
             'passing_marks'    => (int) $test->passing_marks,
             'total_questions'  => (int) $test->questions_count,
             'max_attempts'     => (int) $test->max_attempts,
-            'tab_switch_limit' => (int) $test->tab_switch_limit,
-            'is_open'          => $test->isOpen(),
-            'open_date'        => $test->open_date?->toDateString(),
-            'close_date'       => $test->close_date?->toDateString(),
-            'user_stats'       => $userStats,
+            'tab_switch_limit'     => (int) $test->tab_switch_limit,
+            'require_camera_photo' => (bool) $test->require_camera_photo,
+            'target_type'          => $test->target_type,
+            'agency_name'          => $test->agency_name,
+            'controller_name'      => $test->controller_name,
+            'director_name'        => $test->director_name,
+            'is_open'              => $test->isOpen(),
+            'open_date'            => $test->open_date?->toDateString(),
+            'close_date'           => $test->close_date?->toDateString(),
+            'user_stats'           => $userStats,
         ];
 
         return $this->successResponse($data, 'Test details retrieved successfully.');
@@ -226,6 +239,15 @@ class StudentTestController extends Controller
             ], 'Resumed ongoing examination session.');
         }
 
+        // Photo requirement verification
+        $candidatePhotoPath = null;
+        if ($test->require_camera_photo) {
+            $candidatePhotoPath = $this->handleCandidatePhoto($request);
+            if (!$candidatePhotoPath) {
+                return $this->errorResponse('Candidate face photo verification is mandatory before starting this examination. Please provide a photo snapshot.', 422);
+            }
+        }
+
         // Check max attempts
         if ($test->max_attempts > 0) {
             $completedCount = TestAttempt::where('user_id', $user->id)
@@ -244,6 +266,7 @@ class StudentTestController extends Controller
             'user_id'          => $user->id,
             'test_id'          => $test->id,
             'attempt_number'   => $userAttemptsCount + 1,
+            'candidate_photo'  => $candidatePhotoPath,
             'started_at'       => now(),
             'allowed_until'    => now()->addMinutes($test->duration_minutes),
             'total_questions'  => $test->questions->count(),
@@ -618,6 +641,10 @@ class StudentTestController extends Controller
                 'issue_date'         => $attempt->submitted_at ? $attempt->submitted_at->format('F d, Y') : date('F d, Y'),
                 'candidate_name'     => $user->name,
                 'candidate_username' => $user->username ?? ('ID-' . $user->id),
+                'candidate_photo_url'=> $attempt->candidate_photo ? asset('storage/' . $attempt->candidate_photo) : null,
+                'agency_name'        => $test->agency_name ?: 'REIAC Test Assessment Center',
+                'controller_name'    => $test->controller_name ?: 'Kang Min-Seok',
+                'director_name'      => $test->director_name ?: 'Dr. Rajesh Sharma',
                 'result_standing'    => $matchedSlab ? $matchedSlab->name : ($attempt->result === 'pass' ? 'QUALIFIED (PASS)' : 'COMPLETED'),
                 'certificate_url'    => $certificateUrl,
             ],
@@ -683,6 +710,14 @@ class StudentTestController extends Controller
      */
     protected function validateTestAvailability(Test $test, bool $allowClosed = false): void
     {
+        $user = request()->user('sanctum') ?? request()->user();
+        if ($user && !$test->canUserAccess($user)) {
+            throw new HttpResponseException(response()->json([
+                'message' => 'You do not have permission to access this restricted examination.',
+                'errors' => ['test' => ['You do not have permission to access this restricted examination.']],
+            ], 403));
+        }
+
         if ($test->status !== 'published') {
             throw new HttpResponseException(response()->json([
                 'message' => 'Examination not found.',
@@ -703,6 +738,31 @@ class StudentTestController extends Controller
                 'errors' => ['test' => ['This examination is currently not open or has expired.']],
             ], 403));
         }
+    }
+
+    /**
+     * Store candidate photo from file upload or base64 webcam payload.
+     */
+    protected function handleCandidatePhoto(Request $request): ?string
+    {
+        if ($request->hasFile('candidate_photo') && $request->file('candidate_photo')->isValid()) {
+            return $request->file('candidate_photo')->store('test-attempts/photos', 'public');
+        }
+
+        $base64 = $request->input('candidate_photo_base64') ?? $request->input('candidate_photo');
+        if ($base64 && is_string($base64) && str_starts_with($base64, 'data:image/')) {
+            $parts = explode(',', $base64);
+            if (count($parts) === 2) {
+                $data = base64_decode($parts[1]);
+                if ($data !== false) {
+                    $filename = 'test-attempts/photos/' . uniqid('photo_') . '_' . time() . '.jpg';
+                    Storage::disk('public')->put($filename, $data);
+                    return $filename;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**

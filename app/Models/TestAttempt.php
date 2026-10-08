@@ -29,6 +29,7 @@ class TestAttempt extends Model
         'submission_type',
         'tab_switch_count',
         'status',
+        'candidate_photo',
     ];
 
     protected $casts = [

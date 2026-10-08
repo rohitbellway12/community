@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\CommentController;
 use App\Http\Controllers\Api\V1\CountryController;
 use App\Http\Controllers\Api\V1\DeviceController;
 use App\Http\Controllers\Api\V1\DeviceTokenController;
+use App\Http\Controllers\Api\V1\DocumentController;
 use App\Http\Controllers\Api\V1\EventController;
 use App\Http\Controllers\Api\V1\FollowController;
 use App\Http\Controllers\Api\V1\GroupController;
@@ -70,6 +71,11 @@ Route::prefix('v1')->group(function () {
     // Tests (Public Read)
     Route::get('tests', [StudentTestController::class, 'index'])->name('api.v1.tests.index');
     Route::get('tests/{test}', [StudentTestController::class, 'show'])->whereNumber('test')->name('api.v1.tests.show');
+
+    // Documents & Resources (Universal Format & External Links)
+    Route::get('documents', [DocumentController::class, 'index'])->name('api.v1.documents.index');
+    Route::get('documents/{document}', [DocumentController::class, 'show'])->whereNumber('document')->name('api.v1.documents.show');
+    Route::get('documents/{document}/download', [DocumentController::class, 'download'])->whereNumber('document')->name('api.v1.documents.download');
 
     // ============================================================
     // AUTHENTICATION

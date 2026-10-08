@@ -66,18 +66,28 @@
                 </svg>
             </div>
 
-            {{-- INSTITUTION HEADER --}}
+            {{-- INSTITUTION & CANDIDATE IDENTITY HEADER --}}
             <div class="flex items-start justify-between gap-4 pb-4 border-b border-slate-200 relative z-10">
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 rounded-2xl bg-[#0b1329] text-amber-400 flex items-center justify-center font-black text-xl shadow-md shrink-0 border border-amber-400/40">
-                        R
-                    </div>
+                <div class="flex items-center gap-3.5">
+                    @if($attempt->candidate_photo)
+                        <img src="{{ asset('storage/' . $attempt->candidate_photo) }}"
+                             alt="{{ $attempt->user->name ?? 'Candidate' }}"
+                             class="w-16 h-16 rounded-xl object-cover border-2 border-amber-400 shadow-sm shrink-0 bg-slate-100">
+                    @elseif($attempt->user && $attempt->user->avatar)
+                        <img src="{{ str_starts_with($attempt->user->avatar, 'http') ? $attempt->user->avatar : asset('storage/' . $attempt->user->avatar) }}"
+                             alt="{{ $attempt->user->name ?? 'Candidate' }}"
+                             class="w-16 h-16 rounded-xl object-cover border-2 border-amber-400 shadow-sm shrink-0 bg-slate-100">
+                    @else
+                        <div class="w-14 h-14 rounded-xl bg-[#0b1329] text-amber-400 flex items-center justify-center font-black text-xl shadow-md shrink-0 border border-amber-400/40">
+                            {{ strtoupper(substr($attempt->user->name ?? 'C', 0, 1)) }}
+                        </div>
+                    @endif
                     <div>
                         <div class="text-lg font-black tracking-wider text-[#0b1329] uppercase">
-                            REIAC Test Assessment Center
+                            {{ $test->agency_name ?: 'REIAC Test Assessment Center' }}
                         </div>
                         <div class="text-[11px] font-bold tracking-widest text-slate-500 uppercase">
-                            Global Korean Language & Educational Proficiency
+                            {{ $test->agency_name ? 'Authorized Examination & Assessment Portal' : 'Global Korean Language & Educational Proficiency' }}
                         </div>
                     </div>
                 </div>
@@ -175,21 +185,21 @@
             <div class="pt-6 border-t border-slate-200 relative z-10 flex items-center justify-between gap-4">
                 <div class="text-left">
                     <div class="font-serif italic text-lg font-bold text-slate-800 tracking-wider">
-                        Kang Min-Seok
+                        {{ $test->controller_name ?: 'Kang Min-Seok' }}
                     </div>
                     <div class="w-40 border-b border-slate-400 my-1"></div>
                     <div class="text-[11px] font-extrabold text-slate-900 uppercase tracking-wide">
                         Controller of Examinations
                     </div>
                     <div class="text-[9px] text-slate-500 font-medium">
-                        REIAC Assessment Council
+                        {{ $test->agency_name ? ($test->agency_name . ' Board') : 'REIAC Assessment Council' }}
                     </div>
                 </div>
 
                 <div class="flex flex-col items-center justify-center shrink-0">
                     <div class="w-20 h-20 rounded-full border-4 border-amber-400 bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 text-[#0b1329] p-1 flex flex-col items-center justify-center shadow-md text-center select-none">
                         <div class="w-full h-full rounded-full border border-amber-600/40 flex flex-col items-center justify-center p-1">
-                            <span class="text-[8px] font-black uppercase tracking-widest leading-none">REIAC</span>
+                            <span class="text-[8px] font-black uppercase tracking-widest leading-none">{{ $test->agency_name ? strtoupper(substr($test->agency_name, 0, 8)) : 'REIAC' }}</span>
                             <span class="text-xs my-0.5">★</span>
                             <span class="text-[7px] font-black uppercase tracking-wider leading-none">VERIFIED</span>
                             <span class="text-[6px] font-bold tracking-tighter opacity-80 mt-0.5">CERTIFICATE</span>
@@ -200,21 +210,21 @@
 
                 <div class="text-right">
                     <div class="font-serif italic text-lg font-bold text-slate-800 tracking-wider">
-                        Dr. Rajesh Sharma
+                        {{ $test->director_name ?: 'Dr. Rajesh Sharma' }}
                     </div>
                     <div class="w-40 border-b border-slate-400 my-1 ml-auto"></div>
                     <div class="text-[11px] font-extrabold text-slate-900 uppercase tracking-wide">
                         Academic Director
                     </div>
                     <div class="text-[9px] text-slate-500 font-medium">
-                        Global Education Board
+                        {{ $test->agency_name ? ($test->agency_name . ' Directorate') : 'Global Education Board' }}
                     </div>
                 </div>
             </div>
 
             {{-- VERIFICATION FOOTER NOTICE --}}
             <div class="mt-5 pt-3 border-t border-slate-100 text-center text-[9px] text-slate-400 font-medium">
-                This is an official system-verified electronic certificate issued by REIAC Test Assessment Center.
+                This is an official system-verified electronic certificate issued by {{ $test->agency_name ?: 'REIAC Test Assessment Center' }}.
                 Authenticity can be verified at: <span class="font-mono text-slate-600 font-bold">{{ url('/community/tests/student/' . $test->id . '/result/' . $attempt->id) }}</span>
             </div>
 

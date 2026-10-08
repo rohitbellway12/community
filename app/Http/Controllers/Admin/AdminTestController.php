@@ -47,8 +47,12 @@ class AdminTestController extends Controller
     {
         $levels = TestLevel::where('status', 'active')->orderBy('name')->get();
         $questions = Question::where('status', 'active')->orderBy('id')->get();
+        $groups = \App\Models\Group::orderBy('name')->get(['id', 'name']);
+        $students = User::where('role', '!=', \App\Enums\UserRole::ADMIN->value)
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
 
-        return view('admin.tests.create', compact('levels', 'questions'));
+        return view('admin.tests.create', compact('levels', 'questions', 'groups', 'students'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -69,6 +73,13 @@ class AdminTestController extends Controller
             'max_attempts' => 'required|integer|min:0',
             'tab_switch_limit' => 'required|integer|min:0',
             'status' => 'required|in:draft,scheduled,published,archived',
+            'target_type' => 'required|in:all,group,user',
+            'target_group_id' => 'nullable|required_if:target_type,group|exists:groups,id',
+            'target_user_id' => 'nullable|required_if:target_type,user|exists:users,id',
+            'require_camera_photo' => 'nullable|boolean',
+            'agency_name' => 'nullable|string|max:255',
+            'controller_name' => 'nullable|string|max:255',
+            'director_name' => 'nullable|string|max:255',
             'questions' => 'required|array|min:1',
             'questions.*' => [
                 'required',
@@ -92,6 +103,13 @@ class AdminTestController extends Controller
             'max_attempts' => $validated['max_attempts'],
             'tab_switch_limit' => $validated['tab_switch_limit'],
             'status' => $validated['status'],
+            'target_type' => $validated['target_type'],
+            'target_group_id' => $validated['target_type'] === 'group' ? $validated['target_group_id'] : null,
+            'target_user_id' => $validated['target_type'] === 'user' ? $validated['target_user_id'] : null,
+            'require_camera_photo' => $request->boolean('require_camera_photo'),
+            'agency_name' => !empty($validated['agency_name']) ? $validated['agency_name'] : 'REIAC Test Assessment Center',
+            'controller_name' => !empty($validated['controller_name']) ? $validated['controller_name'] : 'Kang Min-Seok',
+            'director_name' => !empty($validated['director_name']) ? $validated['director_name'] : 'Dr. Rajesh Sharma',
         ]);
 
         if (!empty($validated['questions'])) {
@@ -103,10 +121,18 @@ class AdminTestController extends Controller
 
         // Notify students about the new/updated test
         if ($test->status === 'published') {
-            $students = User::where('role', \App\Enums\UserRole::USER->value)
-                ->orWhere('role', '!=', \App\Enums\UserRole::ADMIN->value)
-                ->get();
-            Notification::send($students, new NewTestNotification($test));
+            if ($test->target_type === 'user' && $test->target_user_id) {
+                $students = User::where('id', $test->target_user_id)->get();
+            } elseif ($test->target_type === 'group' && $test->target_group_id) {
+                $students = $test->targetGroup ? $test->targetGroup->users()->wherePivot('status', 'active')->get() : collect();
+            } else {
+                $students = User::where('role', \App\Enums\UserRole::USER->value)
+                    ->orWhere('role', '!=', \App\Enums\UserRole::ADMIN->value)
+                    ->get();
+            }
+            if ($students->isNotEmpty()) {
+                Notification::send($students, new NewTestNotification($test));
+            }
         }
 
         return redirect()->route('admin.tests.index')
@@ -121,8 +147,12 @@ class AdminTestController extends Controller
             ->orWhereIn('id', $attachedIds)
             ->orderBy('id')
             ->get();
+        $groups = \App\Models\Group::orderBy('name')->get(['id', 'name']);
+        $students = User::where('role', '!=', \App\Enums\UserRole::ADMIN->value)
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
 
-        return view('admin.tests.edit', compact('test', 'levels', 'questions', 'attachedIds'));
+        return view('admin.tests.edit', compact('test', 'levels', 'questions', 'attachedIds', 'groups', 'students'));
     }
 
     public function update(Request $request, Test $test): RedirectResponse
@@ -143,6 +173,13 @@ class AdminTestController extends Controller
             'max_attempts' => 'required|integer|min:0',
             'tab_switch_limit' => 'required|integer|min:0',
             'status' => 'required|in:draft,scheduled,published,archived',
+            'target_type' => 'required|in:all,group,user',
+            'target_group_id' => 'nullable|required_if:target_type,group|exists:groups,id',
+            'target_user_id' => 'nullable|required_if:target_type,user|exists:users,id',
+            'require_camera_photo' => 'nullable|boolean',
+            'agency_name' => 'nullable|string|max:255',
+            'controller_name' => 'nullable|string|max:255',
+            'director_name' => 'nullable|string|max:255',
             'questions' => 'required|array|min:1',
             'questions.*' => 'exists:questions,id',
         ]);
@@ -163,6 +200,13 @@ class AdminTestController extends Controller
             'max_attempts' => $validated['max_attempts'],
             'tab_switch_limit' => $validated['tab_switch_limit'],
             'status' => $validated['status'],
+            'target_type' => $validated['target_type'],
+            'target_group_id' => $validated['target_type'] === 'group' ? $validated['target_group_id'] : null,
+            'target_user_id' => $validated['target_type'] === 'user' ? $validated['target_user_id'] : null,
+            'require_camera_photo' => $request->boolean('require_camera_photo'),
+            'agency_name' => !empty($validated['agency_name']) ? $validated['agency_name'] : 'REIAC Test Assessment Center',
+            'controller_name' => !empty($validated['controller_name']) ? $validated['controller_name'] : 'Kang Min-Seok',
+            'director_name' => !empty($validated['director_name']) ? $validated['director_name'] : 'Dr. Rajesh Sharma',
         ]);
 
         if (!empty($validated['questions'])) {
@@ -174,8 +218,16 @@ class AdminTestController extends Controller
 
         // Notify students if test is published
         if ($test->status === 'published') {
-            $students = User::where('role', '!=', \App\Enums\UserRole::ADMIN->value)->get();
-            Notification::send($students, new NewTestNotification($test));
+            if ($test->target_type === 'user' && $test->target_user_id) {
+                $students = User::where('id', $test->target_user_id)->get();
+            } elseif ($test->target_type === 'group' && $test->target_group_id) {
+                $students = $test->targetGroup ? $test->targetGroup->users()->wherePivot('status', 'active')->get() : collect();
+            } else {
+                $students = User::where('role', '!=', \App\Enums\UserRole::ADMIN->value)->get();
+            }
+            if ($students->isNotEmpty()) {
+                Notification::send($students, new NewTestNotification($test));
+            }
         }
 
         return redirect()->route('admin.tests.index')

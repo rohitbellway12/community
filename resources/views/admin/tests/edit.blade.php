@@ -149,6 +149,108 @@
             </select>
         </div>
 
+        {{-- TARGET AUDIENCE & ACCESS CONTROL --}}
+        <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-4" x-data="{ targetType: '{{ old('target_type', $test->target_type ?? 'all') }}' }">
+            <div>
+                <label class="block text-xs font-bold text-slate-800 mb-1">Target Audience (Who Can Take This Test?) *</label>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <label class="flex items-center gap-2 p-3 bg-white border rounded-xl cursor-pointer transition"
+                           :class="targetType === 'all' ? 'border-amber-400 ring-2 ring-amber-400/20 bg-amber-50/20' : 'border-slate-200'">
+                        <input type="radio" name="target_type" value="all" x-model="targetType" class="accent-amber-500">
+                        <div>
+                            <div class="text-xs font-bold text-slate-800">All Students</div>
+                            <div class="text-[10px] text-slate-500">Open to all registered learners</div>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-2 p-3 bg-white border rounded-xl cursor-pointer transition"
+                           :class="targetType === 'group' ? 'border-amber-400 ring-2 ring-amber-400/20 bg-amber-50/20' : 'border-slate-200'">
+                        <input type="radio" name="target_type" value="group" x-model="targetType" class="accent-amber-500">
+                        <div>
+                            <div class="text-xs font-bold text-slate-800">Specific Group</div>
+                            <div class="text-[10px] text-slate-500">Only members of a group</div>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-2 p-3 bg-white border rounded-xl cursor-pointer transition"
+                           :class="targetType === 'user' ? 'border-amber-400 ring-2 ring-amber-400/20 bg-amber-50/20' : 'border-slate-200'">
+                        <input type="radio" name="target_type" value="user" x-model="targetType" class="accent-amber-500">
+                        <div>
+                            <div class="text-xs font-bold text-slate-800">Specific Student</div>
+                            <div class="text-[10px] text-slate-500">Only assigned candidate</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            {{-- SPECIFIC GROUP SELECTOR --}}
+            <div x-show="targetType === 'group'" x-cloak>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Select Community Group *</label>
+                <select name="target_group_id" class="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-400 focus:outline-none bg-white">
+                    <option value="">Select a Group</option>
+                    @foreach($groups as $grp)
+                        <option value="{{ $grp->id }}" {{ old('target_group_id', $test->target_group_id) == $grp->id ? 'selected' : '' }}>
+                            {{ $grp->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            {{-- SPECIFIC STUDENT SELECTOR --}}
+            <div x-show="targetType === 'user'" x-cloak>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Select Student / Candidate *</label>
+                <select name="target_user_id" class="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-400 focus:outline-none bg-white">
+                    <option value="">Select a Student</option>
+                    @foreach($students as $st)
+                        <option value="{{ $st->id }}" {{ old('target_user_id', $test->target_user_id) == $st->id ? 'selected' : '' }}>
+                            {{ $st->name }} ({{ $st->email }})
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+
+        {{-- PROCTORING / PHOTO CAPTURE REQUIREMENT --}}
+        <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+            <label class="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" name="require_camera_photo" value="1" {{ old('require_camera_photo', $test->require_camera_photo) ? 'checked' : '' }}
+                       class="w-4 h-4 mt-0.5 rounded border-slate-300 text-amber-500 focus:ring-amber-400 accent-amber-500">
+                <div>
+                    <div class="text-xs font-bold text-slate-900">Require Student Photo Before Test (Identity Verification)</div>
+                    <div class="text-[11px] text-slate-500 mt-0.5">
+                        If checked, students must take a live camera snapshot before starting the exam. This photo will be printed in the top-left badge of their Certificate of Achievement.
+                    </div>
+                </div>
+            </label>
+        </div>
+
+        {{-- CERTIFICATE BRANDING & SIGNATORIES --}}
+        <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+            <div class="flex items-center gap-2 mb-1">
+                <div class="w-2 h-2 rounded-full bg-amber-500"></div>
+                <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Certificate Branding & Signatures</h3>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Consultancy / Agency Name (Header)</label>
+                <input type="text" name="agency_name" value="{{ old('agency_name', $test->agency_name ?? 'REIAC Test Assessment Center') }}"
+                       placeholder="e.g. Global Educational Consultancy"
+                       class="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-400 focus:outline-none bg-white">
+                <p class="text-[10px] text-slate-400 mt-1">This name will appear on the top header of the student's Certificate of Achievement.</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Controller of Examinations (Name)</label>
+                    <input type="text" name="controller_name" value="{{ old('controller_name', $test->controller_name ?? 'Kang Min-Seok') }}"
+                           placeholder="e.g. Kang Min-Seok"
+                           class="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-400 focus:outline-none bg-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Academic Director (Name)</label>
+                    <input type="text" name="director_name" value="{{ old('director_name', $test->director_name ?? 'Dr. Rajesh Sharma') }}"
+                           placeholder="e.g. Dr. Rajesh Sharma"
+                           class="w-full text-xs px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-400 focus:outline-none bg-white">
+                </div>
+            </div>
+        </div>
+
         {{-- QUESTIONS --}}
         <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Questions * (select at least 1)</label>

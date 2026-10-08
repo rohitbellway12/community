@@ -56,6 +56,12 @@
                             </span>
 
                             {{-- STATUS BADGES --}}
+                            @if($test->require_camera_photo)
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
+                                    📷 Face Photo Required
+                                </span>
+                            @endif
+
                             @if($hasActiveAttempt)
                                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1.5 animate-pulse">
                                     <span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
@@ -115,7 +121,7 @@
                     <div class="grid grid-cols-2 sm:flex items-center gap-2 sm:gap-2.5 w-full lg:w-auto mt-2 lg:mt-0 shrink-0">
                         <a href="{{ route('tests.student.show', $test) }}"
                            class="inline-flex items-center justify-center px-4 py-2.5 text-xs font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-xl transition border border-slate-200 text-center">
-                            Details
+                            Instructions
                         </a>
 
                         @if($hasActiveAttempt)
@@ -124,18 +130,22 @@
                                 <span>Resume Exam →</span>
                             </a>
                         @elseif($test->can_take)
-                            <form id="start-exam-form-{{ $test->id }}" action="{{ route('tests.student.start', $test) }}" method="POST" class="w-full sm:w-auto">
-                                @csrf
-                                <button type="button"
-                                        onclick="promptStartExam('start-exam-form-{{ $test->id }}', '{{ addslashes($test->title) }}', {{ $test->duration_minutes }})"
-                                        class="w-full sm:w-auto px-5 py-2.5 text-xs font-bold text-white bg-reiac-navy hover:bg-slate-800 rounded-xl transition shadow-xs inline-flex items-center justify-center gap-1.5 cursor-pointer">
+                            <a href="{{ route('tests.student.show', $test) }}"
+                               class="w-full sm:w-auto px-5 py-2.5 text-xs font-extrabold text-white bg-reiac-navy hover:bg-slate-800 rounded-xl transition shadow-xs inline-flex items-center justify-center gap-1.5 cursor-pointer text-center">
+                                @if($test->require_camera_photo)
+                                    <svg class="w-3.5 h-3.5 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                    <span>Verify Photo & Start →</span>
+                                @else
                                     <svg class="w-3.5 h-3.5 text-reiac-gold shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                     </svg>
-                                    <span>Start Test</span>
-                                </button>
-                            </form>
+                                    <span>Start Test →</span>
+                                @endif
+                            </a>
                         @elseif(!$test->is_open && $test->open_date && now()->lt($test->open_date))
                             <button disabled
                                     class="inline-flex items-center justify-center px-4 py-2.5 text-xs font-bold text-slate-400 bg-slate-100 rounded-xl cursor-not-allowed text-center">
@@ -177,45 +187,4 @@
     </div>
 
 </div>
-
-<script>
-function promptStartExam(formId, title, durationMinutes) {
-    Swal.fire({
-        title: 'Ready to Begin Examination?',
-        html: `
-            <div class="text-left text-xs text-slate-600 space-y-3 mt-3">
-                <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl">
-                    <div class="font-extrabold text-slate-900 text-sm mb-0.5">${title}</div>
-                    <div class="text-[11px] text-slate-500 font-semibold">Official Computer-Based Examination (CBT)</div>
-                </div>
-                <div class="p-3.5 bg-amber-50 border border-amber-200/80 rounded-2xl flex items-center gap-3 text-amber-900">
-                    <span class="text-2xl shrink-0">⏱</span>
-                    <div>
-                        <div class="font-extrabold text-xs">Strict Countdown Timer:</div>
-                        <div class="text-[11px] leading-relaxed mt-0.5">The timer of <strong>${durationMinutes} minutes</strong> will start immediately upon confirmation and will auto-submit when the duration finishes.</div>
-                    </div>
-                </div>
-                <p class="text-[11px] text-slate-400 leading-relaxed">
-                    Make sure you have an uninterrupted internet connection before starting.
-                </p>
-            </div>
-        `,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, Start Examination',
-        cancelButtonText: 'Cancel',
-        confirmButtonColor: '#0b1329',
-        cancelButtonColor: '#94a3b8',
-        customClass: {
-            popup: 'rounded-3xl p-6 shadow-2xl border border-slate-200',
-            confirmButton: 'rounded-xl font-extrabold text-xs px-6 py-3 shadow-sm',
-            cancelButton: 'rounded-xl font-bold text-xs px-5 py-3'
-        }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            document.getElementById(formId).submit();
-        }
-    });
-}
-</script>
 @endsection
