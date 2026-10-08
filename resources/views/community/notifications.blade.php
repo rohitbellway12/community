@@ -274,6 +274,32 @@
                         $dataType = strtolower((string) ($data['type'] ?? ''));
                         $status = strtolower((string) ($data['status'] ?? 'pending'));
                         $url = $data['url'] ?? null;
+                        if (!empty($data['user_id']) && (
+                            str_contains((string) $url, '/profile/') ||
+                            str_contains($dataType, 'follow') ||
+                            str_contains($type, 'follow')
+                        )) {
+                            $liveUsername = \App\Models\Profile::where('user_id', $data['user_id'])->value('username');
+                            if ($liveUsername) {
+                                $url = route('community.profile', ['username' => $liveUsername]);
+                            }
+                        }
+                        if (!empty($data['test_id']) && (
+                            $dataType === 'new_test' ||
+                            str_contains($type, 'newtest') ||
+                            str_contains((string) $url, '/tests/student/')
+                        )) {
+                            $url = route('tests.student.show', ['test' => $data['test_id']]);
+                        }
+
+                        if ($url) {
+                            $url = str_replace(
+                                ['/community/community/', '/reaic/'],
+                                ['/community/', '/community/'],
+                                $url
+                            );
+                            $url = str_replace('/community/community/', '/community/', $url);
+                        }
 
                         /*
                         |--------------------------------------------------------------------------

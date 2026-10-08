@@ -68,7 +68,66 @@ class UserProfileController extends Controller
             'country',
         ])
             ->where('username', $username)
-            ->firstOrFail();
+            ->first();
+
+        // Fallback 1: If parameter is numeric, treat as user_id or profile id
+        if (!$profile && is_numeric($username)) {
+            $profile = Profile::with(['user.stats', 'country'])
+                ->where('user_id', (int) $username)
+                ->orWhere('id', (int) $username)
+                ->first();
+        }
+
+        // Fallback 2: Check if an existing notification recorded this username for a user
+        if (!$profile) {
+            $matchedUserId = \Illuminate\Support\Facades\DB::table('notifications')
+                ->where('data', 'like', '%' . $username . '%')
+                ->pluck('data')
+                ->map(function ($raw) {
+                    $decoded = is_string($raw) ? json_decode($raw, true) : (array) $raw;
+                    return $decoded['user_id'] ?? null;
+                })
+                ->filter()
+                ->first();
+
+            if ($matchedUserId) {
+                $profile = Profile::with(['user.stats', 'country'])
+                    ->where('user_id', (int) $matchedUserId)
+                    ->first();
+            }
+        }
+
+        // Fallback 3: Prefix / slug matching (handles truncated or trailing random suffixes)
+        if (!$profile && strlen($username) >= 6) {
+            $cleanPrefix = preg_replace('/-[a-z0-9]{2,6}$/i', '', $username);
+            $profile = Profile::with(['user.stats', 'country'])
+                ->where('username', 'like', $cleanPrefix . '%')
+                ->first();
+
+            if (!$profile) {
+                $profile = Profile::with(['user.stats', 'country'])
+                    ->where('username', 'like', substr($username, 0, 10) . '%')
+                    ->first();
+            }
+        }
+
+        // Fallback 4: Match by user's full name slug (e.g. "test-jign" matches "test jign")
+        if (!$profile) {
+            $nameCandidate = str_replace('-', ' ', $username);
+            $matchedUser = User::where('name', 'like', $nameCandidate . '%')->first();
+            if ($matchedUser && $matchedUser->profile) {
+                $profile = $matchedUser->profile->load(['user.stats', 'country']);
+            }
+        }
+
+        if (!$profile) {
+            abort(404, 'User profile not found.');
+        }
+
+        // Canonical redirect: If the requested username was an old identifier, redirect to their active profile
+        if ($profile->username && $profile->username !== $username) {
+            return redirect()->route('community.profile', ['username' => $profile->username], 301);
+        }
 
         $user = $profile->user;
 

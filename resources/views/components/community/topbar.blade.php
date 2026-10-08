@@ -119,13 +119,37 @@
                     }
                 }
 
-                if (!empty($data['url']) && str_contains($data['url'], '/reaic/')) {
+                $type = strtolower((string) ($notification->type ?? ''));
+                $dataType = strtolower((string) ($data['type'] ?? ''));
+
+                if (!empty($data['url'])) {
                     $data['url'] = str_replace('/reaic/', '/community/', $data['url']);
+                    $data['url'] = str_replace('/community/community/', '/community/', $data['url']);
+                }
+
+                // Dynamically resolve test notification URLs
+                if (!empty($data['test_id']) && (
+                    $dataType === 'new_test' ||
+                    str_contains($type, 'newtest') ||
+                    str_contains($data['url'] ?? '', '/tests/student/')
+                )) {
+                    $data['url'] = route('tests.student.show', ['test' => $data['test_id']]);
+                }
+
+                // Resolve follower/profile URL to the user's current live username
+                if (!empty($data['user_id']) && (
+                    str_contains($data['url'] ?? '', '/profile/') ||
+                    str_contains($dataType, 'follow') ||
+                    str_contains($type, 'follow')
+                )) {
+                    $liveUsername = \App\Models\Profile::where('user_id', $data['user_id'])->value('username');
+                    if ($liveUsername) {
+                        $data['username'] = $liveUsername;
+                        $data['url'] = route('community.profile', ['username' => $liveUsername]);
+                    }
                 }
 
                 $title = $data['title'] ?? null;
-                $type = strtolower((string) ($notification->type ?? ''));
-                $dataType = strtolower((string) ($data['type'] ?? ''));
 
                 if (!$title) {
                     if ($dataType === 'group_invitation' || str_contains($type, 'groupinvitation')) {
@@ -549,7 +573,19 @@
                                 }
 
                                 if (data.url) {
-                                    const cleanUrl = data.url.replace('/reaic/', '/community/');
+                                    let cleanUrl = data.url.replace('/reaic/', '/community/').replace('/community/community/', '/community/');
+                                    if ((type.includes('new_test') || type.includes('newtest') || cleanUrl.includes('/tests/student/')) && data.test_id) {
+                                        cleanUrl = @js(route('tests.student.show', ['test' => '__TEST_ID__'])).replace('__TEST_ID__', data.test_id);
+                                    } else if ((type.includes('follow') || cleanUrl.includes('/profile/')) && data.username) {
+                                        cleanUrl = @js(route('community.profile', ['username' => '__USERNAME__'])).replace('__USERNAME__', data.username);
+                                    } else {
+                                        try {
+                                            if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+                                                const urlObj = new URL(cleanUrl);
+                                                cleanUrl = window.location.origin + urlObj.pathname + urlObj.search + urlObj.hash;
+                                            }
+                                        } catch (e) {}
+                                    }
                                     this.notificationOpen = false;
                                     window.location.href = cleanUrl;
                                     return;

@@ -51,13 +51,37 @@ class NotificationController extends Controller
                     }
                 }
 
-                if (!empty($data['url']) && str_contains($data['url'], '/reaic/')) {
+                $type = strtolower((string) ($notification->type ?? ''));
+                $dataType = strtolower((string) ($data['type'] ?? ''));
+
+                if (!empty($data['url'])) {
                     $data['url'] = str_replace('/reaic/', '/community/', $data['url']);
+                    $data['url'] = str_replace('/community/community/', '/community/', $data['url']);
+                }
+
+                // Dynamically resolve test notification URLs
+                if (!empty($data['test_id']) && (
+                    $dataType === 'new_test' ||
+                    str_contains($type, 'newtest') ||
+                    str_contains($data['url'] ?? '', '/tests/student/')
+                )) {
+                    $data['url'] = route('tests.student.show', ['test' => $data['test_id']]);
+                }
+
+                // Resolve follower/profile URL to the user's current live username
+                if (!empty($data['user_id']) && (
+                    str_contains($data['url'] ?? '', '/profile/') ||
+                    str_contains($dataType, 'follow') ||
+                    str_contains($type, 'follow')
+                )) {
+                    $liveUsername = \App\Models\Profile::where('user_id', $data['user_id'])->value('username');
+                    if ($liveUsername) {
+                        $data['username'] = $liveUsername;
+                        $data['url'] = route('community.profile', ['username' => $liveUsername]);
+                    }
                 }
 
                 $title = $data['title'] ?? null;
-                $type = strtolower((string) ($notification->type ?? ''));
-                $dataType = strtolower((string) ($data['type'] ?? ''));
 
                 if (!$title) {
                     if ($dataType === 'group_invitation' || str_contains($type, 'groupinvitation')) {
@@ -80,6 +104,7 @@ class NotificationController extends Controller
                 }
 
                 return [
+                    
                     'id' => $notification->id,
 
                     'type' => $notification->type,

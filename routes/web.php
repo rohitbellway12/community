@@ -67,6 +67,21 @@ Route::group([], function () {
         });
     });
 
+    // Fallback redirect for legacy or double-prefixed community test URLs
+    Route::get('/community/tests/student/{test}/show', function ($test) {
+        return redirect()->route('tests.student.show', ['test' => $test], 301);
+    });
+    Route::get('/community/tests/student/{path?}', function ($path = null) {
+        return redirect('/tests/student/' . ($path ?? ''), 301);
+    })->where('path', '.*');
+
+    Route::get('/community/community/tests/student/{test}/show', function ($test) {
+        return redirect()->route('tests.student.show', ['test' => $test], 301);
+    });
+    Route::get('/community/community/tests/student/{path?}', function ($path = null) {
+        return redirect('/tests/student/' . ($path ?? ''), 301);
+    })->where('path', '.*');
+
     Route::get('/', [PostController::class, 'index'])
         ->name('community.index');
 
