@@ -25,6 +25,10 @@ Route::get('/dashboard', function () {
     return redirect()->route('community.index');
 })->name('dashboard');
 
+Route::get('/home', function () {
+    return redirect()->route('community.index');
+})->name('home');
+
 Route::get('/admin', function () {
     return redirect()->route('admin.dashboard');
 });
@@ -134,7 +138,7 @@ Route::group([], function () {
     )->name('community.terms');
 
 
-    Route::get('/events/{slug}', [EventWebController::class, 'show'])
+    Route::get('/community/events/{slug}', [EventWebController::class, 'show'])
         ->name('community.events.show');
 
     /*

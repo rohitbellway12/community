@@ -81,7 +81,7 @@
     x-data="eventPage({
         endAt: '{{ $event->end_at->toIso8601String() }}',
         startAt: '{{ $event->start_at->toIso8601String() }}',
-        eventUrl: '{{ route('events.show', $event->slug) }}'
+        eventUrl: '{{ Route::has('events.show') ? route('events.show', $event->slug) : (Route::has('community.events.show') ? route('community.events.show', $event->slug) : url('/events/' . $event->slug)) }}'
     })"
 >
 
@@ -135,7 +135,7 @@
                     </svg>
                     Community Home
                 </a>
-                <a href="{{ route('events.show', $event->slug) }}" class="flex items-center gap-3.5 px-3 py-2.5 rounded-xl bg-amber-50 text-amber-900 font-bold">
+                <a href="{{ Route::has('events.show') ? route('events.show', $event->slug) : (Route::has('community.events.show') ? route('community.events.show', $event->slug) : url('/events/' . $event->slug)) }}" class="flex items-center gap-3.5 px-3 py-2.5 rounded-xl bg-amber-50 text-amber-900 font-bold">
                     <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.504-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.004 0V5.625a2.25 2.25 0 00-2.25-2.25h-1.5a2.25 2.25 0 00-2.25 2.25v8.625"/>
                     </svg>

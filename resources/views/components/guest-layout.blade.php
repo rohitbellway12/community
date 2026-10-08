@@ -13,18 +13,13 @@
 
 <body class="min-h-screen font-sans antialiased text-gray-900">
 
-      <div class="bg-red-500 text-white text-center p-5 font-bold">
-        TOPBAR TEST
-    </div>
-
-
     {{-- Top Navigation --}}
     <x-community.topbar :notifications-count="$notificationsCount ?? 0" />
 
     {{-- Page --}}
     <main class="min-h-[calc(100vh-4rem)] flex flex-col justify-center bg-gradient-to-br from-slate-50 to-blue-50 py-12 sm:px-6 lg:px-8">
 
-        <a href="{{ route('home') }}"
+        <a href="{{ Route::has('community.index') ? route('community.index') : url('/') }}"
             class="mx-auto text-center text-3xl font-extrabold tracking-tight text-[#031b43]">
             <span>REIAC</span>
             <span class="font-semibold text-slate-700">Community</span>

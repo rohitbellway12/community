@@ -166,7 +166,7 @@
                                             <div class="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
                                                 <span>Slug: <span class="font-mono text-slate-600">{{ $event->slug }}</span></span>
                                                 <span>•</span>
-                                                <a href="{{ route('events.show', $event->slug) }}" target="_blank" class="text-amber-600 hover:underline font-semibold flex items-center gap-0.5">
+                                                <a href="{{ Route::has('events.show') ? route('events.show', $event->slug) : (Route::has('community.events.show') ? route('community.events.show', $event->slug) : url('/events/' . $event->slug)) }}" target="_blank" class="text-amber-600 hover:underline font-semibold flex items-center gap-0.5">
                                                     Rules Page ↗
                                                 </a>
                                             </div>

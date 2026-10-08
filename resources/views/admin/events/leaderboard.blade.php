@@ -23,7 +23,7 @@
 
         <div class="flex items-center gap-2">
             <a
-                href="{{ route('events.show', $event->slug) }}"
+                href="{{ Route::has('events.show') ? route('events.show', $event->slug) : (Route::has('community.events.show') ? route('community.events.show', $event->slug) : url('/events/' . $event->slug)) }}"
                 target="_blank"
                 class="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold text-xs shadow-xs transition flex items-center gap-1.5"
             >

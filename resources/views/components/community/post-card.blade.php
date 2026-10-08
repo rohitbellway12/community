@@ -52,6 +52,11 @@
             </div>
 
             {{-- Post Content --}}
+@php
+    $postId = is_array($post) ? ($post['id'] ?? null) : ($post->id ?? null);
+    $postShowUrl = $postId ? route('community.posts.show', $postId) : '#';
+@endphp
+
             <div
                 class="mt-3 {{ !empty($post['image'])
                     ? 'sm:grid sm:grid-cols-[minmax(0,1fr)_155px] sm:gap-5'
@@ -62,7 +67,7 @@
 
                     {{-- Post Title --}}
                     <a
-                        href="{{ route('community.posts.show') }}"
+                        href="{{ $postShowUrl }}"
                         class="text-[17px] font-bold leading-5 text-slate-900 hover:text-[#0d3c81]"
                     >
                         {{ $post['title'] }}
@@ -107,7 +112,7 @@
                 </button>
 
                 {{-- Comments --}}
-                <a href="{{ route('community.posts.show') }}">
+                <a href="{{ $postShowUrl }}">
                     ▢
                     <span class="ml-1">
                         {{ $post['comments'] }}

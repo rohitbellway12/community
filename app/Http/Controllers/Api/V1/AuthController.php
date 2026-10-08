@@ -38,6 +38,7 @@ class AuthController extends Controller
             'password'      => ['required', 'confirmed', Password::defaults()],
             'country_id'    => ['required', 'exists:countries,id'],
             'device_name'   => ['nullable', 'string', 'max:255'],
+            'device_id'     => ['nullable', 'string', 'max:255'],
             'referral_code' => ['nullable', 'string', 'max:15', 'exists:users,referral_code'],
         ], [
             'email.unique' => 'This email is already registered. Please use a different email or try logging in.',
@@ -47,12 +48,23 @@ class AuthController extends Controller
             'password.confirmed' => 'Password confirmation does not match.',
             'country_id.required' => 'Please select your country.',
             'country_id.exists' => 'Selected country is invalid.',
+            'referral_code.exists' => 'The provided referral code is invalid.',
         ]);
 
         // Auto-generate a unique referral code: REIAC + 5 digits
         do {
             $code = 'REIAC' . str_pad(random_int(0, 99999), 5, '0', STR_PAD_LEFT);
         } while (User::where('referral_code', $code)->exists());
+
+        // Process referral fraud check if a code was provided
+        $deviceId = $validated['device_id'] ?? $request->header('X-Device-Id');
+        if (!empty($validated['referral_code']) && !empty($deviceId)) {
+            if (Referral::where('device_id', $deviceId)->exists()) {
+                throw ValidationException::withMessages([
+                    'referral_code' => ['This device has already used a referral code. Only one referral per device is allowed.'],
+                ]);
+            }
+        }
 
         $user = User::create([
             'name'          => $validated['name'],
@@ -80,6 +92,7 @@ class AuthController extends Controller
                 Referral::create([
                     'referrer_id' => $referrer->id,
                     'referred_id' => $user->id,
+                    'device_id'   => $deviceId,
                 ]);
 
                 // Increment the referrer's referred_count in user_stats
