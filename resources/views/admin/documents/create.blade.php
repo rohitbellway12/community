@@ -26,7 +26,7 @@
         </div>
     @endif
 
-    @if($errors->any())
+    @if(isset($errors) && $errors->any())
         <div class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold space-y-1">
             @foreach($errors->all() as $err)
                 <div>• {{ $err }}</div>
@@ -37,21 +37,19 @@
     {{-- UPLOAD FORM --}}
     <form action="{{ route('admin.documents.store') }}" method="POST" enctype="multipart/form-data"
           x-data="{
-              fileName: '',
-              fileSize: '',
-              fileExt: '',
+              filesList: [],
               linkUrl: '{{ old('link_url', '') }}',
-              handleFile(event) {
-                  const file = event.target.files[0];
-                  if (file) {
-                      this.fileName = file.name;
-                      this.fileSize = (file.size / 1024 / 1024).toFixed(2) + ' MB';
-                      const parts = file.name.split('.');
-                      this.fileExt = parts.length > 1 ? parts.pop().toUpperCase() : 'FILE';
-                  } else {
-                      this.fileName = '';
-                      this.fileSize = '';
-                      this.fileExt = '';
+              handleFiles(event) {
+                  const files = event.target.files;
+                  this.filesList = [];
+                  if (files && files.length > 0) {
+                      for (let i = 0; i < files.length; i++) {
+                          const file = files[i];
+                          const parts = file.name.split('.');
+                          const ext = parts.length > 1 ? parts.pop().toUpperCase() : 'FILE';
+                          const size = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+                          this.filesList.push({ name: file.name, ext: ext, size: size });
+                      }
                   }
               }
           }"
@@ -123,35 +121,45 @@
             </div>
 
             <div class="border-2 border-dashed border-slate-300 hover:border-reiac-navy rounded-2xl p-6 text-center bg-slate-50/50 hover:bg-slate-50 transition relative cursor-pointer">
-                <input type="file" name="file" id="file" @change="handleFile($event)"
+                <input type="file" name="files[]" id="files" multiple @change="handleFiles($event)"
                        class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
 
-                <template x-if="!fileName">
+                <template x-if="filesList.length === 0">
                     <div>
                         <div class="w-12 h-12 mx-auto rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-600 flex items-center justify-center text-xl mb-3 shadow-xs">
                             📂
                         </div>
                         <p class="text-xs font-extrabold text-slate-800">
-                            Click to browse or drag & drop any file here
+                            Click to browse or drag & drop files here (You can select multiple files: 2, 3 or more)
                         </p>
                         <p class="text-[11px] text-slate-500 mt-1">
-                            PDF, Word (DOC/DOCX), Excel (XLS/XLSX), PPT, Korean Hancom (HWP/HWPX), Images, Videos, ZIP, etc. (Up to 500MB)
+                            PDF, Word (DOC/DOCX), Excel, PPT, HWP, Images, Videos, Audio, ZIP (Up to 500MB each)
                         </p>
                     </div>
                 </template>
 
-                <template x-if="fileName">
-                    <div class="flex items-center justify-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-emerald-500 text-white font-black text-xs flex items-center justify-center shrink-0" x-text="fileExt"></div>
-                        <div class="text-left min-w-0">
-                            <div class="text-xs font-extrabold text-slate-900 truncate max-w-sm" x-text="fileName"></div>
-                            <div class="text-[11px] text-slate-500 font-mono" x-text="fileSize"></div>
+                <template x-if="filesList.length > 0">
+                    <div class="space-y-2 relative z-20 pointer-events-none">
+                        <div class="text-xs font-black text-emerald-700 mb-2">
+                            ✓ <span x-text="filesList.length"></span> File(s) selected:
                         </div>
-                        <span class="text-xs font-bold text-emerald-600 ml-2">✓ Ready to upload</span>
+                        <template x-for="(f, idx) in filesList" :key="idx">
+                            <div class="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-white border border-slate-200 shadow-xs max-w-lg mx-auto">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <span class="w-8 h-8 rounded-lg bg-emerald-500 text-white font-black text-[10px] flex items-center justify-center shrink-0" x-text="f.ext"></span>
+                                    <div class="text-left min-w-0">
+                                        <div class="text-xs font-extrabold text-slate-900 truncate" x-text="f.name"></div>
+                                        <div class="text-[10px] text-slate-500 font-mono" x-text="f.size"></div>
+                                    </div>
+                                </div>
+                                <span class="text-[10px] font-bold text-emerald-600 shrink-0">Ready</span>
+                            </div>
+                        </template>
+                        <p class="text-[11px] text-slate-400 mt-2">Click to select different or additional files</p>
                     </div>
                 </template>
             </div>
-            <p class="text-[11px] text-slate-400 mt-1.5">No restriction on file extensions. Whatever file you upload will be accepted.</p>
+            <p class="text-[11px] text-slate-400 mt-1.5">No restriction on file extensions. Select multiple files at once using Ctrl/Shift.</p>
         </div>
 
         {{-- 5. CLICKABLE EXTERNAL LINK --}}

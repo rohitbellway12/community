@@ -294,6 +294,50 @@ public function index(Request $request)
             });
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Documents & Resources (For Community Hub)
+    |--------------------------------------------------------------------------
+    */
+    $activeTab = $request->input('tab', 'discussions');
+    $documentsQuery = \App\Models\Document::query()
+        ->where('is_active', true)
+        ->with(['uploader', 'files'])
+        ->latest();
+
+    if ($search->isNotEmpty()) {
+        $documentsQuery->where(function ($q) use ($search) {
+            $q->where('title', 'like', "%{$search}%")
+              ->orWhere('description', 'like', "%{$search}%")
+              ->orWhere('file_name', 'like', "%{$search}%")
+              ->orWhere('category', 'like', "%{$search}%");
+        });
+    }
+
+    if ($request->filled('doc_category') && $request->input('doc_category') !== 'all') {
+        $documentsQuery->where('category', $request->input('doc_category'));
+    }
+
+    if ($request->filled('doc_type') && $request->input('doc_type') !== 'all') {
+        $docType = strtolower($request->input('doc_type'));
+        if ($docType === 'link') {
+            $documentsQuery->whereNotNull('link_url');
+        } elseif ($docType === 'file') {
+            $documentsQuery->whereNotNull('file_path');
+        } else {
+            $documentsQuery->where('file_type', $docType);
+        }
+    }
+
+    $documents = $documentsQuery->paginate(12, ['*'], 'doc_page')->withQueryString();
+    $documentsTotal = \App\Models\Document::where('is_active', true)->count();
+    $documentCategories = \App\Models\Document::where('is_active', true)
+        ->whereNotNull('category')
+        ->distinct()
+        ->pluck('category')
+        ->filter()
+        ->values();
+
     return view('community.index', compact(
         'posts',
         'categories',
@@ -310,7 +354,11 @@ public function index(Request $request)
         'activeBanner',
         'activeEvent',
         'eventTopUsers',
-        'liveTest'
+        'liveTest',
+        'documents',
+        'documentsTotal',
+        'documentCategories',
+        'activeTab'
     ));
 }
 

@@ -22,7 +22,7 @@ class DocumentController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Document::where('is_active', true)->latest();
+        $query = Document::where('is_active', true)->with('files')->latest();
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -76,6 +76,8 @@ class DocumentController extends Controller
         if (!$document->is_active) {
             return $this->errorResponse('Document not found or inactive.', 404);
         }
+
+        $document->load('files');
 
         return $this->successResponse($document, 'Document details retrieved successfully.');
     }

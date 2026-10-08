@@ -26,7 +26,7 @@
         </div>
     @endif
 
-    @if($errors->any())
+    @if(isset($errors) && $errors->any())
         <div class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold space-y-1">
             @foreach($errors->all() as $err)
                 <div>• {{ $err }}</div>
@@ -37,21 +37,19 @@
     {{-- EDIT FORM --}}
     <form action="{{ route('admin.documents.update', $document) }}" method="POST" enctype="multipart/form-data"
           x-data="{
-              fileName: '',
-              fileSize: '',
-              fileExt: '',
+              filesList: [],
               linkUrl: '{{ old('link_url', $document->link_url) }}',
-              handleFile(event) {
-                  const file = event.target.files[0];
-                  if (file) {
-                      this.fileName = file.name;
-                      this.fileSize = (file.size / 1024 / 1024).toFixed(2) + ' MB';
-                      const parts = file.name.split('.');
-                      this.fileExt = parts.length > 1 ? parts.pop().toUpperCase() : 'FILE';
-                  } else {
-                      this.fileName = '';
-                      this.fileSize = '';
-                      this.fileExt = '';
+              handleFiles(event) {
+                  const files = event.target.files;
+                  this.filesList = [];
+                  if (files && files.length > 0) {
+                      for (let i = 0; i < files.length; i++) {
+                          const file = files[i];
+                          const parts = file.name.split('.');
+                          const ext = parts.length > 1 ? parts.pop().toUpperCase() : 'FILE';
+                          const size = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+                          this.filesList.push({ name: file.name, ext: ext, size: size });
+                      }
                   }
               }
           }"
@@ -107,13 +105,66 @@
                       class="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-reiac-navy focus:outline-hidden">{{ old('description', $document->description) }}</textarea>
         </div>
 
-        {{-- 4. CURRENT FILE & REPLACE UPLOADER --}}
+        {{-- 4. CURRENT FILES & MULTI-FILE UPLOADER --}}
         <div class="border-t border-slate-200 pt-5">
-            <label class="block text-xs font-black uppercase tracking-wider text-slate-700 mb-2">
-                File Attachment (Any Format: PPT, DOC, PDF, HWP, Image, Video, etc.)
-            </label>
+            <div class="flex items-center justify-between mb-2">
+                <label class="block text-xs font-black uppercase tracking-wider text-slate-700">
+                    File Attachments (Multiple Files Supported)
+                </label>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-indigo-100 text-indigo-800 border border-indigo-200">
+                    All Formats · Multiple Files
+                </span>
+            </div>
 
-            @if($document->file_path)
+            {{-- LIST OF CURRENTLY ATTACHED FILES --}}
+            @php
+                $attachedFiles = $document->files;
+            @endphp
+
+            @if($attachedFiles->count() > 0)
+                <div class="mb-4 space-y-2">
+                    <div class="flex items-center justify-between text-xs font-bold text-slate-600 px-1">
+                        <span>Currently Attached Files ({{ $attachedFiles->count() }}):</span>
+                        <span class="text-[11px] text-slate-400">Select checkbox to remove any file</span>
+                    </div>
+
+                    @foreach($attachedFiles as $df)
+                        @php $badge = $df->file_badge; @endphp
+                        <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3 hover:bg-slate-100/70 transition">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <span class="px-2.5 py-1 rounded-xl text-xs font-black {{ $badge['bg'] }} {{ $badge['text'] }} border {{ $badge['border'] }} shrink-0">
+                                    {{ $badge['icon'] }} {{ $badge['label'] }}
+                                </span>
+                                <div class="min-w-0">
+                                    <div class="text-xs font-extrabold text-slate-900 truncate">{{ $df->file_name }}</div>
+                                    <div class="text-[11px] text-slate-500 font-mono">
+                                        Size: {{ $df->formatted_size }} · Downloads: {{ $df->download_count }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <a href="{{ route('community.documents.files.download', $df) }}"
+                                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs transition">
+                                    <svg class="w-3.5 h-3.5 text-indigo-700" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                    </svg>
+                                    <span>Download</span>
+                                </a>
+                                @if($df->file_url)
+                                    <a href="{{ $df->file_url }}" target="_blank"
+                                       class="px-2.5 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition">
+                                        View ↗
+                                    </a>
+                                @endif
+                                <label class="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs transition cursor-pointer flex items-center gap-1.5 border border-rose-200 select-none">
+                                    <input type="checkbox" name="delete_file_ids[]" value="{{ $df->id }}" class="rounded text-rose-600 focus:ring-rose-500 cursor-pointer">
+                                    <span>🗑 Delete</span>
+                                </label>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @elseif($document->file_path)
                 @php $badge = $document->file_badge; @endphp
                 <div class="p-3.5 mb-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
                     <div class="flex items-center gap-3 min-w-0">
@@ -129,43 +180,61 @@
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
                         <a href="{{ route('admin.documents.download', $document) }}"
-                           class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs transition">
-                            ⬇ Download
+                           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs transition">
+                            <svg class="w-3.5 h-3.5 text-indigo-700" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                            </svg>
+                            <span>Download</span>
                         </a>
-                        <a href="{{ $document->file_url }}" target="_blank"
-                           class="px-3 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition">
-                            View ↗
-                        </a>
+                        <label class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs transition cursor-pointer flex items-center gap-1.5 border border-rose-200 select-none">
+                            <input type="checkbox" name="remove_file" value="1" class="rounded text-rose-600 focus:ring-rose-500 cursor-pointer">
+                            <span>🗑 Delete File</span>
+                        </label>
                     </div>
                 </div>
             @endif
 
-            <div class="border-2 border-dashed border-slate-300 hover:border-reiac-navy rounded-2xl p-5 text-center bg-slate-50/50 hover:bg-slate-50 transition relative cursor-pointer">
-                <input type="file" name="file" id="file" @change="handleFile($event)"
+            {{-- MULTIPLE FILE UPLOADER TO ADD MORE FILES --}}
+            <div class="border-2 border-dashed border-slate-300 hover:border-reiac-navy rounded-2xl p-6 text-center bg-slate-50/50 hover:bg-slate-50 transition relative cursor-pointer">
+                <input type="file" name="files[]" id="files" multiple @change="handleFiles($event)"
                        class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10">
 
-                <template x-if="!fileName">
+                <template x-if="filesList.length === 0">
                     <div>
+                        <div class="w-10 h-10 mx-auto rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-600 flex items-center justify-center text-lg mb-2 shadow-xs">
+                            ➕
+                        </div>
                         <p class="text-xs font-extrabold text-slate-800">
-                            {{ $document->file_path ? 'Click to replace with a new file (Optional)' : 'Click to attach a file' }}
+                            Click or drag to attach more files (You can select multiple files: 2, 3 or more)
                         </p>
-                        <p class="text-[11px] text-slate-500 mt-0.5">
-                            Any format supported: PPT, DOC, PDF, HWP, Images, Videos, Audio, ZIP (Up to 500MB)
+                        <p class="text-[11px] text-slate-500 mt-1">
+                            PDF, Word (DOC/DOCX), Excel, PPT, HWP, Images, Videos, Audio, ZIP (Up to 500MB each)
                         </p>
                     </div>
                 </template>
 
-                <template x-if="fileName">
-                    <div class="flex items-center justify-center gap-3">
-                        <div class="w-8 h-8 rounded-lg bg-emerald-500 text-white font-black text-xs flex items-center justify-center shrink-0" x-text="fileExt"></div>
-                        <div class="text-left min-w-0">
-                            <div class="text-xs font-extrabold text-slate-900 truncate max-w-sm" x-text="fileName"></div>
-                            <div class="text-[11px] text-slate-500 font-mono" x-text="fileSize"></div>
+                <template x-if="filesList.length > 0">
+                    <div class="space-y-2 relative z-20 pointer-events-none">
+                        <div class="text-xs font-black text-emerald-700 mb-2">
+                            ✓ <span x-text="filesList.length"></span> New file(s) selected to add:
                         </div>
-                        <span class="text-xs font-bold text-emerald-600 ml-2">✓ New file selected</span>
+                        <template x-for="(f, idx) in filesList" :key="idx">
+                            <div class="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-white border border-slate-200 shadow-xs max-w-lg mx-auto">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <span class="w-8 h-8 rounded-lg bg-emerald-500 text-white font-black text-[10px] flex items-center justify-center shrink-0" x-text="f.ext"></span>
+                                    <div class="text-left min-w-0">
+                                        <div class="text-xs font-extrabold text-slate-900 truncate" x-text="f.name"></div>
+                                        <div class="text-[10px] text-slate-500 font-mono" x-text="f.size"></div>
+                                    </div>
+                                </div>
+                                <span class="text-[10px] font-bold text-emerald-600 shrink-0">Ready to add</span>
+                            </div>
+                        </template>
+                        <p class="text-[10px] text-slate-500 mt-1">These files will be added to the document upon saving.</p>
                     </div>
                 </template>
             </div>
+            <p class="text-[11px] text-slate-400 mt-1.5">Existing files above will be preserved unless marked with 🗑 Delete.</p>
         </div>
 
         {{-- 5. CLICKABLE EXTERNAL LINK --}}

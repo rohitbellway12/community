@@ -141,6 +141,11 @@ Route::group([], function () {
     Route::get('/community/events/{slug}', [EventWebController::class, 'show'])
         ->name('community.events.show');
 
+    Route::get('/documents/{document}/download', [\App\Http\Controllers\Community\DocumentWebController::class, 'download'])
+        ->name('community.documents.download');
+    Route::get('/documents/files/{file}/download', [\App\Http\Controllers\Community\DocumentWebController::class, 'downloadFile'])
+        ->name('community.documents.files.download');
+
     /*
     |--------------------------------------------------------------------------
     | Authenticated Community
@@ -470,6 +475,7 @@ Route::group([], function () {
 
             // Documents & Resources (Universal Format & External Links)
             Route::get('documents/{document}/download', [\App\Http\Controllers\Admin\AdminDocumentController::class, 'download'])->name('documents.download');
+            Route::delete('documents/{document}/files/{file}', [\App\Http\Controllers\Admin\AdminDocumentController::class, 'deleteFile'])->name('documents.files.destroy');
             Route::resource('documents', \App\Http\Controllers\Admin\AdminDocumentController::class);
         });
 

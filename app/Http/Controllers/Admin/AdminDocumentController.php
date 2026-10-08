@@ -15,7 +15,7 @@ class AdminDocumentController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = Document::with('uploader')->latest();
+        $query = Document::with(['uploader', 'files'])->latest();
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -65,46 +65,59 @@ class AdminDocumentController extends Controller
             'description' => ['nullable', 'string'],
             'category'    => ['nullable', 'string', 'max:100'],
             'link_url'    => ['nullable', 'url', 'max:2048'],
-            // NO RESTRICTION ON FILE FORMAT: ppt, doc, xls, pdf, png, hwp, mp4, etc. are all accepted
             'file'        => ['nullable', 'file', 'max:512000'], // up to 500MB
+            'files'       => ['nullable', 'array'],
+            'files.*'     => ['file', 'max:512000'],
             'is_active'   => ['nullable', 'boolean'],
         ]);
 
-        if (!$request->hasFile('file') && !$request->filled('link_url')) {
-            return back()->withInput()->with('error', 'Please provide either an uploaded file or an external reference link (or both).');
+        $uploadedFiles = [];
+        if ($request->hasFile('files')) {
+            $uploadedFiles = $request->file('files');
+        } elseif ($request->hasFile('file')) {
+            $uploadedFiles = [$request->file('file')];
         }
 
-        $filePath = null;
-        $fileName = null;
-        $fileType = null;
-        $fileSize = null;
-        $mimeType = null;
-
-        if ($request->hasFile('file') && $request->file('file')->isValid()) {
-            $file = $request->file('file');
-            $fileName = $file->getClientOriginalName();
-            $fileType = strtolower($file->getClientOriginalExtension());
-            $fileSize = $file->getSize();
-            $mimeType = $file->getClientMimeType();
-
-            // Store cleanly in public storage
-            $filePath = $file->store('documents', 'public');
+        if (empty($uploadedFiles) && ! $request->filled('link_url')) {
+            return back()->withInput()->with('error', 'Please provide either uploaded file(s) or an external reference link (or both).');
         }
 
-        Document::create([
+        $document = Document::create([
             'title'          => $request->input('title'),
             'description'    => $request->input('description'),
             'category'       => $request->input('category') ?: 'General',
             'link_url'       => $request->input('link_url'),
-            'file_path'      => $filePath,
-            'file_name'      => $fileName,
-            'file_type'      => $fileType,
-            'file_size'      => $fileSize,
-            'mime_type'      => $mimeType,
             'is_active'      => $request->boolean('is_active', true),
             'download_count' => 0,
             'created_by'     => auth()->id(),
         ]);
+
+        $firstDocFile = null;
+        foreach ($uploadedFiles as $file) {
+            if ($file && $file->isValid()) {
+                $path = $file->store('documents', 'public');
+                $df = $document->files()->create([
+                    'file_name' => $file->getClientOriginalName(),
+                    'file_type' => strtolower($file->getClientOriginalExtension()),
+                    'file_size' => $file->getSize(),
+                    'mime_type' => $file->getClientMimeType(),
+                    'file_path' => $path,
+                ]);
+                if (! $firstDocFile) {
+                    $firstDocFile = $df;
+                }
+            }
+        }
+
+        if ($firstDocFile) {
+            $document->update([
+                'file_path' => $firstDocFile->file_path,
+                'file_name' => $firstDocFile->file_name,
+                'file_type' => $firstDocFile->file_type,
+                'file_size' => $firstDocFile->file_size,
+                'mime_type' => $firstDocFile->mime_type,
+            ]);
+        }
 
         return redirect()->route('admin.documents.index')
             ->with('success', 'Document / Resource uploaded successfully.');
@@ -112,6 +125,7 @@ class AdminDocumentController extends Controller
 
     public function edit(Document $document): View
     {
+        $document->load('files');
         $existingCategories = Document::whereNotNull('category')->distinct()->pluck('category')->filter()->values();
         return view('admin.documents.edit', compact('document', 'existingCategories'));
     }
@@ -119,12 +133,16 @@ class AdminDocumentController extends Controller
     public function update(Request $request, Document $document): RedirectResponse
     {
         $request->validate([
-            'title'       => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'category'    => ['nullable', 'string', 'max:100'],
-            'link_url'    => ['nullable', 'url', 'max:2048'],
-            'file'        => ['nullable', 'file', 'max:512000'],
-            'is_active'   => ['nullable', 'boolean'],
+            'title'             => ['required', 'string', 'max:255'],
+            'description'       => ['nullable', 'string'],
+            'category'          => ['nullable', 'string', 'max:100'],
+            'link_url'          => ['nullable', 'url', 'max:2048'],
+            'file'              => ['nullable', 'file', 'max:512000'],
+            'files'             => ['nullable', 'array'],
+            'files.*'           => ['file', 'max:512000'],
+            'delete_file_ids'   => ['nullable', 'array'],
+            'delete_file_ids.*' => ['integer'],
+            'is_active'         => ['nullable', 'boolean'],
         ]);
 
         $updateData = [
@@ -135,18 +153,70 @@ class AdminDocumentController extends Controller
             'is_active'   => $request->boolean('is_active', true),
         ];
 
-        if ($request->hasFile('file') && $request->file('file')->isValid()) {
-            // Delete old file if present
+        // 1. Delete specific selected files
+        if ($request->has('delete_file_ids') && is_array($request->input('delete_file_ids'))) {
+            $filesToDelete = $document->files()->whereIn('id', $request->input('delete_file_ids'))->get();
+            foreach ($filesToDelete as $df) {
+                if ($df->file_path && Storage::disk('public')->exists($df->file_path)) {
+                    Storage::disk('public')->delete($df->file_path);
+                }
+                $df->delete();
+            }
+        }
+
+        // 2. Remove all files if remove_file is checked
+        if ($request->boolean('remove_file')) {
+            foreach ($document->files as $df) {
+                if ($df->file_path && Storage::disk('public')->exists($df->file_path)) {
+                    Storage::disk('public')->delete($df->file_path);
+                }
+                $df->delete();
+            }
             if ($document->file_path && Storage::disk('public')->exists($document->file_path)) {
                 Storage::disk('public')->delete($document->file_path);
             }
+            $updateData['file_path'] = null;
+            $updateData['file_name'] = null;
+            $updateData['file_type'] = null;
+            $updateData['file_size'] = null;
+            $updateData['mime_type'] = null;
+        }
 
-            $file = $request->file('file');
-            $updateData['file_name'] = $file->getClientOriginalName();
-            $updateData['file_type'] = strtolower($file->getClientOriginalExtension());
-            $updateData['file_size'] = $file->getSize();
-            $updateData['mime_type'] = $file->getClientMimeType();
-            $updateData['file_path'] = $file->store('documents', 'public');
+        // 3. Upload new files (multiple allowed!)
+        $newFiles = [];
+        if ($request->hasFile('files')) {
+            $newFiles = $request->file('files');
+        } elseif ($request->hasFile('file')) {
+            $newFiles = [$request->file('file')];
+        }
+
+        foreach ($newFiles as $file) {
+            if ($file && $file->isValid()) {
+                $path = $file->store('documents', 'public');
+                $document->files()->create([
+                    'file_name' => $file->getClientOriginalName(),
+                    'file_type' => strtolower($file->getClientOriginalExtension()),
+                    'file_size' => $file->getSize(),
+                    'mime_type' => $file->getClientMimeType(),
+                    'file_path' => $path,
+                ]);
+            }
+        }
+
+        // 4. Synchronize primary file fields with latest file
+        $latestFile = $document->files()->latest()->first();
+        if ($latestFile) {
+            $updateData['file_path'] = $latestFile->file_path;
+            $updateData['file_name'] = $latestFile->file_name;
+            $updateData['file_type'] = $latestFile->file_type;
+            $updateData['file_size'] = $latestFile->file_size;
+            $updateData['mime_type'] = $latestFile->mime_type;
+        } elseif ($document->files()->count() === 0) {
+            $updateData['file_path'] = null;
+            $updateData['file_name'] = null;
+            $updateData['file_type'] = null;
+            $updateData['file_size'] = null;
+            $updateData['mime_type'] = null;
         }
 
         $document->update($updateData);
@@ -155,8 +225,35 @@ class AdminDocumentController extends Controller
             ->with('success', 'Document updated successfully.');
     }
 
+    public function deleteFile(Document $document, \App\Models\DocumentFile $file): RedirectResponse
+    {
+        if ($file->document_id === $document->id) {
+            if ($file->file_path && Storage::disk('public')->exists($file->file_path)) {
+                Storage::disk('public')->delete($file->file_path);
+            }
+            $file->delete();
+
+            $latest = $document->files()->latest()->first();
+            $document->update([
+                'file_path' => $latest?->file_path,
+                'file_name' => $latest?->file_name,
+                'file_type' => $latest?->file_type,
+                'file_size' => $latest?->file_size,
+                'mime_type' => $latest?->mime_type,
+            ]);
+        }
+
+        return back()->with('success', 'File deleted successfully.');
+    }
+
     public function destroy(Document $document): RedirectResponse
     {
+        foreach ($document->files as $df) {
+            if ($df->file_path && Storage::disk('public')->exists($df->file_path)) {
+                Storage::disk('public')->delete($df->file_path);
+            }
+        }
+
         if ($document->file_path && Storage::disk('public')->exists($document->file_path)) {
             Storage::disk('public')->delete($document->file_path);
         }

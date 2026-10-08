@@ -144,9 +144,33 @@
                                 </span>
                             </td>
 
-                            {{-- Uploaded File --}}
-                            <td class="py-3.5 px-4 min-w-[180px]">
-                                @if($doc->file_path)
+                            {{-- Uploaded Files --}}
+                            <td class="py-3.5 px-4 min-w-[220px]">
+                                @if($doc->files->count() > 0)
+                                    <div class="space-y-1.5">
+                                        @foreach($doc->files as $f)
+                                            @php $fBadge = $f->file_badge; @endphp
+                                            <div class="flex items-center justify-between gap-2 p-1.5 rounded-xl bg-slate-50 border border-slate-200 hover:bg-indigo-50/50 transition">
+                                                <div class="flex items-center gap-1.5 min-w-0">
+                                                    <span class="px-1.5 py-0.5 rounded-lg text-[9px] font-black {{ $fBadge['bg'] }} {{ $fBadge['text'] }} shrink-0">
+                                                        {{ $fBadge['label'] }}
+                                                    </span>
+                                                    <span class="font-bold text-slate-800 truncate text-[11px] max-w-[130px]" title="{{ $f->file_name }}">
+                                                        {{ $f->file_name }}
+                                                    </span>
+                                                    <span class="text-[10px] text-slate-400 font-mono shrink-0">({{ $f->formatted_size }})</span>
+                                                </div>
+                                                <a href="{{ route('community.documents.files.download', $f) }}"
+                                                   class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[10px] shrink-0 transition" title="Download">
+                                                    <svg class="w-3 h-3 text-indigo-700" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                                    </svg>
+                                                    <span>⬇</span>
+                                                </a>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @elseif($doc->file_path)
                                     <div class="flex items-center gap-2">
                                         <span class="px-2 py-1 rounded-lg text-[10px] font-black {{ $badge['bg'] }} {{ $badge['text'] }} border {{ $badge['border'] }} shrink-0">
                                             {{ $badge['icon'] }} {{ $badge['label'] }}
@@ -161,7 +185,10 @@
                                     <div class="mt-1.5 flex items-center gap-2">
                                         <a href="{{ route('admin.documents.download', $doc) }}"
                                            class="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 hover:text-indigo-800 hover:underline">
-                                            <span>⬇ Download File</span>
+                                            <svg class="w-3 h-3 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                            </svg>
+                                            <span>Download</span>
                                         </a>
                                         <span class="text-slate-300">·</span>
                                         <a href="{{ $doc->file_url }}" target="_blank"
@@ -178,12 +205,12 @@
                             <td class="py-3.5 px-4 min-w-[180px]">
                                 @if($doc->link_url)
                                     <a href="{{ $doc->link_url }}" target="_blank" rel="noopener noreferrer"
-                                       class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 font-bold text-[11px] transition max-w-[200px] truncate"
+                                       class="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800 hover:underline max-w-[200px] truncate transition"
                                        title="{{ $doc->link_url }}">
                                         <span>🔗</span>
-                                        <span class="truncate">{{ parse_url($doc->link_url, PHP_URL_HOST) ?: 'Open External Link' }}</span>
-                                        <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                        <span class="truncate">{{ $doc->link_url }}</span>
+                                        <svg class="w-3 h-3 shrink-0 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
                                         </svg>
                                     </a>
                                 @else
@@ -206,8 +233,11 @@
                             <td class="py-3.5 px-4 whitespace-nowrap text-right">
                                 <div class="flex items-center justify-end gap-1.5">
                                     <a href="{{ route('admin.documents.edit', $doc) }}"
-                                       class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition">
-                                        Edit
+                                       class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                        </svg>
+                                        <span>Edit</span>
                                     </a>
 
                                     <form action="{{ route('admin.documents.destroy', $doc) }}" method="POST"
@@ -216,8 +246,11 @@
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit"
-                                                class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] transition cursor-pointer">
-                                            Delete
+                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] transition cursor-pointer">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                            </svg>
+                                            <span>Delete</span>
                                         </button>
                                     </form>
                                 </div>

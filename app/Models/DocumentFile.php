@@ -6,29 +6,23 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Document extends Model
+class DocumentFile extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'title',
-        'description',
+        'document_id',
         'file_path',
         'file_name',
         'file_type',
         'file_size',
         'mime_type',
-        'link_url',
-        'category',
-        'is_active',
         'download_count',
-        'created_by',
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
-        'download_count' => 'integer',
         'file_size' => 'integer',
+        'download_count' => 'integer',
     ];
 
     protected $appends = [
@@ -37,19 +31,14 @@ class Document extends Model
         'file_badge',
     ];
 
-    public function uploader(): BelongsTo
+    public function document(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function files(): \Illuminate\Database\Eloquent\Relations\HasMany
-    {
-        return $this->hasMany(DocumentFile::class, 'document_id');
+        return $this->belongsTo(Document::class);
     }
 
     public function getFileUrlAttribute(): ?string
     {
-        if (!$this->file_path) {
+        if (! $this->file_path) {
             return null;
         }
 
@@ -62,7 +51,7 @@ class Document extends Model
 
     public function getFormattedSizeAttribute(): string
     {
-        if (!$this->file_size) {
+        if (! $this->file_size) {
             return '—';
         }
 
