@@ -564,7 +564,64 @@
                                 "result"
                             ]
                         },
-                        "description": "Returns full test evaluation, scorecard analytics, detailed answers & explanations, and Certificate details including `candidate_photo_url`, `agency_name`, `controller_name`, `director_name`, and `certificate_url`."
+                        "description": "Returns full test evaluation, scorecard analytics, detailed answers & explanations, and Certificate details.\n\n📱 **FOR MOBILE APP DEVELOPERS:**\n- `certificate_pdf_url`: **DIRECT PDF DOWNLOAD LINK**. When user taps 'Download Certificate' in the mobile app, open/download this link to directly download the clean A4 Certificate PDF file (`Certificate_Name_ID.pdf`)!\n- `certificate_url`: **STANDALONE CERTIFICATE WEB VIEW**. Shows ONLY the official certificate (No questions, no scorecard, no web header/sidebar).\n- `result_url`: Full web scorecard page with questions and explanations."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Download Certificate PDF (Direct)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/pdf",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{appUrl}}/tests/student/{{test_id}}/certificate/{{attempt_id}}/download",
+                            "host": [
+                                "{{appUrl}}"
+                            ],
+                            "path": [
+                                "tests",
+                                "student",
+                                "{{test_id}}",
+                                "certificate",
+                                "{{attempt_id}}",
+                                "download"
+                            ]
+                        },
+                        "description": "Direct PDF download endpoint. Returns `application/pdf` binary stream. No login or session required for completed exams. Ideal for mobile app 'Download Certificate' button."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "View Clean Certificate (Web View)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "text/html",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{appUrl}}/tests/student/{{test_id}}/certificate/{{attempt_id}}",
+                            "host": [
+                                "{{appUrl}}"
+                            ],
+                            "path": [
+                                "tests",
+                                "student",
+                                "{{test_id}}",
+                                "certificate",
+                                "{{attempt_id}}"
+                            ]
+                        },
+                        "description": "Dedicated, clean 1-page certificate view. Contains only the certificate with floating 'Download PDF' and 'Print' action buttons. No scorecards or questions."
                     },
                     "response": []
                 },
@@ -684,6 +741,11 @@
         }
     ],
     "variable": [
+        {
+            "key": "appUrl",
+            "value": "http://localhost/community",
+            "type": "string"
+        },
         {
             "key": "baseUrl",
             "value": "http://localhost/community/api/v1",

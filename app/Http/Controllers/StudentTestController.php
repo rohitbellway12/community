@@ -355,6 +355,43 @@ class StudentTestController extends Controller
         return view('student.tests.result', compact('test', 'attempt'));
     }
 
+    public function certificate(Test $test, TestAttempt $attempt): View
+    {
+        if ((int) $attempt->test_id !== (int) $test->id) {
+            abort(404, 'Examination attempt not found.');
+        }
+
+        if ($attempt->status !== 'completed') {
+            if (!auth()->check() || (int) $attempt->user_id !== (int) auth()->id()) {
+                abort(403, 'Examination not completed yet.');
+            }
+        }
+
+        $test->load(['testLevel']);
+        $attempt->load(['user.profile']);
+
+        return view('student.tests.certificate', compact('test', 'attempt'));
+    }
+
+    public function downloadCertificatePdf(Test $test, TestAttempt $attempt)
+    {
+        if ((int) $attempt->test_id !== (int) $test->id) {
+            abort(404, 'Examination attempt not found.');
+        }
+
+        if ($attempt->status !== 'completed') {
+            if (!auth()->check() || (int) $attempt->user_id !== (int) auth()->id()) {
+                abort(403, 'Examination not completed yet.');
+            }
+        }
+
+        return redirect()->route('tests.student.certificate', [
+            'test' => $test->id,
+            'attempt' => $attempt->id,
+            'autoprint' => 1,
+        ]);
+    }
+
     public function saveAnswer(Request $request, Test $test, TestAttempt $attempt): JsonResponse
     {
         $this->authorizeStudent($test);
