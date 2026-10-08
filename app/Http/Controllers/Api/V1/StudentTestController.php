@@ -650,6 +650,7 @@ class StudentTestController extends Controller
                 'result_standing'     => $matchedSlab ? $matchedSlab->name : ($attempt->result === 'pass' ? 'QUALIFIED (PASS)' : 'COMPLETED'),
                 'certificate_url'     => $certificateUrl,
                 'certificate_pdf_url' => $certificatePdfUrl,
+                'certificate_view_url' => $certificatePdfUrl . '?inline=1',
                 'result_url'          => $resultUrl,
             ],
             'scorecard' => [
@@ -701,9 +702,10 @@ class StudentTestController extends Controller
                 'total_marks'     => (int) ($att->test?->total_marks ?? 0),
                 'percentage'      => (float) $att->percentage,
                 'result'              => $att->result,
-                'certificate_url'     => route('tests.student.certificate', ['test' => $att->test_id, 'attempt' => $att->id]),
-                'certificate_pdf_url' => route('tests.student.certificate.download', ['test' => $att->test_id, 'attempt' => $att->id]),
-                'submitted_at'        => $att->submitted_at?->toIso8601String(),
+                'certificate_url'      => route('tests.student.certificate', ['test' => $att->test_id, 'attempt' => $att->id]),
+                'certificate_pdf_url'  => route('tests.student.certificate.download', ['test' => $att->test_id, 'attempt' => $att->id]),
+                'certificate_view_url' => route('tests.student.certificate.download', ['test' => $att->test_id, 'attempt' => $att->id]) . '?inline=1',
+                'submitted_at'         => $att->submitted_at?->toIso8601String(),
             ];
         });
 

@@ -50,13 +50,13 @@
             <span class="text-xs font-bold text-slate-800">Official Verified Certificate (A4)</span>
         </div>
         <div class="flex items-center gap-2.5 flex-wrap">
-            <button type="button"
-                    id="btn-direct-download"
-                    onclick="downloadCertificatePdf()"
-                    class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-xs cursor-pointer">
+            <a href="{{ route('tests.student.certificate.download', ['test' => $test->id, 'attempt' => $attempt->id]) }}"
+               download
+               id="btn-direct-download"
+               class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-xs cursor-pointer">
                 <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                <span>Direct Download PDF</span>
-            </button>
+                <span>Download Official PDF</span>
+            </a>
             <button type="button"
                     onclick="window.print()"
                     class="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-[#0b1329] font-black text-xs transition shadow-md hover:shadow-lg cursor-pointer">

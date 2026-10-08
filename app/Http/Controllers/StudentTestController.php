@@ -373,7 +373,7 @@ class StudentTestController extends Controller
         return view('student.tests.certificate', compact('test', 'attempt'));
     }
 
-    public function downloadCertificatePdf(Test $test, TestAttempt $attempt)
+    public function downloadCertificatePdf(Request $request, Test $test, TestAttempt $attempt)
     {
         if ((int) $attempt->test_id !== (int) $test->id) {
             abort(404, 'Examination attempt not found.');
@@ -385,11 +385,42 @@ class StudentTestController extends Controller
             }
         }
 
-        return redirect()->route('tests.student.certificate', [
-            'test' => $test->id,
-            'attempt' => $attempt->id,
-            'autoprint' => 1,
+        $test->load(['testLevel']);
+        $attempt->load(['user.profile']);
+
+        $candidatePhotoBase64 = null;
+        if ($attempt->candidate_photo) {
+            $pubPath = public_path('storage/' . $attempt->candidate_photo);
+            $storePath = storage_path('app/public/' . $attempt->candidate_photo);
+            $fullPath = file_exists($pubPath) ? $pubPath : (file_exists($storePath) ? $storePath : null);
+
+            if ($fullPath && file_exists($fullPath)) {
+                $fileContent = @file_get_contents($fullPath);
+                if ($fileContent) {
+                    $mime = mime_content_type($fullPath) ?: 'image/jpeg';
+                    $candidatePhotoBase64 = 'data:' . $mime . ';base64,' . base64_encode($fileContent);
+                }
+            }
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('student.tests.certificate-pdf', [
+            'test' => $test,
+            'attempt' => $attempt,
+            'candidatePhotoBase64' => $candidatePhotoBase64,
         ]);
+        $pdf->setPaper('a4', 'portrait');
+
+        $safeName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $attempt->user->name ?? 'Candidate');
+        $filename = "Certificate_{$safeName}_{$attempt->id}.pdf";
+
+        $response = ($request->boolean('inline') || $request->boolean('stream'))
+            ? $pdf->stream($filename)
+            : $pdf->download($filename);
+
+        $response->headers->set('Access-Control-Allow-Origin', '*');
+        $response->headers->set('Cache-Control', 'public, max-age=3600');
+
+        return $response;
     }
 
     public function saveAnswer(Request $request, Test $test, TestAttempt $attempt): JsonResponse
