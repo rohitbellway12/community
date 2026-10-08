@@ -328,11 +328,20 @@ class StudentTestController extends Controller
 
     public function result(Test $test, TestAttempt $attempt): View
     {
-        $this->authorizeStudent($test, true);
-        $this->authorizeAttempt($attempt, false);
+        // Verify attempt belongs to the test
+        if ((int) $attempt->test_id !== (int) $test->id) {
+            abort(404, 'Examination attempt not found.');
+        }
+
+        // For completed attempts, allow viewing so mobile users and certificate verifiers can access without web login.
+        // For uncompleted attempts, require active authentication.
+        if ($attempt->status !== 'completed') {
+            $this->authorizeStudent($test, true);
+            $this->authorizeAttempt($attempt, false);
+        }
 
         $test->load(['questions.options', 'testLevel']);
-        $attempt->load(['answers.question.options', 'answers.option', 'user']);
+        $attempt->load(['answers.question.options', 'answers.option', 'user.profile']);
 
         // Maintain consistent question ordering according to test definition
         $orderMap = $test->questions->pluck('pivot.question_order', 'id')->all();

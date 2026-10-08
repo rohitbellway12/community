@@ -150,12 +150,11 @@
                     Saved Posts
                 </a>
 
-                @auth
-                    @php
-                        $hasActiveTestMobile = \App\Models\Test::where('status', 'published')
-                            ->get()
-                            ->first(function ($t) { return $t->isAvailableFor(auth()->user()); });
-                    @endphp
+                @php
+                    $hasActiveTestMobile = \App\Models\Test::where('status', 'published')
+                        ->get()
+                        ->first(function ($t) { return auth()->check() ? $t->isAvailableFor(auth()->user()) : $t->isOpen(); });
+                @endphp
                     <a href="{{ route('tests.student.index') }}"
                         class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition {{ request()->is('*tests/student*') ? 'bg-[#0c1b33] text-white shadow-xs' : 'text-slate-700 hover:bg-slate-100/70' }} group">
                         <div class="flex items-center gap-2.5">
@@ -172,7 +171,6 @@
                             </span>
                         @endif
                     </a>
-                @endauth
 
                 <div class="border-t border-slate-100 my-2"></div>
 
@@ -385,7 +383,7 @@
                 }));
             @endphp
             <div class="lg:hidden">
-                <a href="{{ auth()->check() ? route('tests.student.index') : route('login') }}"
+                <a href="{{ route('tests.student.index') }}"
                     class="flex items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md transition active:scale-[0.99] group">
                     
                     <div class="flex items-center gap-3.5 min-w-0">

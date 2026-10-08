@@ -625,7 +625,7 @@ class StudentTestController extends Controller
 
         $matchedSlab = \App\Models\ResultSlab::getSlabForScore((float) $attempt->score_obtained, $attempt->test_id);
         $certNumber = 'REIAC-CRT-' . date('Y') . '-' . str_pad($attempt->id, 6, '0', STR_PAD_LEFT);
-        $certificateUrl = url('/community/tests/student/' . $test->id . '/result/' . $attempt->id);
+        $certificateUrl = route('tests.student.result', ['test' => $test->id, 'attempt' => $attempt->id]);
 
         $data = [
             'test' => [
@@ -697,7 +697,7 @@ class StudentTestController extends Controller
                 'total_marks'     => (int) ($att->test?->total_marks ?? 0),
                 'percentage'      => (float) $att->percentage,
                 'result'          => $att->result,
-                'certificate_url' => url('/community/tests/student/' . $att->test_id . '/result/' . $att->id),
+                'certificate_url' => route('tests.student.result', ['test' => $att->test_id, 'attempt' => $att->id]),
                 'submitted_at'    => $att->submitted_at?->toIso8601String(),
             ];
         });

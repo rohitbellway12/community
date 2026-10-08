@@ -26,7 +26,7 @@ class ProfileActivityService
             'avatar' => [
                 'title'          => 'Upload Profile Photo',
                 'description'    => 'Add a personalized profile avatar to help members recognize you.',
-                'action_url'     => '/community/profile/edit',
+                'action_url'     => '/profile/edit',
                 'action_label'   => 'Upload Avatar',
                 'default_points' => 15,
                 'icon'           => 'camera',
@@ -34,7 +34,7 @@ class ProfileActivityService
             'bio' => [
                 'title'          => 'Write a Bio',
                 'description'    => 'Tell the community about your goals, study interests, and background.',
-                'action_url'     => '/community/profile/edit',
+                'action_url'     => '/profile/edit',
                 'action_label'   => 'Write Bio',
                 'default_points' => 10,
                 'icon'           => 'user',
@@ -42,7 +42,7 @@ class ProfileActivityService
             'location' => [
                 'title'          => 'Set Country & Location',
                 'description'    => 'Select your home country or city to connect with nearby members.',
-                'action_url'     => '/community/profile/edit',
+                'action_url'     => '/profile/edit',
                 'action_label'   => 'Set Location',
                 'default_points' => 10,
                 'icon'           => 'globe',
@@ -50,7 +50,7 @@ class ProfileActivityService
             'bio_location' => [
                 'title'          => 'Add Bio & Location',
                 'description'    => 'Complete both your personal bio and location details in full.',
-                'action_url'     => '/community/profile/edit',
+                'action_url'     => '/profile/edit',
                 'action_label'   => 'Edit Profile',
                 'default_points' => 20,
                 'icon'           => 'user',
@@ -58,7 +58,7 @@ class ProfileActivityService
             'email_verified' => [
                 'title'          => 'Verify Email Address',
                 'description'    => 'Confirm your email address to secure your account and receive updates.',
-                'action_url'     => '/community/email/verify',
+                'action_url'     => '/email/verify',
                 'action_label'   => 'Verify Email',
                 'default_points' => 20,
                 'icon'           => 'mail',
@@ -82,7 +82,7 @@ class ProfileActivityService
             'join_group' => [
                 'title'          => 'Join a Community Group',
                 'description'    => 'Become a member of at least one study or regional community group.',
-                'action_url'     => '/community/groups',
+                'action_url'     => '/groups',
                 'action_label'   => 'Browse Groups',
                 'default_points' => 10,
                 'icon'           => 'users',
@@ -90,7 +90,7 @@ class ProfileActivityService
             'first_test' => [
                 'title'          => 'Attempt an Online Test',
                 'description'    => 'Take at least one student test to test your skills and earn scores.',
-                'action_url'     => '/community/tests/student',
+                'action_url'     => '/tests/student',
                 'action_label'   => 'Take Test',
                 'default_points' => 20,
                 'icon'           => 'academic-cap',
@@ -106,7 +106,7 @@ class ProfileActivityService
             'cover_image' => [
                 'title'          => 'Upload Profile Banner',
                 'description'    => 'Add a personalized header cover image to make your profile stand out.',
-                'action_url'     => '/community/profile/edit',
+                'action_url'     => '/profile/edit',
                 'action_label'   => 'Upload Banner',
                 'default_points' => 10,
                 'icon'           => 'photograph',
@@ -138,7 +138,7 @@ class ProfileActivityService
             'pass_test' => [
                 'title'          => 'Pass an Online Test',
                 'description'    => 'Score a passing result on any online student practice or mock test.',
-                'action_url'     => '/community/tests/student',
+                'action_url'     => '/tests/student',
                 'action_label'   => 'Pass a Test',
                 'default_points' => 20,
                 'icon'           => 'academic-cap',

@@ -323,12 +323,14 @@
                     {{-- Community --}}
                     <a
                         href="{{ route('community.index') }}"
-                        class="text-white font-semibold relative whitespace-nowrap py-1"
+                        class="text-white font-semibold relative whitespace-nowrap py-1 {{ request()->routeIs('community.index') ? '' : '' }}"
                     >
                         Community
 
                         <span class="absolute left-0 right-0 -bottom-1 h-0.5 bg-amber-400 rounded-full"></span>
                     </a>
+
+
 
                     {{-- Notices --}}
                     <a
@@ -1280,31 +1282,7 @@
                 Community
             </a>
 
-            {{-- Online Tests (mobile) --}}
-            @php
-                $hasActiveTestTopbar = \App\Models\Test::where('status', 'published')
-                    ->get()
-                    ->first(function ($t) { return auth()->check() ? $t->isAvailableFor(auth()->user()) : $t->isOpen(); });
-            @endphp
-            <a
-                href="{{ auth()->check() ? route('tests.student.index') : route('login') }}"
-                @click="mobileMenuOpen = false"
-                class="flex items-center justify-between px-3 py-3 rounded-xl text-sm font-bold text-slate-200 hover:text-white hover:bg-white/10 transition"
-            >
-                <div class="flex items-center gap-2.5">
-                    <svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" stroke-width="2"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span>Online Tests</span>
-                </div>
-                @if($hasActiveTestTopbar)
-                    <span class="inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span> Live
-                    </span>
-                @endif
-            </a>
+
 
             {{-- Notices --}}
             <a

@@ -41,6 +41,30 @@
         </div>
     </div>
 
+    @guest
+        <div class="mb-5 bg-gradient-to-r from-amber-50 via-white to-amber-50/50 border border-amber-200/90 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div class="flex items-center gap-3.5">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0 border border-amber-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-xs sm:text-sm font-bold text-slate-900">Exam Hall Login Required</h3>
+                    <p class="text-[11px] sm:text-xs text-slate-600 mt-0.5">You can browse available examinations below. To attempt a test, please log in or register.</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                <a href="{{ route('login') }}" class="px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition shadow-xs">
+                    Log In
+                </a>
+                <a href="{{ route('register') }}" class="px-4 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition">
+                    Register
+                </a>
+            </div>
+        </div>
+    @endguest
+
     {{-- TESTS LIST --}}
     <div class="space-y-3.5 sm:space-y-4">
         @forelse($tests as $test)
@@ -67,7 +91,7 @@
                                     <span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
                                     SESSION IN PROGRESS
                                 </span>
-                            @elseif($test->can_take)
+                            @elseif($test->can_take || (!auth()->check() && $test->is_open))
                                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
                                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                                     LIVE NOW
@@ -119,44 +143,74 @@
 
                     {{-- ACTIONS --}}
                     <div class="grid grid-cols-2 sm:flex items-center gap-2 sm:gap-2.5 w-full lg:w-auto mt-2 lg:mt-0 shrink-0">
-                        <a href="{{ route('tests.student.show', $test) }}"
-                           class="inline-flex items-center justify-center px-4 py-2.5 text-xs font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-xl transition border border-slate-200 text-center">
-                            Instructions
-                        </a>
-
-                        @if($hasActiveAttempt)
-                            <a href="{{ route('tests.student.take', ['test' => $test, 'attempt' => $test->active_attempt]) }}"
-                               class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-xl transition shadow-xs gap-1.5 cursor-pointer text-center">
-                                <span>Resume Exam →</span>
-                            </a>
-                        @elseif($test->can_take)
+                        @auth
                             <a href="{{ route('tests.student.show', $test) }}"
-                               class="w-full sm:w-auto px-5 py-2.5 text-xs font-extrabold text-white bg-reiac-navy hover:bg-slate-800 rounded-xl transition shadow-xs inline-flex items-center justify-center gap-1.5 cursor-pointer text-center">
-                                @if($test->require_camera_photo)
-                                    <svg class="w-3.5 h-3.5 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                    </svg>
-                                    <span>Verify Photo & Start →</span>
-                                @else
-                                    <svg class="w-3.5 h-3.5 text-reiac-gold shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                    <span>Start Test →</span>
-                                @endif
+                               class="inline-flex items-center justify-center px-4 py-2.5 text-xs font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-xl transition border border-slate-200 text-center">
+                                Instructions
                             </a>
-                        @elseif(!$test->is_open && $test->open_date && now()->lt($test->open_date))
-                            <button disabled
-                                    class="inline-flex items-center justify-center px-4 py-2.5 text-xs font-bold text-slate-400 bg-slate-100 rounded-xl cursor-not-allowed text-center">
-                                Starts {{ $test->open_date->format('M d') }}
-                            </button>
+
+                            @if($hasActiveAttempt)
+                                <a href="{{ route('tests.student.take', ['test' => $test, 'attempt' => $test->active_attempt]) }}"
+                                   class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-xl transition shadow-xs gap-1.5 cursor-pointer text-center">
+                                    <span>Resume Exam →</span>
+                                </a>
+                            @elseif($test->can_take)
+                                <a href="{{ route('tests.student.show', $test) }}"
+                                   class="w-full sm:w-auto px-5 py-2.5 text-xs font-extrabold text-white bg-reiac-navy hover:bg-slate-800 rounded-xl transition shadow-xs inline-flex items-center justify-center gap-1.5 cursor-pointer text-center">
+                                    @if($test->require_camera_photo)
+                                        <svg class="w-3.5 h-3.5 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        </svg>
+                                        <span>Verify Photo & Start →</span>
+                                    @else
+                                        <svg class="w-3.5 h-3.5 text-reiac-gold shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <span>Start Test →</span>
+                                    @endif
+                                </a>
+                            @elseif(!$test->is_open && $test->open_date && now()->lt($test->open_date))
+                                <button disabled
+                                        class="inline-flex items-center justify-center px-4 py-2.5 text-xs font-bold text-slate-400 bg-slate-100 rounded-xl cursor-not-allowed text-center">
+                                    Starts {{ $test->open_date->format('M d') }}
+                                </button>
+                            @else
+                                <button disabled
+                                        class="inline-flex items-center justify-center px-4 py-2.5 text-xs font-bold text-slate-400 bg-slate-100 rounded-xl cursor-not-allowed text-center">
+                                    Test Closed
+                                </button>
+                            @endif
                         @else
-                            <button disabled
-                                    class="inline-flex items-center justify-center px-4 py-2.5 text-xs font-bold text-slate-400 bg-slate-100 rounded-xl cursor-not-allowed text-center">
-                                Test Closed
+                            {{-- GUEST USER --}}
+                            <button type="button"
+                                    onclick="promptLoginForTest('{{ route('login') }}', '{{ addslashes($test->title) }}')"
+                                    class="inline-flex items-center justify-center px-4 py-2.5 text-xs font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-xl transition border border-slate-200 text-center cursor-pointer">
+                                Instructions
                             </button>
-                        @endif
+
+                            @if($test->is_open)
+                                <button type="button"
+                                        onclick="promptLoginForTest('{{ route('login') }}', '{{ addslashes($test->title) }}')"
+                                        class="w-full sm:w-auto px-5 py-2.5 text-xs font-extrabold text-white bg-reiac-navy hover:bg-slate-800 rounded-xl transition shadow-xs inline-flex items-center justify-center gap-1.5 cursor-pointer text-center">
+                                    <svg class="w-3.5 h-3.5 text-reiac-gold shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                                    </svg>
+                                    <span>Login to Start Test →</span>
+                                </button>
+                            @elseif($test->open_date && now()->lt($test->open_date))
+                                <button disabled
+                                        class="inline-flex items-center justify-center px-4 py-2.5 text-xs font-bold text-slate-400 bg-slate-100 rounded-xl cursor-not-allowed text-center">
+                                    Starts {{ $test->open_date->format('M d') }}
+                                </button>
+                            @else
+                                <button disabled
+                                        class="inline-flex items-center justify-center px-4 py-2.5 text-xs font-bold text-slate-400 bg-slate-100 rounded-xl cursor-not-allowed text-center">
+                                    Test Closed
+                                </button>
+                            @endif
+                        @endauth
                     </div>
                 </div>
             </div>
@@ -184,7 +238,39 @@
                 @endif
             </div>
         @endforelse
-    </div>
-
 </div>
+
+@push('scripts')
+<script>
+function promptLoginForTest(loginUrl, testTitle) {
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: 'Login Required',
+            html: '<p class="text-sm text-slate-600">Please login or create an account to start <br><strong class="text-slate-900 font-bold">' + (testTitle || 'this examination') + '</strong>.</p>',
+            icon: 'info',
+            iconColor: '#F7B500',
+            showCancelButton: true,
+            confirmButtonText: 'Go to Login →',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#0B132B',
+            cancelButtonColor: '#94a3b8',
+            reverseButtons: true,
+            customClass: {
+                popup: 'rounded-2xl',
+                confirmButton: 'rounded-xl font-bold px-5 py-2.5 text-sm',
+                cancelButton: 'rounded-xl font-semibold px-4 py-2.5 text-sm'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = loginUrl;
+            }
+        });
+    } else {
+        if (confirm('Please login to attempt this examination. Proceed to login page?')) {
+            window.location.href = loginUrl;
+        }
+    }
+}
+</script>
+@endpush
 @endsection

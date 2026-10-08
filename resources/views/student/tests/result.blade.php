@@ -47,10 +47,10 @@
 @endphp
 
 {{-- =========================================================================
-     1. OFFICIAL 1-PAGE CERTIFICATE (PRINT / PDF ONLY)
+     1. OFFICIAL CERTIFICATE (VISIBLE ON SCREEN & PRINT READY)
      ========================================================================= --}}
-<div class="hidden print:block w-full">
-    <div class="cert-print-card bg-white border-4 border-[#0b1329] p-3 relative text-[#0b1329]">
+<div class="w-full max-w-[1020px] mx-auto p-3 sm:p-6 lg:p-8 pb-0">
+    <div class="cert-print-card bg-white border-4 border-[#0b1329] p-3 relative text-[#0b1329] rounded-2xl sm:rounded-3xl shadow-sm">
         <div class="border-2 border-amber-500/70 p-6 sm:p-8 relative bg-gradient-to-b from-amber-50/20 via-white to-amber-50/10">
 
             {{-- CORNER ORNAMENTS --}}
@@ -225,7 +225,7 @@
             {{-- VERIFICATION FOOTER NOTICE --}}
             <div class="mt-5 pt-3 border-t border-slate-100 text-center text-[9px] text-slate-400 font-medium">
                 This is an official system-verified electronic certificate issued by {{ $test->agency_name ?: 'REIAC Test Assessment Center' }}.
-                Authenticity can be verified at: <span class="font-mono text-slate-600 font-bold">{{ url('/community/tests/student/' . $test->id . '/result/' . $attempt->id) }}</span>
+                Authenticity can be verified at: <span class="font-mono text-slate-600 font-bold">{{ route('tests.student.result', ['test' => $test->id, 'attempt' => $attempt->id]) }}</span>
             </div>
 
         </div>

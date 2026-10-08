@@ -21,22 +21,19 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TagController;
 
-Route::get('/', function () {
-    return redirect()->route('community.index');
-})->name('home');
-
 Route::get('/dashboard', function () {
     return redirect()->route('community.index');
 })->name('dashboard');
 
-Route::get('/admin/{any?}', function ($any = null) {
-    return redirect('/community/admin' . ($any ? '/' . $any : '/dashboard'));
-})->where('any', '.*');
+Route::get('/admin', function () {
+    return redirect()->route('admin.dashboard');
+});
 
 Route::get('/events/{slug}', [EventWebController::class, 'show'])->name('events.show');
 
 
-Route::prefix('community')->group(function () {
+// Route::prefix('community') removed — XAMPP folder already provides the /community base path
+Route::group([], function () {
     require __DIR__ . '/auth.php';
 
     Route::middleware('auth')->group(function () {
@@ -53,16 +50,19 @@ Route::prefix('community')->group(function () {
 
     // Student Test-Taking
 
-    Route::middleware('auth')->name('tests.student.')->prefix('tests')->group(function () {
+    Route::name('tests.student.')->prefix('tests')->group(function () {
         Route::get('/student', [\App\Http\Controllers\StudentTestController::class, 'index'])->name('index');
-        Route::get('/student/{test}/show', [\App\Http\Controllers\StudentTestController::class, 'show'])->name('show');
-        Route::post('/student/{test}/start', [\App\Http\Controllers\StudentTestController::class, 'start'])->name('start');
-        Route::get('/student/{test}/take/{attempt}', [\App\Http\Controllers\StudentTestController::class, 'take'])->name('take');
-        Route::post('/student/{test}/submit/{attempt}', [\App\Http\Controllers\StudentTestController::class, 'submit'])->name('submit');
         Route::get('/student/{test}/result/{attempt}', [\App\Http\Controllers\StudentTestController::class, 'result'])->name('result');
-        Route::post('/student/{test}/answer/{attempt}', [\App\Http\Controllers\StudentTestController::class, 'saveAnswer'])->name('answer.save');
-        Route::post('/student/{test}/clear-answer/{attempt}', [\App\Http\Controllers\StudentTestController::class, 'clearAnswer'])->name('answer.clear');
-        Route::post('/student/{test}/mark-review/{attempt}', [\App\Http\Controllers\StudentTestController::class, 'toggleMarkForReview'])->name('answer.mark-review');
+
+        Route::middleware('auth')->group(function () {
+            Route::get('/student/{test}/show', [\App\Http\Controllers\StudentTestController::class, 'show'])->name('show');
+            Route::post('/student/{test}/start', [\App\Http\Controllers\StudentTestController::class, 'start'])->name('start');
+            Route::get('/student/{test}/take/{attempt}', [\App\Http\Controllers\StudentTestController::class, 'take'])->name('take');
+            Route::post('/student/{test}/submit/{attempt}', [\App\Http\Controllers\StudentTestController::class, 'submit'])->name('submit');
+            Route::post('/student/{test}/answer/{attempt}', [\App\Http\Controllers\StudentTestController::class, 'saveAnswer'])->name('answer.save');
+            Route::post('/student/{test}/clear-answer/{attempt}', [\App\Http\Controllers\StudentTestController::class, 'clearAnswer'])->name('answer.clear');
+            Route::post('/student/{test}/mark-review/{attempt}', [\App\Http\Controllers\StudentTestController::class, 'toggleMarkForReview'])->name('answer.mark-review');
+        });
     });
 
     Route::get('/', [PostController::class, 'index'])

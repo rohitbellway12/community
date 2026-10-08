@@ -63,6 +63,12 @@
                         </span>
                         <span class="text-xs text-slate-300 font-medium hidden md:inline">{{ auth()->user()->name }}</span>
                     </div>
+                @else
+                    <div class="pl-2 border-l border-slate-700 flex items-center gap-2">
+                        <a href="{{ route('login') }}" class="px-3.5 py-1.5 rounded-lg bg-reiac-gold text-reiac-navy font-bold hover:bg-amber-400 transition shadow-xs text-xs">
+                            Log In
+                        </a>
+                    </div>
                 @endauth
             </nav>
         </div>
@@ -81,5 +87,6 @@
     </footer>
     @endunless
 
+    @stack('scripts')
 </body>
 </html>

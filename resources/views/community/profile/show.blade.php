@@ -553,7 +553,7 @@
                                     </button>
 
                                     <button type="button"
-                                            @click="navigator.clipboard.writeText('{{ url('/community/register?ref=' . $user->referral_code) }}'); copiedLink = true; setTimeout(() => copiedLink = false, 2000)"
+                                            @click="navigator.clipboard.writeText('{{ route('register') }}' + '?ref=' + '{{ $user->referral_code }}'); copiedLink = true; setTimeout(() => copiedLink = false, 2000)"
                                             class="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs transition cursor-pointer shadow-xs">
                                         <span x-show="!copiedLink">Share Link</span>
                                         <span x-show="copiedLink" class="text-white">✓ Link Copied</span>
