@@ -47,10 +47,10 @@
 @endphp
 
 {{-- =========================================================================
-     1. OFFICIAL CERTIFICATE (VISIBLE ON SCREEN & PRINT READY)
+     1. OFFICIAL 1-PAGE CERTIFICATE (PRINT / PDF ONLY)
      ========================================================================= --}}
-<div class="w-full max-w-[1020px] mx-auto p-3 sm:p-6 lg:p-8 pb-0">
-    <div class="cert-print-card bg-white border-4 border-[#0b1329] p-3 relative text-[#0b1329] rounded-2xl sm:rounded-3xl shadow-sm">
+<div class="hidden print:block w-full">
+    <div class="cert-print-card bg-white border-4 border-[#0b1329] p-3 relative text-[#0b1329]">
         <div class="border-2 border-amber-500/70 p-6 sm:p-8 relative bg-gradient-to-b from-amber-50/20 via-white to-amber-50/10">
 
             {{-- CORNER ORNAMENTS --}}
