@@ -133,6 +133,21 @@ class CertificatePdfService
         $test->loadMissing(['testLevel']);
         $attempt->loadMissing(['user.profile']);
 
+        $fontDir = storage_path('fonts');
+        if (!is_dir($fontDir)) {
+            @mkdir($fontDir, 0775, true);
+        }
+
+        $dompdfOptions = [
+            'isRemoteEnabled' => true,
+            'isHtml5ParserEnabled' => true,
+            'isFontSubsettingEnabled' => true,
+            'fontDir' => $fontDir,
+            'fontCache' => $fontDir,
+            'tempDir' => $fontDir,
+            'chroot' => [base_path(), $fontDir],
+        ];
+
         try {
             if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
                 $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('student.tests.certificate-pdf', [
@@ -140,6 +155,7 @@ class CertificatePdfService
                     'attempt' => $attempt,
                 ]);
                 $pdf->setPaper('a4', 'portrait');
+                $pdf->setOptions($dompdfOptions);
                 return $pdf->output();
             }
 
@@ -149,6 +165,7 @@ class CertificatePdfService
                     'attempt' => $attempt,
                 ]);
                 $pdf->setPaper('a4', 'portrait');
+                $pdf->setOptions($dompdfOptions);
                 return $pdf->output();
             }
 
@@ -158,12 +175,17 @@ class CertificatePdfService
                     'attempt' => $attempt,
                 ]);
                 $pdf->setPaper('a4', 'portrait');
+                $pdf->setOptions($dompdfOptions);
                 return $pdf->output();
             }
 
             if (class_exists(\Dompdf\Dompdf::class)) {
                 $html = view('student.tests.certificate-pdf', compact('test', 'attempt'))->render();
-                $dompdf = new \Dompdf\Dompdf(['isRemoteEnabled' => true]);
+                $options = new \Dompdf\Options();
+                foreach ($dompdfOptions as $key => $val) {
+                    $options->set($key, $val);
+                }
+                $dompdf = new \Dompdf\Dompdf($options);
                 $dompdf->loadHtml($html);
                 $dompdf->setPaper('A4', 'portrait');
                 $dompdf->render();
