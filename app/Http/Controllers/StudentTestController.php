@@ -385,13 +385,51 @@ class StudentTestController extends Controller
             }
         }
 
-        if ($request->boolean('inline') || $request->boolean('stream')) {
-            return redirect()->route('tests.student.certificate', [
-                'test' => $test->id,
-                'attempt' => $attempt->id,
+        $pdfService = app(\App\Services\CertificatePdfService::class);
+        $safeName = preg_replace('/[^A-Za-z0-9_\-]/', '_', $attempt->user->name ?? 'Candidate');
+        $filename = "Certificate_{$safeName}_{$attempt->id}.pdf";
+
+        if ($request->boolean('base64')) {
+            $base64 = $pdfService->getPdfBase64($test, $attempt);
+            return response()->json([
+                'status' => true,
+                'filename' => $filename,
+                'mime_type' => 'application/pdf',
+                'pdf_base64' => $base64,
             ]);
         }
 
+        // Check if file is available on disk
+        $pdfPath = $pdfService->getOrGeneratePdf($test, $attempt);
+        if ($pdfPath && file_exists($pdfPath) && filesize($pdfPath) > 1000) {
+            if ($request->boolean('inline') || $request->boolean('stream')) {
+                return response()->file($pdfPath, [
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => 'inline; filename="' . $filename . '"',
+                    'Access-Control-Allow-Origin' => '*',
+                ]);
+            }
+
+            return response()->download($pdfPath, $filename, [
+                'Content-Type' => 'application/pdf',
+                'Access-Control-Allow-Origin' => '*',
+            ]);
+        }
+
+        // Fallback: In-memory binary response (never throws FileNotFoundException)
+        $binary = $pdfService->getPdfBinary($test, $attempt);
+        if ($binary && strlen($binary) > 1000) {
+            $disposition = ($request->boolean('inline') || $request->boolean('stream')) ? 'inline' : 'attachment';
+
+            return response($binary, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => "{$disposition}; filename=\"{$filename}\"",
+                'Content-Length' => strlen($binary),
+                'Access-Control-Allow-Origin' => '*',
+            ]);
+        }
+
+        // Graceful fallback if no server PDF engine is installed:
         return redirect()->route('tests.student.certificate', [
             'test' => $test->id,
             'attempt' => $attempt->id,

@@ -629,6 +629,9 @@ class StudentTestController extends Controller
         $certificatePdfUrl = route('tests.student.certificate.download', ['test' => $test->id, 'attempt' => $attempt->id]);
         $resultUrl = route('tests.student.result', ['test' => $test->id, 'attempt' => $attempt->id]);
 
+        $pdfService = app(\App\Services\CertificatePdfService::class);
+        $pdfBase64 = $pdfService->getPdfBase64($test, $attempt);
+
         $data = [
             'test' => [
                 'id'               => $test->id,
@@ -639,19 +642,21 @@ class StudentTestController extends Controller
                 'duration_minutes' => (int) $test->duration_minutes,
             ],
             'certificate' => [
-                'certificate_number'  => $certNumber,
-                'issue_date'          => $attempt->submitted_at ? $attempt->submitted_at->format('F d, Y') : date('F d, Y'),
-                'candidate_name'      => $user->name,
-                'candidate_username'  => $user->username ?? ('ID-' . $user->id),
-                'candidate_photo_url' => $attempt->candidate_photo ? asset('storage/' . $attempt->candidate_photo) : null,
-                'agency_name'         => $test->agency_name ?: 'REIAC Test Assessment Center',
-                'controller_name'     => $test->controller_name ?: 'Kang Min-Seok',
-                'director_name'       => $test->director_name ?: 'Dr. Rajesh Sharma',
-                'result_standing'     => $matchedSlab ? $matchedSlab->name : ($attempt->result === 'pass' ? 'QUALIFIED (PASS)' : 'COMPLETED'),
-                'certificate_url'     => $certificateUrl,
-                'certificate_pdf_url' => $certificatePdfUrl,
+                'certificate_number'   => $certNumber,
+                'issue_date'           => $attempt->submitted_at ? $attempt->submitted_at->format('F d, Y') : date('F d, Y'),
+                'candidate_name'       => $user->name,
+                'candidate_username'   => $user->username ?? ('ID-' . $user->id),
+                'candidate_photo_url'  => $attempt->candidate_photo ? asset('storage/' . $attempt->candidate_photo) : null,
+                'agency_name'          => $test->agency_name ?: 'REIAC Test Assessment Center',
+                'controller_name'      => $test->controller_name ?: 'Kang Min-Seok',
+                'director_name'        => $test->director_name ?: 'Dr. Rajesh Sharma',
+                'result_standing'      => $matchedSlab ? $matchedSlab->name : ($attempt->result === 'pass' ? 'QUALIFIED (PASS)' : 'COMPLETED'),
+                'certificate_url'      => $certificateUrl,
+                'certificate_pdf_url'  => $certificatePdfUrl,
                 'certificate_view_url' => $certificatePdfUrl . '?inline=1',
-                'result_url'          => $resultUrl,
+                'pdf_download_url'     => $certificatePdfUrl,
+                'pdf_base64'           => $pdfBase64,
+                'result_url'           => $resultUrl,
             ],
             'scorecard' => [
                 'attempt_id'       => $attempt->id,
@@ -705,6 +710,7 @@ class StudentTestController extends Controller
                 'certificate_url'      => route('tests.student.certificate', ['test' => $att->test_id, 'attempt' => $att->id]),
                 'certificate_pdf_url'  => route('tests.student.certificate.download', ['test' => $att->test_id, 'attempt' => $att->id]),
                 'certificate_view_url' => route('tests.student.certificate.download', ['test' => $att->test_id, 'attempt' => $att->id]) . '?inline=1',
+                'pdf_download_url'     => route('tests.student.certificate.download', ['test' => $att->test_id, 'attempt' => $att->id]),
                 'submitted_at'         => $att->submitted_at?->toIso8601String(),
             ];
         });
