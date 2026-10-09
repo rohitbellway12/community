@@ -195,7 +195,6 @@
         {{-- VERIFICATION FOOTER NOTICE --}}
         <div class="mt-5 pt-3 border-t border-slate-100 text-center text-[9px] text-slate-400 font-medium" style="margin-top: 1.25rem; padding-top: 0.75rem; border-top: 1px solid #f1f5f9; text-align: center; font-size: 9px; color: #94a3b8; font-weight: 500;">
             This is an official system-verified electronic certificate issued by {{ $test->agency_name ?: 'REIAC Test Assessment Center' }}.
-            Authenticity can be verified at: <span class="font-mono text-slate-600 font-bold" style="font-family: monospace; color: #475569; font-weight: 700;">{{ route('tests.student.certificate', ['test' => $test->id, 'attempt' => $attempt->id]) }}</span>
         </div>
 
     </div>

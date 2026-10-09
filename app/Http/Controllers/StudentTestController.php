@@ -399,6 +399,10 @@ class StudentTestController extends Controller
             ]);
         }
 
+        if ($request->hasAny(['refresh', 'force', 'clear'])) {
+            $pdfService->clearCache($test, $attempt);
+        }
+
         // Check if file is available on disk
         $pdfPath = $pdfService->getOrGeneratePdf($test, $attempt);
         if ($pdfPath && file_exists($pdfPath) && filesize($pdfPath) > 1000) {

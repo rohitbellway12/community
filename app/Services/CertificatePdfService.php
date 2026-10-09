@@ -37,13 +37,56 @@ class CertificatePdfService
     }
 
     /**
-     * Get the absolute path to the certificate PDF if it exists on disk.
+     * Check if a cached PDF file is valid and fresh.
+     */
+    public function isPdfCacheValid(?string $pdfPath): bool
+    {
+        if (!$pdfPath || !file_exists($pdfPath) || filesize($pdfPath) < 1000) {
+            return false;
+        }
+
+        // Forced refresh via request query (?refresh=1 or ?force=1)
+        if (request()->hasAny(['refresh', 'force', 'regenerate'])) {
+            @unlink($pdfPath);
+            return false;
+        }
+
+        // Invalidate if the blade template was modified after the PDF was generated
+        $template = resource_path('views/student/tests/certificate-pdf.blade.php');
+        if (file_exists($template) && filemtime($pdfPath) < filemtime($template)) {
+            @unlink($pdfPath);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Clear cached certificate PDFs.
+     */
+    public function clearCache(?Test $test = null, ?TestAttempt $attempt = null): void
+    {
+        $dir = storage_path('app/certificates');
+        if ($test && $attempt) {
+            $file = $dir . "/certificate_{$test->id}_{$attempt->id}.pdf";
+            if (file_exists($file)) {
+                @unlink($file);
+            }
+        } elseif (is_dir($dir)) {
+            foreach (glob($dir . '/certificate_*.pdf') as $f) {
+                @unlink($f);
+            }
+        }
+    }
+
+    /**
+     * Get the absolute path to the certificate PDF if it exists and is fresh.
      */
     public function getPdfPathIfExists(Test $test, TestAttempt $attempt): ?string
     {
         $dir = storage_path('app/certificates');
         $pdfPath = $dir . "/certificate_{$test->id}_{$attempt->id}.pdf";
-        return (file_exists($pdfPath) && filesize($pdfPath) > 1000) ? $pdfPath : null;
+        return $this->isPdfCacheValid($pdfPath) ? $pdfPath : null;
     }
 
     /**
@@ -62,10 +105,11 @@ class CertificatePdfService
 
         $pdfPath = $dir . "/certificate_{$test->id}_{$attempt->id}.pdf";
 
-        if (file_exists($pdfPath) && filesize($pdfPath) > 1000) {
+        if ($this->isPdfCacheValid($pdfPath)) {
             return $pdfPath;
         }
 
+        @unlink($pdfPath);
         $this->generatePdfFile($test, $attempt, $pdfPath);
 
         return (file_exists($pdfPath) && filesize($pdfPath) > 1000) ? $pdfPath : null;

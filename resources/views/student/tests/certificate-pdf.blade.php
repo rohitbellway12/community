@@ -12,7 +12,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>Certificate - {{ $attempt->user->name ?? 'Candidate' }}</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@700;900&family=Noto+Sans+KR:wght@400;700&display=swap');
 
         @page {
             size: A4 portrait;
@@ -22,7 +22,7 @@
             box-sizing: border-box;
         }
         body {
-            font-family: 'Noto Sans KR', 'DejaVu Sans', sans-serif;
+            font-family: 'Inter', 'Noto Sans KR', 'DejaVu Sans', sans-serif;
             margin: 0;
             padding: 0;
             background-color: #ffffff;
@@ -38,14 +38,14 @@
         }
         .inner-border {
             border: 2px solid rgba(245, 158, 11, 0.7);
-            padding: 20px 24px;
+            padding: 22px 26px;
             background-color: #fffefb;
             position: relative;
         }
         .corner-tl {
             position: absolute;
-            top: 6px;
-            left: 6px;
+            top: 7px;
+            left: 7px;
             width: 14px;
             height: 14px;
             border-top: 2px solid #d97706;
@@ -53,29 +53,11 @@
         }
         .corner-tr {
             position: absolute;
-            top: 6px;
-            right: 6px;
+            top: 7px;
+            right: 7px;
             width: 14px;
             height: 14px;
             border-top: 2px solid #d97706;
-            border-right: 2px solid #d97706;
-        }
-        .corner-bl {
-            position: absolute;
-            bottom: 6px;
-            left: 6px;
-            width: 14px;
-            height: 14px;
-            border-bottom: 2px solid #d97706;
-            border-left: 2px solid #d97706;
-        }
-        .corner-br {
-            position: absolute;
-            bottom: 6px;
-            right: 6px;
-            width: 14px;
-            height: 14px;
-            border-bottom: 2px solid #d97706;
             border-right: 2px solid #d97706;
         }
 
@@ -86,22 +68,8 @@
             border-bottom: 1px solid #e2e8f0;
             padding-bottom: 12px;
         }
-        .logo-box {
-            width: 48px;
-            height: 48px;
-            background-color: #0b1329;
-            color: #fbbf24;
-            text-align: center;
-            vertical-align: middle;
-            font-size: 22px;
-            font-weight: 900;
-            border-radius: 8px;
-            border: 1px solid #fbbf24;
-            display: inline-block;
-            line-height: 48px;
-        }
         .agency-title {
-            font-size: 15px;
+            font-size: 16px;
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -125,20 +93,20 @@
         /* CENTER CONTENT */
         .badge-pill {
             display: inline-block;
-            padding: 3px 14px;
+            padding: 2px 14px;
             background-color: #fef3c7;
             border: 1px solid #fcd34d;
-            border-radius: 12px;
+            border-radius: 9999px;
             font-size: 9px;
             font-weight: 900;
             color: #78350f;
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-top: 10px;
+            margin-top: 8px;
             margin-bottom: 6px;
         }
         .cert-title {
-            font-size: 23px;
+            font-size: 24px;
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -154,14 +122,14 @@
         .candidate-name-box {
             display: inline-block;
             border-bottom: 2px solid #0b1329;
-            padding-bottom: 2px;
-            padding-left: 25px;
-            padding-right: 25px;
+            padding-bottom: 4px;
+            padding-left: 38px;
+            padding-right: 38px;
             margin-top: 6px;
             margin-bottom: 3px;
         }
         .candidate-name {
-            font-size: 23px;
+            font-size: 25px;
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -179,7 +147,7 @@
             margin: 4px 0;
         }
         .test-title {
-            font-size: 17px;
+            font-size: 18px;
             font-weight: 900;
             color: #0b1329;
             margin-top: 3px;
@@ -188,8 +156,8 @@
             display: inline-block;
             background-color: #f1f5f9;
             border: 1px solid #e2e8f0;
-            padding: 2px 10px;
-            border-radius: 5px;
+            padding: 3px 12px;
+            border-radius: 6px;
             font-size: 10px;
             font-weight: 700;
             color: #334155;
@@ -201,15 +169,16 @@
         .stats-table {
             width: 100%;
             border-collapse: separate;
-            border-spacing: 8px 0;
-            margin: 10px 0;
+            border-spacing: 10px 0;
+            margin-top: 20px;
+            margin-bottom: 20px;
         }
         .stat-box {
             width: 25%;
             background-color: #ffffff;
             border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 8px 6px;
+            border-radius: 12px;
+            padding: 12px 8px;
             text-align: center;
         }
         .stat-label {
@@ -220,10 +189,11 @@
             color: #94a3b8;
         }
         .stat-value {
-            font-size: 18px;
+            font-size: 19px;
             font-weight: 900;
             color: #0b1329;
             margin: 2px 0;
+            line-height: 1.1;
         }
         .stat-sub {
             font-size: 9px;
@@ -236,20 +206,20 @@
             width: 100%;
             border-collapse: collapse;
             border-top: 1px solid #e2e8f0;
-            margin-top: 12px;
-            padding-top: 10px;
+            margin-top: 22px;
+            padding-top: 16px;
         }
         .sig-name {
             font-family: Georgia, serif;
             font-style: italic;
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 700;
             color: #1e293b;
         }
         .sig-line {
-            width: 120px;
+            width: 140px;
             border-bottom: 1px solid #94a3b8;
-            margin: 3px 0;
+            margin: 4px 0;
         }
         .sig-title {
             font-size: 10px;
@@ -265,16 +235,19 @@
         }
 
         /* SEAL BADGE */
-        .seal-circle {
-            width: 62px;
-            height: 62px;
-            border-radius: 50%;
+        .seal-table {
+            width: 66px;
+            height: 66px;
+            border-radius: 33px;
             border: 3px solid #fbbf24;
             background-color: #fbbf24;
-            color: #0b1329;
             margin: 0 auto;
+            border-collapse: collapse;
+        }
+        .seal-cell {
             text-align: center;
-            padding-top: 8px;
+            vertical-align: middle;
+            padding: 2px;
         }
         .seal-org {
             font-size: 7px;
@@ -282,11 +255,13 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             line-height: 1;
+            color: #0b1329;
         }
         .seal-star {
             font-size: 10px;
             margin: 1px 0;
             line-height: 1;
+            color: #0b1329;
         }
         .seal-verified {
             font-size: 6px;
@@ -294,19 +269,21 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             line-height: 1;
+            color: #0b1329;
         }
         .seal-cert {
             font-size: 5px;
             font-weight: 700;
             opacity: 0.85;
             line-height: 1;
+            color: #0b1329;
         }
         .seal-ref {
             font-size: 8px;
             font-weight: 700;
             font-family: monospace;
             color: #64748b;
-            margin-top: 2px;
+            margin-top: 3px;
             text-align: center;
         }
 
@@ -324,11 +301,14 @@
 
 <div class="outer-border">
     <div class="inner-border">
+        {{-- WATERMARK STAR --}}
+        <div style="position: absolute; top: 140px; left: 0; width: 100%; text-align: center; font-size: 240px; color: #0b1329; opacity: 0.025; line-height: 1; z-index: 0; pointer-events: none;">
+            &#9733;
+        </div>
+
         {{-- CORNER ORNAMENTS --}}
         <div class="corner-tl"></div>
         <div class="corner-tr"></div>
-        <div class="corner-bl"></div>
-        <div class="corner-br"></div>
 
         {{-- HEADER TABLE --}}
         <table class="header-table">
@@ -337,7 +317,7 @@
                     @if($attempt->candidate_photo && file_exists(public_path('storage/' . $attempt->candidate_photo)))
                         <img src="{{ public_path('storage/' . $attempt->candidate_photo) }}" style="width: 46px; height: 46px; border-radius: 8px; border: 2px solid #fbbf24; object-fit: cover;">
                     @else
-                        <div class="logo-box">
+                        <div style="width: 46px; height: 35px; padding-top: 11px; background-color: #0b1329; border: 1px solid rgba(251, 191, 36, 0.4); border-radius: 10px; text-align: center; color: #fbbf24; font-size: 22px; font-weight: 900; line-height: 1;">
                             {{ strtoupper(substr($attempt->user->name ?? ($test->agency_name ?? 'R'), 0, 1)) }}
                         </div>
                     @endif
@@ -355,7 +335,7 @@
 
         {{-- CENTER BODY --}}
         <div style="text-align: center; margin-top: 6px;">
-            <div class="badge-pill">★ Official Academic Credential ★</div>
+            <div class="badge-pill">&#9733; Official Academic Credential &#9733;</div>
             <div class="cert-title">Certificate of Achievement</div>
             <div class="cert-subtitle">This is to officially certify that</div>
 
@@ -375,7 +355,7 @@
         </div>
 
         {{-- 4 STATS BOXES TABLE (GUARANTEED 4 IN A ROW IN DOMPDF) --}}
-        <table class="stats-table">
+        <table class="stats-table" cellspacing="8" cellpadding="0">
             <tr>
                 <td class="stat-box">
                     <div class="stat-label">Score Obtained</div>
@@ -418,11 +398,11 @@
                     <div class="sig-org">{{ $test->agency_name ? ($test->agency_name . ' Board') : 'REIAC Assessment Council' }}</div>
                 </td>
                 <td style="width: 30%; vertical-align: middle; text-align: center;">
-                    <div class="seal-circle">
-                        <div class="seal-org">{{ $test->agency_name ? strtoupper(substr($test->agency_name, 0, 8)) : 'REIAC' }}</div>
-                        <div class="seal-star">★</div>
-                        <div class="seal-verified">VERIFIED</div>
-                        <div class="seal-cert">CERTIFICATE</div>
+                    <div style="width: 66px; height: 66px; border-radius: 33px; border: 3px solid #fbbf24; background-color: #fbbf24; margin: 0 auto; text-align: center;">
+                        <div style="font-size: 7px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1; color: #0b1329; padding-top: 10px;">{{ $test->agency_name ? strtoupper(substr($test->agency_name, 0, 8)) : 'REIAC' }}</div>
+                        <div style="font-size: 10px; margin: 2px 0; line-height: 1; color: #0b1329;">&#9733;</div>
+                        <div style="font-size: 6px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1; color: #0b1329;">VERIFIED</div>
+                        <div style="font-size: 5px; font-weight: 700; opacity: 0.85; line-height: 1; color: #0b1329;">CERTIFICATE</div>
                     </div>
                     <div class="seal-ref">{{ $certNumber }}</div>
                 </td>
@@ -437,8 +417,20 @@
 
         {{-- VERIFICATION NOTICE FOOTER --}}
         <div class="footer-notice">
-            This is an official system-verified electronic certificate issued by {{ $test->agency_name ?: 'REIAC Test Assessment Center' }}. Authenticity can be verified at: <span style="font-family: monospace; font-weight: 700; color: #475569;">{{ route('tests.student.certificate', ['test' => $test->id, 'attempt' => $attempt->id]) }}</span>
+            This is an official system-verified electronic certificate issued by {{ $test->agency_name ?: 'REIAC Test Assessment Center' }}.
         </div>
+
+        {{-- BOTTOM CORNER ORNAMENTS --}}
+        <table style="width: 100%; border-collapse: collapse; margin-top: 6px; margin-bottom: -15px;">
+            <tr>
+                <td style="text-align: left; vertical-align: bottom; width: 50%; padding: 0;">
+                    <div style="width: 14px; height: 14px; border-bottom: 2px solid #d97706; border-left: 2px solid #d97706; margin-left: -19px;"></div>
+                </td>
+                <td style="text-align: right; vertical-align: bottom; width: 50%; padding: 0;">
+                    <div style="width: 14px; height: 14px; border-bottom: 2px solid #d97706; border-right: 2px solid #d97706; margin-left: auto; margin-right: -19px;"></div>
+                </td>
+            </tr>
+        </table>
     </div>
 </div>
 
