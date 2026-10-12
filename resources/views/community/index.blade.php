@@ -664,6 +664,11 @@
                         following = Boolean($event.detail.following);
                     }
                 "
+                    @post-shared.window="
+                    if (Number($event.detail.postId) === {{ (int) $post->id }}) {
+                        sharesCount = Number($event.detail.sharesCount);
+                    }
+                "
                     x-data="{
                         currentUserId: {{ auth()->check() ? auth()->id() : 'null' }},
                         postMenuOpen: false,
@@ -683,6 +688,7 @@
                         savedPostContent: @js($post->content),
                         savedPostCategoryId: @js($post->category_id),
                         likesCount: {{ $post->likes_count ?? 0 }},
+                        sharesCount: {{ $post->shares_count ?? 0 }},
                         following: {{ $isFollowingAuthor ? 'true' : 'false' }},
                         followLoading: false,
                         liked: {{ auth()->check() &&$post->likes()->where('user_id', auth()->id())->exists()? 'true': 'false' }},
@@ -1722,7 +1728,7 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                                 <span x-text="commentsCount"></span>
                             </button>
 
-                            <button type="button" @click="sharePost()" class="flex items-center gap-1.5 transition text-slate-500 hover:text-emerald-600 font-medium">
+                            <button type="button" @click="sharePost()" class="flex items-center gap-1.5 transition text-slate-500 hover:text-emerald-600 font-medium cursor-pointer">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor"
                                     stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -1730,6 +1736,7 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                                     </path>
                                 </svg>
                                 <span>Share</span>
+                                <span x-show="sharesCount > 0" x-text="sharesCount" class="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600"></span>
                             </button>
 
                         </div>

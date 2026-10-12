@@ -17,36 +17,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $title }}</title>
-    <meta name="description" content="{{ \Illuminate\Support\Str::limit(strip_tags($post->content ?? ''), 200) }}">
-
     @php
+        $rawExcerpt = preg_replace('/\s+/', ' ', trim(strip_tags($post->content ?? $post->body ?? '')));
+        $cleanDescription = \Illuminate\Support\Str::limit($rawExcerpt, 200);
+        $cleanTitle = trim($post->title ?? 'Post');
+
         $firstMedia = $post->media?->first();
         $shareMediaUrl = $firstMedia ? asset('storage/' . $firstMedia->file_path) : null;
         $shareMediaType = ($firstMedia && (($firstMedia->type ?? '') === 'video' || str_starts_with($firstMedia->mime_type ?? '', 'video') || preg_match('/\.(mp4|mov|avi|webm|mkv|m4v|qt|3gp|ogg|wmv)$/i', $firstMedia->file_path))) ? 'video' : 'image';
-        $ogImage = ($shareMediaType === 'image') ? $shareMediaUrl : null;
+        
+        $defaultLogo = asset('storage/logo.png');
+        $ogImage = ($shareMediaType === 'image' && $shareMediaUrl) ? $shareMediaUrl : $defaultLogo;
     @endphp
 
-    @if($ogImage)
-        <meta property="og:image" content="{{ $ogImage }}">
-        <meta property="og:image:width" content="1200">
-        <meta property="og:image:height" content="630">
-    @endif
+    <title>{{ $title }}</title>
+    <meta name="description" content="{{ e($cleanDescription) }}">
 
-    <meta property="og:title" content="{{ $post->title ?? 'Post' }}">
-    <meta property="og:description" content="{{ \Illuminate\Support\Str::limit(strip_tags($post->content ?? ''), 200) }}">
-    <meta property="og:url" content="{{ route('community.posts.show', $post) }}">
+    <!-- Open Graph / Facebook / WhatsApp / Microsoft Teams -->
     <meta property="og:type" content="article">
     <meta property="og:site_name" content="REIAC Community">
+    <meta property="og:title" content="{{ e($cleanTitle) }}">
+    <meta property="og:description" content="{{ e($cleanDescription) }}">
+    <meta property="og:url" content="{{ route('community.posts.show', $post) }}">
+    <meta property="og:image" content="{{ $ogImage }}">
+    <meta property="og:image:secure_url" content="{{ $ogImage }}">
+    <meta property="og:image:alt" content="{{ e($cleanTitle) }}">
     <meta property="article:published_time" content="{{ $post->created_at?->toIso8601String() }}">
-    <meta property="article:author" content="{{ $post->user?->name ?? 'Anonymous' }}">
+    <meta property="article:author" content="{{ e($post->user?->name ?? 'Community Member') }}">
 
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="{{ $post->title ?? 'Post' }}">
-    <meta name="twitter:description" content="{{ \Illuminate\Support\Str::limit(strip_tags($post->content ?? ''), 200) }}">
-    @if($ogImage)
-        <meta name="twitter:image" content="{{ $ogImage }}">
-    @endif
+    <meta name="twitter:title" content="{{ e($cleanTitle) }}">
+    <meta name="twitter:description" content="{{ e($cleanDescription) }}">
+    <meta name="twitter:image" content="{{ $ogImage }}">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
@@ -222,6 +225,11 @@
 
             <div
                 class="community-post-card bg-white p-5 lg:p-6 rounded-2xl shadow-sm border border-slate-200/70 space-y-4 min-w-0 text-left"
+                @post-shared.window="
+                    if (Number($event.detail.postId) === {{ (int) $post->id }}) {
+                        sharesCount = Number($event.detail.sharesCount);
+                    }
+                "
                 x-data="{
                     currentUserId: {{ auth()->check() ? auth()->id() : 'null' }},
                     postOwnerId: {{ (int) $post->user_id }},
@@ -239,6 +247,7 @@
                     availableTags: @js($availableTags->map(fn($tag) => ['id' => (int) $tag->id, 'name' => $tag->name])->values()),
 
                     likesCount: {{ $post->likes_count ?? 0 }},
+                    sharesCount: {{ $post->shares_count ?? 0 }},
                     liked: {{ auth()->check() && $post->likes()->where('user_id', auth()->id())->exists() ? 'true' : 'false' }},
                     saved: {{ auth()->check() && $post->savedBy()->where('user_id', auth()->id())->exists() ? 'true' : 'false' }},
                     copied: false,
@@ -1048,13 +1057,14 @@
 
                         <button type="button"
                             @click="sharePost()"
-                            class="flex items-center gap-1.5 hover:text-emerald-500 transition text-slate-500 font-medium">
+                            class="flex items-center gap-1.5 hover:text-emerald-500 transition text-slate-500 font-medium cursor-pointer">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z">
                                 </path>
                             </svg>
                             <span>Share</span>
+                            <span x-show="sharesCount > 0" x-text="sharesCount" class="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600"></span>
                         </button>
                     </div>
 

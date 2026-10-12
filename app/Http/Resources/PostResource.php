@@ -45,6 +45,13 @@ class PostResource extends JsonResource
             }
         }
 
+        $shareUrl = route('community.posts.show', $this->id);
+        $firstMedia = $this->relationLoaded('media') ? $this->media->first() : null;
+        $shareMediaUrl = $firstMedia ? asset('storage/' . $firstMedia->file_path) : null;
+        $shareMediaType = ($firstMedia && (($firstMedia->type ?? '') === 'video' || str_starts_with($firstMedia->mime_type ?? '', 'video') || preg_match('/\.(mp4|mov|avi|webm|mkv|m4v|qt|3gp|ogg|wmv)$/i', $firstMedia->file_path)))
+            ? 'video'
+            : ($firstMedia ? 'image' : null);
+
         return [
             'id'             => $this->id,
             'title'          => $this->title,
@@ -69,6 +76,16 @@ class PostResource extends JsonResource
             'is_liked'      => (bool) $isLiked,
             'is_saved'      => (bool) $isSaved,
             'is_following'  => (bool) $isFollowing,
+            'share_url'     => $shareUrl,
+            'share_text'    => $this->getShareText(),
+            'share_data'    => [
+                'title'       => $this->title,
+                'text'        => $this->getShareText(),
+                'url'         => $shareUrl,
+                'media_url'   => $shareMediaUrl,
+                'media_type'  => $shareMediaType,
+                'endpoint'    => route('api.v1.posts.share', $this->id),
+            ],
             'created_at'    => $this->created_at?->toIso8601String(),
             'updated_at'    => $this->updated_at?->toIso8601String(),
         ];
@@ -77,5 +94,14 @@ class PostResource extends JsonResource
     protected function excerpt(): string
     {
         return Str::limit(strip_tags($this->content), 200);
+    }
+
+    protected function getShareText(): string
+    {
+        $url = route('community.posts.show', $this->id);
+        $excerpt = Str::limit(strip_tags($this->content ?? ''), 160);
+        $authorName = $this->relationLoaded('user') && $this->user ? $this->user->name : null;
+        $byAuthor = $authorName ? " by {$authorName}" : '';
+        return trim("{$this->title}{$byAuthor}\n\n\"{$excerpt}\"\n\n👉 Read full post: {$url}");
     }
 }
