@@ -88,24 +88,14 @@
                 Community Home
             </a>
 
-            <button type="button"
+            <a href="{{ route('tests.student.certificate.download', ['test' => $test->id, 'attempt' => $attempt->id]) }}"
                id="btn-download-pdf"
-               onclick="downloadCertificatePdf(this)"
-               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-[#0b1329] font-black text-xs transition shadow-md hover:shadow-lg cursor-pointer">
+               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-[#0b1329] font-black text-xs transition shadow-md hover:shadow-lg">
                 <svg class="w-4 h-4 text-[#0b1329]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                 </svg>
-                <span>Download PDF</span>
-            </button>
-
-            <button type="button"
-                    onclick="window.print()"
-                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#0b1329] to-indigo-950 text-amber-300 hover:text-white hover:from-slate-900 hover:to-indigo-900 font-black text-xs transition shadow-md hover:shadow-lg cursor-pointer">
-                <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
-                </svg>
-                <span>Print Certificate</span>
-            </button>
+                <span>Download Certificate</span>
+            </a>
         </div>
     </div>
 
@@ -500,73 +490,4 @@
 
 </div>
 
-<script src="{{ asset('html2pdf.bundle.min.js') }}"></script>
-<script>
-    if (typeof html2pdf === 'undefined') {
-        const cdnScript = document.createElement('script');
-        cdnScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-        document.head.appendChild(cdnScript);
-    }
-
-    function downloadCertificatePdf(btn) {
-        const origHtml = btn ? btn.innerHTML : '';
-        if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<svg class="animate-spin w-4 h-4 text-[#0b1329]" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg><span>Generating PDF...</span>';
-        }
-
-        const element = document.getElementById('certificate-export-wrapper') || document.getElementById('certificate-print-card');
-        if (!element) {
-            if (btn) { btn.innerHTML = origHtml; btn.disabled = false; }
-            window.print();
-            return;
-        }
-
-        const safeName = '{{ preg_replace("/[^A-Za-z0-9_\-]/", "_", $attempt->user->name ?? "Candidate") }}';
-        const opt = {
-            margin:       [4, 4, 4, 4],
-            filename:     `Certificate_${safeName}_{{ $attempt->id }}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  {
-                scale: 2,
-                useCORS: true,
-                allowTaint: true,
-                logging: false,
-                backgroundColor: '#ffffff',
-                scrollX: 0,
-                scrollY: 0
-            },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-
-        const executeExport = () => {
-            html2pdf().set(opt).from(element).save().then(() => {
-                if (btn) {
-                    btn.innerHTML = origHtml;
-                    btn.disabled = false;
-                }
-            }).catch((err) => {
-                console.error('PDF generation error, falling back to print:', err);
-                if (btn) {
-                    btn.innerHTML = origHtml;
-                    btn.disabled = false;
-                }
-                window.print();
-            });
-        };
-
-        if (typeof html2pdf !== 'undefined') {
-            executeExport();
-        } else {
-            setTimeout(() => {
-                if (typeof html2pdf !== 'undefined') {
-                    executeExport();
-                } else {
-                    if (btn) { btn.innerHTML = origHtml; btn.disabled = false; }
-                    window.print();
-                }
-            }, 500);
-        }
-    }
-</script>
 @endsection

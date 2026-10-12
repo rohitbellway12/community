@@ -7,14 +7,14 @@ use App\Models\TestAttempt;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Shared-hosting safe certificate PDF (DomPDF only).
+ * Used by website download + mobile app download/base64 — same file everywhere.
+ */
 class CertificatePdfService
 {
-    /**
-     * Get the PDF binary content directly (either from disk cache or by generating).
-     */
     public function getPdfBinary(Test $test, TestAttempt $attempt): ?string
     {
-        // 1. Try from cached file if it exists
         $cachedPath = $this->getPdfPathIfExists($test, $attempt);
         if ($cachedPath && file_exists($cachedPath) && filesize($cachedPath) > 1000) {
             $content = @file_get_contents($cachedPath);
@@ -23,7 +23,6 @@ class CertificatePdfService
             }
         }
 
-        // 2. Try to generate and save to disk
         $path = $this->getOrGeneratePdf($test, $attempt);
         if ($path && file_exists($path) && filesize($path) > 1000) {
             $content = @file_get_contents($path);
@@ -32,26 +31,20 @@ class CertificatePdfService
             }
         }
 
-        // 3. In-memory fallback (no disk dependency)
         return $this->generateDomPdfBinary($test, $attempt);
     }
 
-    /**
-     * Check if a cached PDF file is valid and fresh.
-     */
     public function isPdfCacheValid(?string $pdfPath): bool
     {
         if (!$pdfPath || !file_exists($pdfPath) || filesize($pdfPath) < 1000) {
             return false;
         }
 
-        // Forced refresh via request query (?refresh=1 or ?force=1)
         if (request()->hasAny(['refresh', 'force', 'regenerate'])) {
             @unlink($pdfPath);
             return false;
         }
 
-        // Invalidate if the blade template was modified after the PDF was generated
         $template = resource_path('views/student/tests/certificate-pdf.blade.php');
         if (file_exists($template) && filemtime($pdfPath) < filemtime($template)) {
             @unlink($pdfPath);
@@ -61,9 +54,6 @@ class CertificatePdfService
         return true;
     }
 
-    /**
-     * Clear cached certificate PDFs.
-     */
     public function clearCache(?Test $test = null, ?TestAttempt $attempt = null): void
     {
         $dir = storage_path('app/certificates');
@@ -79,9 +69,6 @@ class CertificatePdfService
         }
     }
 
-    /**
-     * Get the absolute path to the certificate PDF if it exists and is fresh.
-     */
     public function getPdfPathIfExists(Test $test, TestAttempt $attempt): ?string
     {
         $dir = storage_path('app/certificates');
@@ -89,9 +76,6 @@ class CertificatePdfService
         return $this->isPdfCacheValid($pdfPath) ? $pdfPath : null;
     }
 
-    /**
-     * Get or generate the PDF file on disk. Returns path or null if cannot write to disk.
-     */
     public function getOrGeneratePdf(Test $test, TestAttempt $attempt): ?string
     {
         $dir = storage_path('app/certificates');
@@ -115,9 +99,6 @@ class CertificatePdfService
         return (file_exists($pdfPath) && filesize($pdfPath) > 1000) ? $pdfPath : null;
     }
 
-    /**
-     * Get the base64 encoded content of the certificate PDF.
-     */
     public function getPdfBase64(Test $test, TestAttempt $attempt): ?string
     {
         try {
@@ -132,46 +113,18 @@ class CertificatePdfService
         return null;
     }
 
-    /**
-     * Generate the PDF using headless Chrome/Chromium/Edge or fallback to DomPDF.
-     */
     protected function generatePdfFile(Test $test, TestAttempt $attempt, string $outputPath): void
     {
-        $browserPath = $this->findBrowserBinary();
-        if ($browserPath) {
-            $targetUrl = route('tests.student.certificate', [
-                'test' => $test->id,
-                'attempt' => $attempt->id,
-            ]);
-
-            $cmd = sprintf(
-                '"%s" --headless --disable-gpu --no-pdf-header-footer --print-to-pdf="%s" "%s"',
-                $browserPath,
-                $outputPath,
-                $targetUrl
-            );
-
-            @exec($cmd, $output, $returnCode);
-
-            if (file_exists($outputPath) && filesize($outputPath) > 1000) {
-                return;
-            }
-        }
-
-        // Fallback: Generate via DomPDF and write to disk
         try {
             $binary = $this->generateDomPdfBinary($test, $attempt);
             if ($binary && strlen($binary) > 1000) {
                 @file_put_contents($outputPath, $binary);
             }
         } catch (\Throwable $e) {
-            Log::error('Failed to write DomPDF fallback to disk: ' . $e->getMessage());
+            Log::error('Failed to write DomPDF certificate to disk: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Generate in-memory PDF binary using DomPDF.
-     */
     public function generateDomPdfBinary(Test $test, TestAttempt $attempt): ?string
     {
         $test->loadMissing(['testLevel']);
@@ -182,29 +135,29 @@ class CertificatePdfService
             @mkdir($fontDir, 0775, true);
         }
 
+        // Ensure Korean fonts are available in DomPDF font cache (local + live/public_html)
+        $this->ensureFontsCopied($fontDir);
+
         $dompdfOptions = [
             'isRemoteEnabled' => true,
             'isHtml5ParserEnabled' => true,
             'isFontSubsettingEnabled' => true,
+            'defaultFont' => 'DejaVu Sans',
             'fontDir' => $fontDir,
             'fontCache' => $fontDir,
-            'tempDir' => $fontDir,
-            'chroot' => [base_path(), public_path(), storage_path(), $fontDir],
+            'tempDir' => sys_get_temp_dir(),
+            'chroot' => array_values(array_filter([
+                base_path(),
+                public_path(),
+                storage_path(),
+                $fontDir,
+                base_path('public_html'),
+            ], 'is_dir')),
         ];
 
         try {
             if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
                 $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('student.tests.certificate-pdf', [
-                    'test' => $test,
-                    'attempt' => $attempt,
-                ]);
-                $pdf->setPaper('a4', 'portrait');
-                $pdf->setOptions($dompdfOptions);
-                return $pdf->output();
-            }
-
-            if (class_exists('Barryvdh\DomPDF\Facade\PDF')) {
-                $pdf = call_user_func(['Barryvdh\DomPDF\Facade\PDF', 'loadView'], 'student.tests.certificate-pdf', [
                     'test' => $test,
                     'attempt' => $attempt,
                 ]);
@@ -235,46 +188,46 @@ class CertificatePdfService
                 $dompdf->render();
                 return $dompdf->output();
             }
+
+            Log::error('No DomPDF engine available for certificate generation.');
         } catch (\Throwable $e) {
-            Log::error('DomPDF generation failed: ' . $e->getMessage());
+            Log::error('DomPDF generation failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
         }
 
         return null;
     }
 
     /**
-     * Find a suitable Chromium-based browser executable.
+     * Copy NanumGothic fonts into storage/fonts if missing (shared hosting safe).
      */
-    protected function findBrowserBinary(): ?string
+    protected function ensureFontsCopied(string $fontDir): void
     {
-        if (!function_exists('exec')) {
-            return null;
-        }
-
-        $disabled = explode(',', ini_get('disable_functions') ?: '');
-        $disabled = array_map('trim', $disabled);
-        if (in_array('exec', $disabled, true)) {
-            return null;
-        }
-
-        $candidates = [
-            'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-            'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-            'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-            'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
-            '/usr/bin/google-chrome',
-            '/usr/bin/google-chrome-stable',
-            '/usr/bin/chromium',
-            '/usr/bin/chromium-browser',
-            '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+        $sources = [
+            public_path('fonts'),
+            base_path('public/fonts'),
+            base_path('public_html/fonts'),
         ];
 
-        foreach ($candidates as $bin) {
-            if (@file_exists($bin)) {
-                return $bin;
+        $files = [
+            'NanumGothic-Regular.ttf',
+            'NanumGothic-Bold.ttf',
+            'NanumGothic-ExtraBold.ttf',
+        ];
+
+        foreach ($files as $file) {
+            $dest = $fontDir . DIRECTORY_SEPARATOR . $file;
+            if (file_exists($dest) && filesize($dest) > 1000) {
+                continue;
+            }
+            foreach ($sources as $dir) {
+                $src = rtrim($dir, '/\\') . DIRECTORY_SEPARATOR . $file;
+                if (file_exists($src)) {
+                    @copy($src, $dest);
+                    break;
+                }
             }
         }
-
-        return null;
     }
 }

@@ -373,6 +373,30 @@ class StudentTestController extends Controller
         return view('student.tests.certificate', compact('test', 'attempt'));
     }
 
+    /**
+     * Print-only certificate HTML (same card as website). Used by headless Chrome PDF.
+     * Requires a valid temporary signed URL.
+     */
+    public function certificatePrint(Request $request, Test $test, TestAttempt $attempt): View
+    {
+        if (!$request->hasValidSignature()) {
+            abort(403, 'Invalid or expired print link.');
+        }
+
+        if ((int) $attempt->test_id !== (int) $test->id) {
+            abort(404, 'Examination attempt not found.');
+        }
+
+        if ($attempt->status !== 'completed') {
+            abort(403, 'Examination not completed yet.');
+        }
+
+        $test->load(['testLevel']);
+        $attempt->load(['user.profile']);
+
+        return view('student.tests.certificate-print', compact('test', 'attempt'));
+    }
+
     public function downloadCertificatePdf(Request $request, Test $test, TestAttempt $attempt)
     {
         if ((int) $attempt->test_id !== (int) $test->id) {

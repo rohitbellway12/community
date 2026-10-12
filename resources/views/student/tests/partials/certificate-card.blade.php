@@ -16,8 +16,8 @@
     }
 </style>
 <div id="certificate-export-wrapper" class="cert-export-wrapper w-full box-border" style="padding: 6px; background-color: #ffffff; box-sizing: border-box;">
-<div id="certificate-print-card" class="cert-print-card bg-white border-4 border-[#0b1329] p-3 sm:p-4 relative text-[#0b1329] w-full max-w-[950px] mx-auto box-border shadow-none" style="background-color: #ffffff; color: #0b1329; border: 4px solid #0b1329; box-sizing: border-box;">
-    <div class="border-2 border-amber-500/70 p-6 sm:p-8 relative bg-gradient-to-b from-amber-50/20 via-white to-amber-50/10 box-border" style="border: 2px solid rgba(245, 158, 11, 0.7); position: relative;">
+<div id="certificate-print-card" class="cert-print-card bg-white border-4 border-[#0b1329] p-3 sm:p-4 relative text-[#0b1329] w-full max-w-[950px] mx-auto box-border shadow-none" style="background-color: #ffffff; color: #0b1329; border: 4px solid #0b1329; box-sizing: border-box; padding: 12px;">
+    <div class="border-2 border-amber-500/70 p-6 sm:p-8 relative bg-gradient-to-b from-amber-50/20 via-white to-amber-50/10 box-border" style="border: 2px solid rgba(245, 158, 11, 0.7); position: relative; padding: 28px 32px; box-sizing: border-box;">
 
         {{-- CORNER ORNAMENTS --}}
         <div class="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-amber-600" style="position: absolute; top: 8px; left: 8px; width: 16px; height: 16px; border-top: 2px solid #d97706; border-left: 2px solid #d97706;"></div>
@@ -195,14 +195,14 @@
                     Controller of Examinations
                 </div>
                 <div class="text-[9px] text-slate-500 font-medium" style="font-size: 9px; color: #64748b; font-weight: 500;">
-                    {{ $test->agency_name ? ($test->agency_name . ' Board') : 'REIAC Assessment Council' }}
+                    {{ $test->agency_name ? ($test->agency_name . ' Board') : 'REIAC Test Assessment Center Board' }}
                 </div>
             </div>
 
             <div class="flex flex-col items-center justify-center shrink-0" style="display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0;">
                 <div class="w-20 h-20 rounded-full border-4 border-amber-400 bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 text-[#0b1329] p-1 flex flex-col items-center justify-center shadow-md text-center select-none" style="width: 5rem; height: 5rem; border-radius: 9999px; border: 4px solid #fbbf24; background: linear-gradient(135deg, #fcd34d 0%, #fbbf24 50%, #f59e0b 100%); color: #0b1329; padding: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; user-select: none;">
                     <div class="w-full h-full rounded-full border border-amber-600/40 flex flex-col items-center justify-center p-1" style="width: 100%; height: 100%; border-radius: 9999px; border: 1px solid rgba(217, 119, 6, 0.4); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px;">
-                        <span class="text-[8px] font-black uppercase tracking-widest leading-none" style="font-size: 8px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; line-height: 1;">{{ $test->agency_name ? strtoupper(substr($test->agency_name, 0, 8)) : 'REIAC' }}</span>
+                        <span class="text-[8px] font-black uppercase tracking-widest leading-none" style="font-size: 8px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; line-height: 1;">{{ $test->agency_name ? strtoupper(substr($test->agency_name, 0, 8)) : 'REIAC TE' }}</span>
                         <span class="text-xs my-0.5" style="font-size: 12px; margin-top: 2px; margin-bottom: 2px;">★</span>
                         <span class="text-[7px] font-black uppercase tracking-wider leading-none" style="font-size: 7px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1;">VERIFIED</span>
                         <span class="text-[6px] font-bold tracking-tighter opacity-80 mt-0.5" style="font-size: 6px; font-weight: 700; opacity: 0.8; margin-top: 2px;">CERTIFICATE</span>
@@ -220,7 +220,7 @@
                     Academic Director
                 </div>
                 <div class="text-[9px] text-slate-500 font-medium" style="font-size: 9px; color: #64748b; font-weight: 500;">
-                    {{ $test->agency_name ? ($test->agency_name . ' Directorate') : 'Global Education Board' }}
+                    {{ $test->agency_name ? ($test->agency_name . ' Directorate') : 'REIAC Test Assessment Center Directorate' }}
                 </div>
             </div>
         </div>

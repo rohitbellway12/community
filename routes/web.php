@@ -58,6 +58,7 @@ Route::group([], function () {
         Route::get('/student', [\App\Http\Controllers\StudentTestController::class, 'index'])->name('index');
         Route::get('/student/{test}/result/{attempt}', [\App\Http\Controllers\StudentTestController::class, 'result'])->name('result');
         Route::get('/student/{test}/certificate/{attempt}', [\App\Http\Controllers\StudentTestController::class, 'certificate'])->name('certificate');
+        Route::get('/student/{test}/certificate/{attempt}/print', [\App\Http\Controllers\StudentTestController::class, 'certificatePrint'])->name('certificate.print');
         Route::get('/student/{test}/certificate/{attempt}/download', [\App\Http\Controllers\StudentTestController::class, 'downloadCertificatePdf'])->name('certificate.download');
 
         Route::middleware('auth')->group(function () {
