@@ -1551,7 +1551,7 @@
                                                     <p class="whitespace-pre-wrap break-words text-left"
                                                        :class="expandedContent ? '' : 'max-h-24 overflow-hidden'"
                                                        x-ref="contentRef"
-                                                       x-text="postContent"></p>
+                                                       x-html="formatPostContent(postContent)">{!! \App\Helpers\LinkHelper::makeClickableLinks($post->content ?? $post->body ?? '') !!}</p>
 
                                                     <div class="mt-1.5 flex justify-start text-left" x-show="canExpandContent">
                                                         <button type="button"
@@ -1737,7 +1737,7 @@
 
                                                                         <template x-if="editingCommentId !== Number(comment.id)">
                                                                             <p class="mt-1 text-[11px] leading-relaxed text-slate-700 whitespace-pre-wrap break-words"
-                                                                                x-text="comment.content"></p>
+                                                                                x-html="formatPostContent(comment.content)"></p>
                                                                         </template>
 
                                                                         <template x-if="isCommentOwner(comment) && editingCommentId !== Number(comment.id)">
@@ -1839,7 +1839,7 @@
 
                                                                                             <template x-if="editingCommentId !== Number(reply.id)">
                                                                                                 <p class="mt-0.5 text-[10px] leading-relaxed text-slate-600 whitespace-pre-wrap break-words"
-                                                                                                    x-text="reply.content"></p>
+                                                                                                    x-html="formatPostContent(reply.content)"></p>
                                                                                             </template>
 
                                                                                             <template x-if="isCommentOwner(reply) && editingCommentId !== Number(reply.id)">

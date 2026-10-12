@@ -32,32 +32,32 @@
             </svg>
         </div>
 
-        {{-- INSTITUTION & CANDIDATE IDENTITY HEADER --}}
+        {{-- INSTITUTION & LOGO HEADER --}}
         <div class="flex items-start justify-between gap-4 pb-4 border-b border-slate-200 relative z-10" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #e2e8f0; position: relative; z-index: 10;">
             <div class="flex items-center gap-3.5" style="display: flex; align-items: center; gap: 0.875rem;">
-                @if($attempt->candidate_photo)
-                    <img src="{{ asset('storage/' . $attempt->candidate_photo) }}"
-                         alt="{{ $attempt->user->name ?? 'Candidate' }}"
-                         class="w-16 h-16 rounded-xl object-cover border-2 border-amber-400 shadow-sm shrink-0 bg-slate-100"
-                         style="width: 4rem; height: 4rem; border-radius: 0.75rem; object-fit: cover; border: 2px solid #fbbf24; flex-shrink: 0;"
+                @if(file_exists(public_path('storage/logo.png')))
+                    <img src="{{ asset('storage/logo.png') }}"
+                         alt="{{ $test->agency_name ?: 'Logo' }}"
+                         class="h-14 w-auto max-w-[140px] object-contain shrink-0"
+                         style="height: 3.5rem; max-height: 3.5rem; max-width: 140px; object-fit: contain; flex-shrink: 0;"
                          crossorigin="anonymous">
-                @elseif($attempt->user && $attempt->user->avatar)
-                    <img src="{{ str_starts_with($attempt->user->avatar, 'http') ? $attempt->user->avatar : asset('storage/' . $attempt->user->avatar) }}"
-                         alt="{{ $attempt->user->name ?? 'Candidate' }}"
-                         class="w-16 h-16 rounded-xl object-cover border-2 border-amber-400 shadow-sm shrink-0 bg-slate-100"
-                         style="width: 4rem; height: 4rem; border-radius: 0.75rem; object-fit: cover; border: 2px solid #fbbf24; flex-shrink: 0;"
+                @elseif($test->agency_logo && file_exists(public_path('storage/' . $test->agency_logo)))
+                    <img src="{{ asset('storage/' . $test->agency_logo) }}"
+                         alt="{{ $test->agency_name ?: 'Logo' }}"
+                         class="h-14 w-auto max-w-[140px] object-contain shrink-0"
+                         style="height: 3.5rem; max-height: 3.5rem; max-width: 140px; object-fit: contain; flex-shrink: 0;"
                          crossorigin="anonymous">
                 @else
                     <div class="w-14 h-14 rounded-xl bg-[#0b1329] text-amber-400 flex items-center justify-center font-black text-xl shadow-md shrink-0 border border-amber-400/40" style="width: 3.5rem; height: 3.5rem; border-radius: 0.75rem; background-color: #0b1329; color: #fbbf24; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.25rem; flex-shrink: 0; border: 1px solid rgba(251, 191, 36, 0.4);">
-                        {{ strtoupper(substr($attempt->user->name ?? 'C', 0, 1)) }}
+                        {{ strtoupper(substr($test->agency_name ?: 'B', 0, 1)) }}
                     </div>
                 @endif
                 <div>
                     <div class="text-lg font-black tracking-wider text-[#0b1329] uppercase" style="font-size: 1.125rem; font-weight: 900; letter-spacing: 0.05em; color: #0b1329; text-transform: uppercase;">
-                        {{ $test->agency_name ?: 'REIAC Test Assessment Center' }}
+                        {{ $test->agency_name ?: 'BELLWAY INFOTECT PRIVATE LTD' }}
                     </div>
                     <div class="text-[11px] font-bold tracking-widest text-slate-500 uppercase" style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: #64748b; text-transform: uppercase;">
-                        {{ $test->agency_name ? 'Authorized Examination & Assessment Portal' : 'Global Korean Language & Educational Proficiency' }}
+                        {{ $test->agency_name ? 'Authorized Examination & Assessment Portal' : 'Global Examination & Assessment Portal' }}
                     </div>
                 </div>
             </div>
@@ -81,15 +81,42 @@
                 This is to officially certify that
             </p>
 
-            {{-- CANDIDATE NAME --}}
-            <div class="my-4" style="margin-top: 1rem; margin-bottom: 1rem;">
-                <div class="inline-block border-b-2 border-[#0b1329] pb-1 px-10" style="display: inline-block; border-bottom: 2px solid #0b1329; padding-bottom: 0.25rem; padding-left: 2.5rem; padding-right: 2.5rem;">
-                    <span class="text-3xl font-black text-[#0b1329] tracking-wide uppercase" style="font-size: 1.875rem; font-weight: 900; color: #0b1329; letter-spacing: 0.025em; text-transform: uppercase;">
-                        {{ $attempt->user->name ?? 'Candidate' }}
-                    </span>
+            {{-- CANDIDATE NAME & PHOTO ROW --}}
+            <div class="relative my-4 min-h-[110px] flex items-center justify-center" style="position: relative; margin-top: 1rem; margin-bottom: 1rem; min-height: 110px; display: flex; align-items: center; justify-content: center;">
+                {{-- CANDIDATE VERIFIED PHOTO (MOVED FROM HEADER TO LEFT OF CANDIDATE NAME) --}}
+                <div class="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 flex flex-col items-center" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); -webkit-transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; z-index: 2;">
+                    @if($attempt->candidate_photo)
+                        <img src="{{ asset('storage/' . $attempt->candidate_photo) }}"
+                             alt="{{ $attempt->user->name ?? 'Candidate' }}"
+                             class="w-20 h-26 sm:w-24 sm:h-28 rounded-lg object-cover border-2 border-slate-300 shadow-sm bg-slate-100"
+                             style="width: 5.5rem; height: 6.875rem; border-radius: 0.5rem; object-fit: cover; border: 2px solid #cbd5e1; background-color: #f8fafc; box-shadow: 0 1px 3px rgba(0,0,0,0.08);"
+                             crossorigin="anonymous">
+                    @elseif($attempt->user && $attempt->user->avatar)
+                        <img src="{{ str_starts_with($attempt->user->avatar, 'http') ? $attempt->user->avatar : asset('storage/' . $attempt->user->avatar) }}"
+                             alt="{{ $attempt->user->name ?? 'Candidate' }}"
+                             class="w-20 h-26 sm:w-24 sm:h-28 rounded-lg object-cover border-2 border-slate-300 shadow-sm bg-slate-100"
+                             style="width: 5.5rem; height: 6.875rem; border-radius: 0.5rem; object-fit: cover; border: 2px solid #cbd5e1; background-color: #f8fafc; box-shadow: 0 1px 3px rgba(0,0,0,0.08);"
+                             crossorigin="anonymous">
+                    @else
+                        <div class="w-20 h-26 sm:w-24 sm:h-28 rounded-lg bg-slate-50 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400"
+                             style="width: 5.5rem; height: 6.875rem; border-radius: 0.5rem; background-color: #f8fafc; border: 2px dashed #cbd5e1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8;">
+                            <svg class="w-7 h-7 text-slate-300 mb-1" fill="currentColor" viewBox="0 0 24 24" style="width: 1.75rem; height: 1.75rem; color: #cbd5e1; margin-bottom: 0.25rem;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                            <span class="text-[9px] font-bold uppercase tracking-wider" style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Photo</span>
+                        </div>
+                    @endif
+                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-1" style="font-size: 8px; font-weight: 700; color: #94a3b8; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 0.25rem;">Candidate Photo</span>
                 </div>
-                <div class="text-[11px] font-bold text-slate-500 mt-1" style="font-size: 11px; font-weight: 700; color: #64748b; margin-top: 0.25rem;">
-                    Candidate ID / Username: <span class="font-mono text-slate-800" style="font-family: monospace; color: #1e293b;">{{ $attempt->user->username ?? ('ID-' . $attempt->user_id) }}</span>
+
+                {{-- CANDIDATE NAME & ID (CENTERED) --}}
+                <div class="text-center px-24 sm:px-32" style="text-align: center;">
+                    <div class="inline-block border-b-2 border-[#0b1329] pb-1 px-8 sm:px-10" style="display: inline-block; border-bottom: 2px solid #0b1329; padding-bottom: 0.25rem; padding-left: 2.5rem; padding-right: 2.5rem;">
+                        <span class="text-2xl sm:text-3xl font-black text-[#0b1329] tracking-wide uppercase" style="font-size: 1.875rem; font-weight: 900; color: #0b1329; letter-spacing: 0.025em; text-transform: uppercase;">
+                            {{ $attempt->user->name ?? 'Candidate' }}
+                        </span>
+                    </div>
+                    <div class="text-[11px] font-bold text-slate-500 mt-1" style="font-size: 11px; font-weight: 700; color: #64748b; margin-top: 0.25rem;">
+                        Candidate ID / Username: <span class="font-mono text-slate-800" style="font-family: monospace; color: #1e293b;">{{ $attempt->user->username ?? ('ID-' . $attempt->user_id) }}</span>
+                    </div>
                 </div>
             </div>
 

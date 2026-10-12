@@ -87,4 +87,12 @@ class Post extends Model
     {
         return $this->belongsTo(Group::class);
     }
+
+    /**
+     * Get post content with auto-linked clickable URLs.
+     */
+    public function getFormattedContentAttribute(): string
+    {
+        return \App\Helpers\LinkHelper::makeClickableLinks($this->content ?? '');
+    }
 }

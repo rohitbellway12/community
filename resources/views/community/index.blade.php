@@ -1605,7 +1605,7 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                         <p
                             :class="showFullContent ? '' : 'line-clamp-4'"
                             class="whitespace-pre-wrap break-words"
-                            x-text="postContent"></p>
+                            x-html="formatPostContent(postContent)">{!! \App\Helpers\LinkHelper::makeClickableLinks($post->content) !!}</p>
 
                         @if ($postTitleLength > 90 || $postContentLength > 280)
                             <button type="button" @click="showFullContent = !showFullContent"
@@ -1848,7 +1848,7 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
 
                                                 <template x-if="editingCommentId !== Number(comment.id)">
                                                     <p class="mt-1 text-[11px] leading-relaxed text-slate-700 whitespace-pre-wrap break-words"
-                                                        x-text="comment.content"></p>
+                                                        x-html="formatPostContent(comment.content)"></p>
                                                 </template>
 
                                                 {{-- 3 DOT MENU --}}
@@ -1962,7 +1962,7 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
 
                                                             <template x-if="editingCommentId !== Number(reply.id)">
                                                                 <p class="mt-0.5 text-[10px] leading-relaxed text-slate-600 whitespace-pre-wrap break-words"
-                                                                    x-text="reply.content"></p>
+                                                                    x-html="formatPostContent(reply.content)"></p>
                                                             </template>
 
                                                             {{-- 3 DOT MENU --}}

@@ -12,8 +12,6 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>Certificate - {{ $attempt->user->name ?? 'Candidate' }}</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@700;900&family=Noto+Sans+KR:wght@400;700&display=swap');
-
         @page {
             size: A4 portrait;
             margin: 6mm;
@@ -22,7 +20,7 @@
             box-sizing: border-box;
         }
         body {
-            font-family: 'Inter', 'Noto Sans KR', 'DejaVu Sans', sans-serif;
+            font-family: 'DejaVu Sans', sans-serif;
             margin: 0;
             padding: 0;
             background-color: #ffffff;
@@ -70,16 +68,14 @@
         }
         .agency-title {
             font-size: 16px;
-            font-weight: 900;
+            font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
             color: #0b1329;
         }
         .agency-subtitle {
             font-size: 9px;
-            font-weight: 700;
+            font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.8px;
             color: #64748b;
             margin-top: 2px;
         }
@@ -98,18 +94,16 @@
             border: 1px solid #fcd34d;
             border-radius: 9999px;
             font-size: 9px;
-            font-weight: 900;
+            font-weight: bold;
             color: #78350f;
             text-transform: uppercase;
-            letter-spacing: 1px;
             margin-top: 8px;
             margin-bottom: 6px;
         }
         .cert-title {
             font-size: 24px;
-            font-weight: 900;
+            font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 1px;
             color: #0b1329;
             margin: 4px 0;
         }
@@ -130,14 +124,13 @@
         }
         .candidate-name {
             font-size: 25px;
-            font-weight: 900;
+            font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
             color: #0b1329;
         }
         .candidate-id {
             font-size: 10px;
-            font-weight: 700;
+            font-weight: bold;
             color: #64748b;
             margin-bottom: 8px;
         }
@@ -148,7 +141,7 @@
         }
         .test-title {
             font-size: 18px;
-            font-weight: 900;
+            font-weight: bold;
             color: #0b1329;
             margin-top: 3px;
         }
@@ -159,7 +152,7 @@
             padding: 3px 12px;
             border-radius: 6px;
             font-size: 10px;
-            font-weight: 700;
+            font-weight: bold;
             color: #334155;
             margin-top: 4px;
             margin-bottom: 12px;
@@ -183,21 +176,20 @@
         }
         .stat-label {
             font-size: 8px;
-            font-weight: 700;
+            font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
             color: #94a3b8;
         }
         .stat-value {
             font-size: 19px;
-            font-weight: 900;
+            font-weight: bold;
             color: #0b1329;
             margin: 2px 0;
             line-height: 1.1;
         }
         .stat-sub {
             font-size: 9px;
-            font-weight: 600;
+            font-weight: normal;
             color: #64748b;
         }
 
@@ -213,7 +205,7 @@
             font-family: Georgia, serif;
             font-style: italic;
             font-size: 16px;
-            font-weight: 700;
+            font-weight: bold;
             color: #1e293b;
         }
         .sig-line {
@@ -223,15 +215,14 @@
         }
         .sig-title {
             font-size: 10px;
-            font-weight: 800;
+            font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
             color: #0f172a;
         }
         .sig-org {
             font-size: 8px;
             color: #64748b;
-            font-weight: 500;
+            font-weight: normal;
         }
 
         /* SEAL BADGE */
@@ -251,9 +242,8 @@
         }
         .seal-org {
             font-size: 7px;
-            font-weight: 900;
+            font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
             line-height: 1;
             color: #0b1329;
         }
@@ -265,22 +255,21 @@
         }
         .seal-verified {
             font-size: 6px;
-            font-weight: 900;
+            font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
             line-height: 1;
             color: #0b1329;
         }
         .seal-cert {
             font-size: 5px;
-            font-weight: 700;
+            font-weight: bold;
             opacity: 0.85;
             line-height: 1;
             color: #0b1329;
         }
         .seal-ref {
             font-size: 8px;
-            font-weight: 700;
+            font-weight: bold;
             font-family: monospace;
             color: #64748b;
             margin-top: 3px;
@@ -313,18 +302,20 @@
         {{-- HEADER TABLE --}}
         <table class="header-table">
             <tr>
-                <td style="width: 55px; vertical-align: middle;">
-                    @if($attempt->candidate_photo && file_exists(public_path('storage/' . $attempt->candidate_photo)))
-                        <img src="{{ public_path('storage/' . $attempt->candidate_photo) }}" style="width: 46px; height: 46px; border-radius: 8px; border: 2px solid #fbbf24; object-fit: cover;">
+                <td style="width: 70px; vertical-align: middle;">
+                    @if(file_exists(public_path('storage/logo.png')))
+                        <img src="{{ public_path('storage/logo.png') }}" style="max-height: 48px; max-width: 68px; object-fit: contain;">
+                    @elseif($test->agency_logo && file_exists(public_path('storage/' . $test->agency_logo)))
+                        <img src="{{ public_path('storage/' . $test->agency_logo) }}" style="max-height: 48px; max-width: 68px; object-fit: contain;">
                     @else
                         <div style="width: 46px; height: 35px; padding-top: 11px; background-color: #0b1329; border: 1px solid rgba(251, 191, 36, 0.4); border-radius: 10px; text-align: center; color: #fbbf24; font-size: 22px; font-weight: 900; line-height: 1;">
-                            {{ strtoupper(substr($attempt->user->name ?? ($test->agency_name ?? 'R'), 0, 1)) }}
+                            {{ strtoupper(substr($test->agency_name ?: 'B', 0, 1)) }}
                         </div>
                     @endif
                 </td>
-                <td style="vertical-align: middle; padding-left: 6px;">
-                    <div class="agency-title">{{ $test->agency_name ?: 'REIAC Test Assessment Center' }}</div>
-                    <div class="agency-subtitle">{{ $test->agency_name ? 'Authorized Examination & Assessment Portal' : 'Global Korean Language & Educational Proficiency' }}</div>
+                <td style="vertical-align: middle; padding-left: 8px;">
+                    <div class="agency-title">{{ $test->agency_name ?: 'BELLWAY INFOTECT PRIVATE LTD' }}</div>
+                    <div class="agency-subtitle">{{ $test->agency_name ? 'Authorized Examination & Assessment Portal' : 'Global Examination & Assessment Portal' }}</div>
                 </td>
                 <td class="ref-box" style="vertical-align: middle;">
                     <div>Certificate Ref: <strong style="font-family: monospace; color: #0f172a;">{{ $certNumber }}</strong></div>
@@ -339,12 +330,32 @@
             <div class="cert-title">Certificate of Achievement</div>
             <div class="cert-subtitle">This is to officially certify that</div>
 
-            <div class="candidate-name-box">
-                <span class="candidate-name">{{ $attempt->user->name ?? 'Candidate' }}</span>
-            </div>
-            <div class="candidate-id">
-                Candidate ID / Username: <span style="font-family: monospace; color: #1e293b;">{{ $attempt->user->username ?? ('ID-' . $attempt->user_id) }}</span>
-            </div>
+            {{-- CANDIDATE NAME & PHOTO TABLE --}}
+            <table style="width: 100%; margin: 6px 0; border-collapse: collapse;">
+                <tr>
+                    <td style="width: 85px; vertical-align: middle; text-align: left; padding-left: 4px;">
+                        @if($attempt->candidate_photo && file_exists(public_path('storage/' . $attempt->candidate_photo)))
+                            <img src="{{ public_path('storage/' . $attempt->candidate_photo) }}" style="width: 72px; height: 90px; border-radius: 6px; border: 2px solid #cbd5e1; object-fit: cover;">
+                        @elseif($attempt->user && $attempt->user->avatar && file_exists(public_path('storage/' . $attempt->user->avatar)))
+                            <img src="{{ public_path('storage/' . $attempt->user->avatar) }}" style="width: 72px; height: 90px; border-radius: 6px; border: 2px solid #cbd5e1; object-fit: cover;">
+                        @else
+                            <div style="width: 72px; height: 90px; border-radius: 6px; border: 1px dashed #cbd5e1; background-color: #f8fafc; text-align: center; padding-top: 22px; box-sizing: border-box;">
+                                <div style="width: 22px; height: 22px; border-radius: 11px; background-color: #e2e8f0; margin: 0 auto; color: #94a3b8; font-size: 11px; line-height: 22px; font-weight: bold;">&#9711;</div>
+                                <div style="font-size: 8px; font-weight: bold; color: #94a3b8; text-transform: uppercase; margin-top: 6px;">PHOTO</div>
+                            </div>
+                        @endif
+                        <div style="font-size: 7px; font-weight: bold; color: #94a3b8; text-transform: uppercase; text-align: center; width: 72px; margin-top: 3px;">Candidate Photo</div>
+                    </td>
+                    <td style="text-align: center; vertical-align: middle; padding-right: 85px;">
+                        <div class="candidate-name-box">
+                            <span class="candidate-name">{{ $attempt->user->name ?? 'Candidate' }}</span>
+                        </div>
+                        <div class="candidate-id">
+                            Candidate ID / Username: <span style="font-family: monospace; color: #1e293b;">{{ $attempt->user->username ?? ('ID-' . $attempt->user_id) }}</span>
+                        </div>
+                    </td>
+                </tr>
+            </table>
 
             <div class="appeared-for">has successfully appeared and completed the official examination for</div>
 

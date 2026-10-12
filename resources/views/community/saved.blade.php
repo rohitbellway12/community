@@ -238,7 +238,7 @@
 
                             <p class="text-xs sm:text-sm text-slate-600 leading-relaxed whitespace-pre-wrap break-words"
                                :class="showFullContent ? '' : 'line-clamp-4'">
-                                {{ strip_tags($post->content) }}
+                                {!! \App\Helpers\LinkHelper::makeClickableLinks($post->content) !!}
                             </p>
 
                             @if($postContentLength > 240)

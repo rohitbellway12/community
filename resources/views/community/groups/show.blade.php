@@ -813,8 +813,8 @@
                         </h3>
 
                         <div class="text-xs text-slate-600 leading-relaxed">
-                            <p :class="expandedContent ? '' : 'line-clamp-3'">
-                                {{ $post->content ?? $post->body ?? '' }}
+                            <p :class="expandedContent ? '' : 'line-clamp-3'" class="whitespace-pre-wrap break-words">
+                                {!! \App\Helpers\LinkHelper::makeClickableLinks($post->content ?? $post->body ?? '') !!}
                             </p>
 
                             @if(mb_strlen($post->content ?? $post->body ?? '') > 160)
@@ -914,7 +914,7 @@
                                                     <span class="font-bold text-slate-900 text-xs" x-text="comment.user.name"></span>
                                                     <span class="text-[10px] text-slate-400" x-text="comment.created_at_human"></span>
                                                 </div>
-                                                <p class="text-xs text-slate-700 mt-0.5 leading-relaxed" x-text="comment.content"></p>
+                                                <p class="text-xs text-slate-700 mt-0.5 leading-relaxed whitespace-pre-wrap break-words" x-html="formatPostContent(comment.content)"></p>
                                                 <template x-if="comment.replies && comment.replies.length">
                                                     <div class="mt-1">
                                                         <button type="button" @click="comment.showReplies = !comment.showReplies"
@@ -935,7 +935,7 @@
                                                                 <span class="font-bold text-slate-800 text-[11px]" x-text="reply.user.name"></span>
                                                                 <span class="text-[9px] text-slate-400" x-text="reply.created_at_human"></span>
                                                             </div>
-                                                            <p class="text-xs text-slate-600 mt-0.5 leading-relaxed" x-text="reply.content"></p>
+                                                            <p class="text-xs text-slate-600 mt-0.5 leading-relaxed whitespace-pre-wrap break-words" x-html="formatPostContent(reply.content)"></p>
                                                         </div>
                                                     </div>
                                                 </template>

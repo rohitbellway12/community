@@ -177,7 +177,7 @@
                                 </h3>
                                 
                                 <p class="text-xs text-slate-600 mt-1.5 line-clamp-2 leading-relaxed">
-                                    {{ $post->content }}
+                                    {!! \App\Helpers\LinkHelper::makeClickableLinks($post->content) !!}
                                 </p>
                                 
                                 {{-- Post Actions --}}

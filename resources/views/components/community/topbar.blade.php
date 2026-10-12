@@ -1674,6 +1674,29 @@
         }
 
         setInterval(hideGoogleBar, 300);
+
+        // Global helper to convert plain text URLs into safe clickable HTML links
+        if (typeof window.formatPostContent !== 'function') {
+            window.formatPostContent = function(text) {
+                if (!text) return '';
+                const escaped = String(text)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+
+                const urlPattern = /(https?:\/\/[^\s<]+[^<.,:;"')\]\s]|www\.[^\s<]+[^<.,:;"')\]\s])/gi;
+
+                return escaped.replace(urlPattern, function(matchedUrl) {
+                    var href = matchedUrl;
+                    if (/^www\./i.test(href)) {
+                        href = 'https://' + href;
+                    }
+                    return '<a href="' + href + '" target="_blank" rel="noopener noreferrer" class="text-amber-600 hover:text-amber-700 underline font-semibold break-all inline cursor-pointer" onclick="event.stopPropagation()">' + matchedUrl + '</a>';
+                });
+            };
+        }
     </script>
 
     <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
