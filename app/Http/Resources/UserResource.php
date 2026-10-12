@@ -60,7 +60,7 @@ class UserResource extends JsonResource
             'id'             => $this->id,
             'name'           => $this->name,
             'email'          => $this->email,
-            'referral_code'  => $this->referral_code,
+            'referral_code'  => $this->referral_code ?: $this->getReferralCodeOrDefault(),
             'role'           => $this->role?->value ?? (string) $this->role,
             'status'         => $this->status?->value ?? (string) $this->status,
             'is_self'        => (bool) $isSelf,

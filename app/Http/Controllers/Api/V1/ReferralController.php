@@ -30,10 +30,11 @@ class ReferralController extends Controller
             ->latest()
             ->paginate(20);
 
-        $shareLink = url('/register?ref=' . $user->referral_code);
+        $referralCode = $user->referral_code ?: $user->getReferralCodeOrDefault();
+        $shareLink = url('/register?ref=' . $referralCode);
 
         return $this->successResponse([
-            'referral_code'  => $user->referral_code,
+            'referral_code'  => $referralCode,
             'share_link'     => $shareLink,
             'referred_count' => $referredUsers->total(),
             'referred_users' => $referredUsers->map(function ($referral) {

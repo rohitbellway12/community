@@ -58,6 +58,34 @@ class User extends Authenticatable
     }
 
     /**
+     * Generate a unique referral code.
+     */
+    public static function generateUniqueReferralCode(): string
+    {
+        do {
+            $code = 'REIAC' . str_pad(random_int(0, 99999), 5, '0', STR_PAD_LEFT);
+        } while (static::where('referral_code', $code)->exists());
+
+        return $code;
+    }
+
+    /**
+     * Get the user's referral code, generating and saving one if it is missing.
+     */
+    public function getReferralCodeOrDefault(): string
+    {
+        if (!empty($this->referral_code)) {
+            return $this->referral_code;
+        }
+
+        $code = static::generateUniqueReferralCode();
+        $this->referral_code = $code;
+        $this->updateQuietly(['referral_code' => $code]);
+
+        return $code;
+    }
+
+    /**
      * User profile.
      */
     public function profile()
