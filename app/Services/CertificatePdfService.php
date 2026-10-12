@@ -189,7 +189,7 @@ class CertificatePdfService
             'fontDir' => $fontDir,
             'fontCache' => $fontDir,
             'tempDir' => $fontDir,
-            'chroot' => [base_path(), $fontDir],
+            'chroot' => [base_path(), public_path(), storage_path(), $fontDir],
         ];
 
         try {

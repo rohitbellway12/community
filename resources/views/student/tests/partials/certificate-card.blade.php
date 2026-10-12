@@ -54,7 +54,7 @@
                 @endif
                 <div>
                     <div class="text-lg font-black tracking-wider text-[#0b1329] uppercase" style="font-size: 1.125rem; font-weight: 900; letter-spacing: 0.05em; color: #0b1329; text-transform: uppercase;">
-                        {{ $test->agency_name ?: 'BELLWAY INFOTECT PRIVATE LTD' }}
+                        {{ $test->agency_name ?: 'REIAC TEST ASSESSMENT CENTER' }}
                     </div>
                     <div class="text-[11px] font-bold tracking-widest text-slate-500 uppercase" style="font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: #64748b; text-transform: uppercase;">
                         {{ $test->agency_name ? 'Authorized Examination & Assessment Portal' : 'Global Examination & Assessment Portal' }}
@@ -81,34 +81,40 @@
                 This is to officially certify that
             </p>
 
+            @php
+                $showPhoto = !empty($test->require_camera_photo) || !empty($attempt->candidate_photo);
+            @endphp
+
             {{-- CANDIDATE NAME & PHOTO ROW --}}
-            <div class="relative my-4 min-h-[110px] flex items-center justify-center" style="position: relative; margin-top: 1rem; margin-bottom: 1rem; min-height: 110px; display: flex; align-items: center; justify-content: center;">
-                {{-- CANDIDATE VERIFIED PHOTO (MOVED FROM HEADER TO LEFT OF CANDIDATE NAME) --}}
-                <div class="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 flex flex-col items-center" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); -webkit-transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; z-index: 2;">
-                    @if($attempt->candidate_photo)
-                        <img src="{{ asset('storage/' . $attempt->candidate_photo) }}"
-                             alt="{{ $attempt->user->name ?? 'Candidate' }}"
-                             class="w-20 h-26 sm:w-24 sm:h-28 rounded-lg object-cover border-2 border-slate-300 shadow-sm bg-slate-100"
-                             style="width: 5.5rem; height: 6.875rem; border-radius: 0.5rem; object-fit: cover; border: 2px solid #cbd5e1; background-color: #f8fafc; box-shadow: 0 1px 3px rgba(0,0,0,0.08);"
-                             crossorigin="anonymous">
-                    @elseif($attempt->user && $attempt->user->avatar)
-                        <img src="{{ str_starts_with($attempt->user->avatar, 'http') ? $attempt->user->avatar : asset('storage/' . $attempt->user->avatar) }}"
-                             alt="{{ $attempt->user->name ?? 'Candidate' }}"
-                             class="w-20 h-26 sm:w-24 sm:h-28 rounded-lg object-cover border-2 border-slate-300 shadow-sm bg-slate-100"
-                             style="width: 5.5rem; height: 6.875rem; border-radius: 0.5rem; object-fit: cover; border: 2px solid #cbd5e1; background-color: #f8fafc; box-shadow: 0 1px 3px rgba(0,0,0,0.08);"
-                             crossorigin="anonymous">
-                    @else
-                        <div class="w-20 h-26 sm:w-24 sm:h-28 rounded-lg bg-slate-50 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400"
-                             style="width: 5.5rem; height: 6.875rem; border-radius: 0.5rem; background-color: #f8fafc; border: 2px dashed #cbd5e1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8;">
-                            <svg class="w-7 h-7 text-slate-300 mb-1" fill="currentColor" viewBox="0 0 24 24" style="width: 1.75rem; height: 1.75rem; color: #cbd5e1; margin-bottom: 0.25rem;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                            <span class="text-[9px] font-bold uppercase tracking-wider" style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Photo</span>
-                        </div>
-                    @endif
-                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-1" style="font-size: 8px; font-weight: 700; color: #94a3b8; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 0.25rem;">Candidate Photo</span>
-                </div>
+            <div class="relative my-4 {{ $showPhoto ? 'min-h-[110px]' : '' }} flex items-center justify-center" style="position: relative; margin-top: 1rem; margin-bottom: 1rem; {{ $showPhoto ? 'min-height: 110px;' : '' }} display: flex; align-items: center; justify-content: center;">
+                @if($showPhoto)
+                    {{-- CANDIDATE VERIFIED PHOTO --}}
+                    <div class="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 flex flex-col items-center" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); -webkit-transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; z-index: 2;">
+                        @if($attempt->candidate_photo)
+                            <img src="{{ asset('storage/' . $attempt->candidate_photo) }}"
+                                 alt="{{ $attempt->user->name ?? 'Candidate' }}"
+                                 class="w-20 h-26 sm:w-24 sm:h-28 rounded-lg object-cover border-2 border-slate-300 shadow-sm bg-slate-100"
+                                 style="width: 5.5rem; height: 6.875rem; border-radius: 0.5rem; object-fit: cover; border: 2px solid #cbd5e1; background-color: #f8fafc; box-shadow: 0 1px 3px rgba(0,0,0,0.08);"
+                                 crossorigin="anonymous">
+                        @elseif($attempt->user && $attempt->user->avatar)
+                            <img src="{{ str_starts_with($attempt->user->avatar, 'http') ? $attempt->user->avatar : asset('storage/' . $attempt->user->avatar) }}"
+                                 alt="{{ $attempt->user->name ?? 'Candidate' }}"
+                                 class="w-20 h-26 sm:w-24 sm:h-28 rounded-lg object-cover border-2 border-slate-300 shadow-sm bg-slate-100"
+                                 style="width: 5.5rem; height: 6.875rem; border-radius: 0.5rem; object-fit: cover; border: 2px solid #cbd5e1; background-color: #f8fafc; box-shadow: 0 1px 3px rgba(0,0,0,0.08);"
+                                 crossorigin="anonymous">
+                        @else
+                            <div class="w-20 h-26 sm:w-24 sm:h-28 rounded-lg bg-slate-50 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400"
+                                 style="width: 5.5rem; height: 6.875rem; border-radius: 0.5rem; background-color: #f8fafc; border: 2px dashed #cbd5e1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8;">
+                                <svg class="w-7 h-7 text-slate-300 mb-1" fill="currentColor" viewBox="0 0 24 24" style="width: 1.75rem; height: 1.75rem; color: #cbd5e1; margin-bottom: 0.25rem;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                                <span class="text-[9px] font-bold uppercase tracking-wider" style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Photo</span>
+                            </div>
+                        @endif
+                        <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-1" style="font-size: 8px; font-weight: 700; color: #94a3b8; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 0.25rem;">Candidate Photo</span>
+                    </div>
+                @endif
 
                 {{-- CANDIDATE NAME & ID (CENTERED) --}}
-                <div class="text-center px-24 sm:px-32" style="text-align: center;">
+                <div class="text-center {{ $showPhoto ? 'px-24 sm:px-32' : 'px-4' }}" style="text-align: center;">
                     <div class="inline-block border-b-2 border-[#0b1329] pb-1 px-8 sm:px-10" style="display: inline-block; border-bottom: 2px solid #0b1329; padding-bottom: 0.25rem; padding-left: 2.5rem; padding-right: 2.5rem;">
                         <span class="text-2xl sm:text-3xl font-black text-[#0b1329] tracking-wide uppercase" style="font-size: 1.875rem; font-weight: 900; color: #0b1329; letter-spacing: 0.025em; text-transform: uppercase;">
                             {{ $attempt->user->name ?? 'Candidate' }}
