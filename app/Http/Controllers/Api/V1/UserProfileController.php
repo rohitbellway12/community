@@ -200,8 +200,8 @@ class UserProfileController extends Controller
             'bio'         => ['nullable', 'string', 'max:500'],
             'location'    => ['nullable', 'string', 'max:100'],
             'country_id'  => ['nullable', 'integer', 'exists:countries,id'],
-            'avatar'      => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-            'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            'avatar'      => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
+            'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
         ]);
 
         // Handle Avatar upload

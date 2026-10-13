@@ -27,8 +27,8 @@ class UpdateProfileRequest extends FormRequest
                 Rule::unique('profiles', 'username')->ignore($profileId),
             ],
             'bio' => ['nullable', 'string', 'max:500'],
-            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
+            'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp'],
             'country_id' => ['nullable', 'exists:countries,id'],
             'location' => ['nullable', 'string', 'max:100'],
         ];
