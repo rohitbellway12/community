@@ -37,6 +37,14 @@ class Event extends Model
     ];
 
     /**
+     * Prepare a date for array / JSON serialization in application timezone.
+     */
+    protected function serializeDate(\DateTimeInterface $date): string
+    {
+        return $date->format('Y-m-d H:i:s');
+    }
+
+    /**
      * Scope: only events currently active by status.
      */
     public function scopeActive($query)

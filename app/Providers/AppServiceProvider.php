@@ -28,6 +28,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        date_default_timezone_set(config('app.timezone', 'Asia/Seoul'));
+
         Gate::before(function ($user, $ability) {
             if ($user->role === UserRole::ADMIN) {
                 return true;

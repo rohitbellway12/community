@@ -251,9 +251,15 @@
                                     </a>
 
                                     {{-- Edit --}}
+                                    @php
+                                        $eventData = array_merge($event->toArray(), [
+                                            'start_at_input' => $event->start_at->format('Y-m-d\TH:i'),
+                                            'end_at_input'   => $event->end_at->format('Y-m-d\TH:i'),
+                                        ]);
+                                    @endphp
                                     <button
                                         type="button"
-                                        @click="openEditModal({{ json_encode($event) }})"
+                                        @click="openEditModal({{ json_encode($eventData) }})"
                                         class="inline-flex items-center px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition"
                                     >
                                         Edit
@@ -375,7 +381,7 @@
                 {{-- Date Range --}}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Start Date & Time <span class="text-rose-500">*</span></label>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Start Date & Time (KST - Korea Time) <span class="text-rose-500">*</span></label>
                         <input
                             type="datetime-local"
                             name="start_at"
@@ -385,7 +391,7 @@
                         >
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">End Date & Time <span class="text-rose-500">*</span></label>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">End Date & Time (KST - Korea Time) <span class="text-rose-500">*</span></label>
                         <input
                             type="datetime-local"
                             name="end_at"
@@ -531,24 +537,22 @@ function eventManagement() {
             rules: ''
         },
 
+        getKstDateTime(d = new Date()) {
+            return d.toLocaleString('sv-SE', { timeZone: 'Asia/Seoul' }).replace(' ', 'T').slice(0, 16);
+        },
+
         openCreateModal() {
             this.isEdit = false;
             this.formAction = '{{ route('admin.events.store') }}';
             const now = new Date();
-            const nextMonth = new Date();
-            nextMonth.setDate(now.getDate() + 30);
-
-            const formatForInput = (d) => {
-                const pad = (n) => String(n).padStart(2, '0');
-                return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-            };
+            const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
             this.form = {
                 id: null,
                 title: '',
                 banner_link_url: '',
-                start_at: formatForInput(now),
-                end_at: formatForInput(nextMonth),
+                start_at: this.getKstDateTime(now),
+                end_at: this.getKstDateTime(nextMonth),
                 posts_weight: 5,
                 comments_weight: 3,
                 likes_weight: 2,
@@ -566,17 +570,17 @@ function eventManagement() {
 
             const formatIsoForInput = (isoString) => {
                 if (!isoString) return '';
-                const d = new Date(isoString);
-                const pad = (n) => String(n).padStart(2, '0');
-                return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                // Keep the exact server/KST date-time without converting to local browser timezone
+                const clean = String(isoString).replace(' ', 'T');
+                return clean.slice(0, 16);
             };
 
             this.form = {
                 id: event.id,
                 title: event.title || '',
                 banner_link_url: event.banner_link_url || '',
-                start_at: formatIsoForInput(event.start_at),
-                end_at: formatIsoForInput(event.end_at),
+                start_at: event.start_at_input || (event.start_at ? String(event.start_at).replace(' ', 'T').slice(0, 16) : ''),
+                end_at: event.end_at_input || (event.end_at ? String(event.end_at).replace(' ', 'T').slice(0, 16) : ''),
                 posts_weight: event.posts_weight ?? 5,
                 comments_weight: event.comments_weight ?? 3,
                 likes_weight: event.likes_weight ?? 2,
