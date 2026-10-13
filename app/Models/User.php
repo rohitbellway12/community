@@ -67,39 +67,55 @@ class User extends Authenticatable
     {
         static::deleting(function (User $user) {
             // 1. Delete Profile Avatar and Cover Image from storage
-            if ($user->profile) {
-                if ($user->profile->avatar && Storage::disk('public')->exists($user->profile->avatar)) {
-                    Storage::disk('public')->delete($user->profile->avatar);
+            try {
+                if ($user->profile) {
+                    if ($user->profile->avatar && Storage::disk('public')->exists($user->profile->avatar)) {
+                        Storage::disk('public')->delete($user->profile->avatar);
+                    }
+                    if ($user->profile->cover_image && Storage::disk('public')->exists($user->profile->cover_image)) {
+                        Storage::disk('public')->delete($user->profile->cover_image);
+                    }
                 }
-                if ($user->profile->cover_image && Storage::disk('public')->exists($user->profile->cover_image)) {
-                    Storage::disk('public')->delete($user->profile->cover_image);
-                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Error deleting user profile images: ' . $e->getMessage());
             }
 
             // 2. Delete all Post Media files from storage
-            foreach ($user->posts()->with('media')->get() as $post) {
-                foreach ($post->media as $media) {
-                    if ($media->file_path && Storage::disk('public')->exists($media->file_path)) {
-                        Storage::disk('public')->delete($media->file_path);
+            try {
+                foreach ($user->posts()->with('media')->get() as $post) {
+                    foreach ($post->media as $media) {
+                        if ($media->file_path && Storage::disk('public')->exists($media->file_path)) {
+                            Storage::disk('public')->delete($media->file_path);
+                        }
                     }
                 }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Error deleting user post media: ' . $e->getMessage());
             }
 
             // 3. Delete Owned Groups Cover Image from storage
-            foreach ($user->ownedGroups as $group) {
-                if ($group->cover_image && Storage::disk('public')->exists($group->cover_image)) {
-                    Storage::disk('public')->delete($group->cover_image);
+            try {
+                foreach ($user->ownedGroups as $group) {
+                    if ($group->cover_image && Storage::disk('public')->exists($group->cover_image)) {
+                        Storage::disk('public')->delete($group->cover_image);
+                    }
                 }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Error deleting group covers: ' . $e->getMessage());
             }
 
             // 4. Delete candidate photos from Test Attempts
-            $attempts = TestAttempt::where('user_id', $user->id)
-                ->whereNotNull('candidate_photo')
-                ->get();
-            foreach ($attempts as $attempt) {
-                if (Storage::disk('public')->exists($attempt->candidate_photo)) {
-                    Storage::disk('public')->delete($attempt->candidate_photo);
+            try {
+                $attempts = TestAttempt::where('user_id', $user->id)
+                    ->whereNotNull('candidate_photo')
+                    ->get();
+                foreach ($attempts as $attempt) {
+                    if (Storage::disk('public')->exists($attempt->candidate_photo)) {
+                        Storage::disk('public')->delete($attempt->candidate_photo);
+                    }
                 }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Error deleting candidate photos: ' . $e->getMessage());
             }
 
             // 5. Delete all received notifications and notifications related to this user
@@ -114,7 +130,11 @@ class User extends Authenticatable
             }
 
             // 6. Revoke all Sanctum access tokens
-            $user->tokens()->delete();
+            try {
+                $user->tokens()->delete();
+            } catch (\Throwable $e) {
+                // Ignore
+            }
         });
     }
 

@@ -140,6 +140,9 @@ class AdminUserController extends Controller
     public function destroy(Request $request, User $user)
     {
         if ((int) auth()->id() === (int) $user->id) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'You cannot delete your own admin account.'], 403);
+            }
             return back()->with('error', 'You cannot delete your own admin account.');
         }
 
@@ -147,6 +150,10 @@ class AdminUserController extends Controller
 
         // User::deleting hook in User.php handles all files, notifications, and tokens cleanup
         $user->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => "User '{$userName}' and all associated records have been permanently deleted."]);
+        }
 
         return back()->with('success', "User '{$userName}' and all associated records have been permanently deleted.");
     }
