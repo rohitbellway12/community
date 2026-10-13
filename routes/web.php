@@ -335,6 +335,11 @@ Route::group([], function () {
                 [AdminUserController::class, 'updateStatus']
             )->name('users.updateStatus');
 
+            Route::delete(
+                '/users/{user}',
+                [AdminUserController::class, 'destroy']
+            )->name('users.destroy');
+
             // Profile Activities & Progress Bar Settings
             Route::get('/profile-activities', [\App\Http\Controllers\Admin\AdminProfileActivityController::class, 'index'])->name('profile-activities.index');
             Route::post('/profile-activities', [\App\Http\Controllers\Admin\AdminProfileActivityController::class, 'store'])->name('profile-activities.store');

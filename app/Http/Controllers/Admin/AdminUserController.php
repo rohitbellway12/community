@@ -133,4 +133,21 @@ class AdminUserController extends Controller
 
         return back()->with('success', 'User details updated successfully.');
     }
+
+    /**
+     * Delete a user account and all associated data permanently.
+     */
+    public function destroy(Request $request, User $user)
+    {
+        if ((int) auth()->id() === (int) $user->id) {
+            return back()->with('error', 'You cannot delete your own admin account.');
+        }
+
+        $userName = $user->name;
+
+        // User::deleting hook in User.php handles all files, notifications, and tokens cleanup
+        $user->delete();
+
+        return back()->with('success', "User '{$userName}' and all associated records have been permanently deleted.");
+    }
 }

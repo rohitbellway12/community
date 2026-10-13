@@ -328,6 +328,23 @@
                                             class="px-2.5 py-1 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition">
                                         View
                                     </button>
+
+                                    @if((int) auth()->id() !== (int) $user->id)
+                                        {{-- Delete Button --}}
+                                        <form id="delete-user-{{ $user->id }}"
+                                              action="{{ route('admin.users.destroy', $user) }}"
+                                              method="POST"
+                                              class="inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="button"
+                                                    onclick="confirmUserDelete('delete-user-{{ $user->id }}', '{{ addslashes($user->name) }}')"
+                                                    class="px-2.5 py-1 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition"
+                                                    title="Delete User Account">
+                                                Delete
+                                            </button>
+                                        </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -717,6 +734,23 @@
                     </div>
                     
                     <div class="flex items-center space-x-2.5">
+                        <template x-if="currentUser.id && currentUser.id != '{{ auth()->id() }}'">
+                            <form :id="'delete-modal-user-' + currentUser.id"
+                                  :action="'{{ route('admin.users') }}/' + currentUser.id"
+                                  method="POST"
+                                  class="inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="button"
+                                        @click="confirmUserDelete('delete-modal-user-' + currentUser.id, currentUser.name)"
+                                        class="px-3.5 py-2 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition flex items-center space-x-1.5"
+                                        title="Delete User Account">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-9 0h14"/></svg>
+                                    <span>Delete</span>
+                                </button>
+                            </form>
+                        </template>
+
                         <button type="button" @click="modalOpen = false" class="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition">
                             Close
                         </button>
@@ -759,6 +793,29 @@ function confirmStatusToggle(formId, userName, newStatus) {
             popup: 'rounded-3xl p-6 shadow-2xl border border-slate-100',
             confirmButton: 'rounded-xl font-bold px-5 py-2.5 shadow-xs',
             cancelButton: 'rounded-xl font-bold px-5 py-2.5'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById(formId).submit();
+        }
+    });
+}
+
+function confirmUserDelete(formId, userName) {
+    Swal.fire({
+        title: 'Delete User Account?',
+        html: `Are you sure you want to permanently delete <b>${userName}</b>?<br><br><span class="text-xs text-rose-500 font-semibold">⚠️ All posts, comments, media photos, test attempts, referrals, points, and notifications of this user will be permanently deleted!</span>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Delete User',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#E11D48',
+        cancelButtonColor: '#64748B',
+        reverseButtons: true,
+        customClass: {
+            popup: 'rounded-3xl p-6 shadow-2xl border border-slate-100',
+            confirmButton: 'rounded-xl font-bold px-5 py-2.5 shadow-xs',
+            cancelButton: 'rounded-xl font-bold px-5 py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200'
         }
     }).then((result) => {
         if (result.isConfirmed) {

@@ -12,6 +12,8 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
@@ -55,6 +57,65 @@ class User extends Authenticatable
             'last_seen_at' => 'datetime',
             'ip_address' => 'string',
         ];
+    }
+
+    /**
+     * The "booted" method of the model.
+     * Clean up all physical files, notifications, and associated assets when user account is deleted.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (User $user) {
+            // 1. Delete Profile Avatar and Cover Image from storage
+            if ($user->profile) {
+                if ($user->profile->avatar && Storage::disk('public')->exists($user->profile->avatar)) {
+                    Storage::disk('public')->delete($user->profile->avatar);
+                }
+                if ($user->profile->cover_image && Storage::disk('public')->exists($user->profile->cover_image)) {
+                    Storage::disk('public')->delete($user->profile->cover_image);
+                }
+            }
+
+            // 2. Delete all Post Media files from storage
+            foreach ($user->posts()->with('media')->get() as $post) {
+                foreach ($post->media as $media) {
+                    if ($media->file_path && Storage::disk('public')->exists($media->file_path)) {
+                        Storage::disk('public')->delete($media->file_path);
+                    }
+                }
+            }
+
+            // 3. Delete Owned Groups Cover Image from storage
+            foreach ($user->ownedGroups as $group) {
+                if ($group->cover_image && Storage::disk('public')->exists($group->cover_image)) {
+                    Storage::disk('public')->delete($group->cover_image);
+                }
+            }
+
+            // 4. Delete candidate photos from Test Attempts
+            $attempts = TestAttempt::where('user_id', $user->id)
+                ->whereNotNull('candidate_photo')
+                ->get();
+            foreach ($attempts as $attempt) {
+                if (Storage::disk('public')->exists($attempt->candidate_photo)) {
+                    Storage::disk('public')->delete($attempt->candidate_photo);
+                }
+            }
+
+            // 5. Delete all received notifications and notifications related to this user
+            try {
+                $user->notifications()->delete();
+                DB::table('notifications')
+                    ->where('data', 'like', '%"user_id":' . $user->id . '%')
+                    ->orWhere('data', 'like', '%"actor_id":' . $user->id . '%')
+                    ->delete();
+            } catch (\Throwable $e) {
+                // Ignore if notifications table structure differs
+            }
+
+            // 6. Revoke all Sanctum access tokens
+            $user->tokens()->delete();
+        });
     }
 
     /**
