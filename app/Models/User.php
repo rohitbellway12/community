@@ -71,11 +71,21 @@ class User extends Authenticatable
 
     /**
      * Get the user's referral code, generating and saving one if it is missing.
+     * Re-reads from DB first so partial selects cannot overwrite an existing code.
      */
     public function getReferralCodeOrDefault(): string
     {
         if (!empty($this->referral_code)) {
             return $this->referral_code;
+        }
+
+        if ($this->getKey()) {
+            $existing = static::whereKey($this->getKey())->value('referral_code');
+            if (!empty($existing)) {
+                $this->referral_code = $existing;
+
+                return $existing;
+            }
         }
 
         $code = static::generateUniqueReferralCode();
@@ -219,6 +229,7 @@ public function activeGroups(): BelongsToMany
                 'users.id',
                 'users.name',
                 'users.email',
+                'users.referral_code',
             ])
             ->with([
                 'profile:id,user_id,username,avatar',
