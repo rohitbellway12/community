@@ -30,6 +30,9 @@ class AppServiceProvider extends ServiceProvider
     {
         date_default_timezone_set(config('app.timezone', 'Asia/Seoul'));
 
+        \Carbon\Carbon::serializeUsing(fn ($date) => $date->toIso8601String());
+        \Carbon\CarbonImmutable::serializeUsing(fn ($date) => $date->toIso8601String());
+
         Gate::before(function ($user, $ability) {
             if ($user->role === UserRole::ADMIN) {
                 return true;
