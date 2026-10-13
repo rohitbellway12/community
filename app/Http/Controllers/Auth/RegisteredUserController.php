@@ -34,6 +34,16 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        // Sanitize & normalize referral_code
+        $rawReferral = $request->input('referral_code') ?? $request->input('ref');
+        if ($rawReferral !== null) {
+            $cleanedReferral = trim(strtoupper((string) $rawReferral));
+            if ($cleanedReferral === '' || $cleanedReferral === 'NULL' || $cleanedReferral === 'UNDEFINED') {
+                $cleanedReferral = null;
+            }
+            $request->merge(['referral_code' => $cleanedReferral]);
+        }
+
         $validated = $request->validate([
             'name'          => ['required', 'string', 'max:255'],
             'email'         => [

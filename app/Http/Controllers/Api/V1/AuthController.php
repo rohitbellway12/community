@@ -32,6 +32,16 @@ class AuthController extends Controller
      */
     public function register(Request $request): JsonResponse
     {
+        // Sanitize & normalize referral_code (handle whitespaces, casing, and alternative parameter names)
+        $rawReferral = $request->input('referral_code') ?? $request->input('referralCode') ?? $request->input('ref_code');
+        if ($rawReferral !== null) {
+            $cleanedReferral = trim(strtoupper((string) $rawReferral));
+            if ($cleanedReferral === '' || $cleanedReferral === 'NULL' || $cleanedReferral === 'UNDEFINED') {
+                $cleanedReferral = null;
+            }
+            $request->merge(['referral_code' => $cleanedReferral]);
+        }
+
         $validated = $request->validate([
             'name'          => ['required', 'string', 'max:255'],
             'email'         => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
