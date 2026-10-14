@@ -86,7 +86,7 @@
     </div>
 
     {{-- TODAY'S ACTIVITY HIGHLIGHT CARDS --}}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {{-- Today Registrations --}}
         <div class="bg-gradient-to-br from-emerald-50/70 via-white to-white p-5 rounded-2xl border border-emerald-100/90 shadow-xs flex items-center justify-between">
             <div>
@@ -98,7 +98,7 @@
                     {{ number_format($todayRegistrations) }}
                 </div>
                 <div class="text-xs text-slate-500 mt-0.5">
-                    New user accounts created today
+                    New accounts created today
                 </div>
             </div>
             <div class="w-12 h-12 rounded-2xl bg-emerald-100/80 text-emerald-600 flex items-center justify-center shrink-0 text-xl font-black">
@@ -125,21 +125,40 @@
             </div>
         </div>
 
-        {{-- Today Active Users --}}
+        {{-- Revisits --}}
         <div class="bg-gradient-to-br from-purple-50/70 via-white to-white p-5 rounded-2xl border border-purple-100/90 shadow-xs flex items-center justify-between">
             <div>
                 <div class="flex items-center gap-1.5">
                     <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
-                    <span class="text-xs font-bold text-purple-800 uppercase tracking-wider">Today's Active Users</span>
+                    <span class="text-xs font-bold text-purple-800 uppercase tracking-wider">Revisits</span>
+                </div>
+                <div class="text-3xl font-black text-slate-900 mt-2">
+                    {{ number_format($todayRevisits ?? 0) }}
+                </div>
+                <div class="text-xs text-slate-500 mt-0.5">
+                    Returning members active today
+                </div>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-purple-100/80 text-purple-600 flex items-center justify-center shrink-0 text-xl font-black">
+                🔄
+            </div>
+        </div>
+
+        {{-- Today Active Users (Revisits + Registrations) --}}
+        <div class="bg-gradient-to-br from-amber-50/80 via-white to-white p-5 rounded-2xl border border-amber-200/90 shadow-xs flex items-center justify-between">
+            <div>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                    <span class="text-xs font-bold text-amber-800 uppercase tracking-wider">Today's Active Users</span>
                 </div>
                 <div class="text-3xl font-black text-slate-900 mt-2">
                     {{ number_format($todayActiveUsers) }}
                 </div>
-                <div class="text-xs text-slate-500 mt-0.5">
-                    Users active or interacting today
+                <div class="text-[11px] text-amber-700 font-semibold mt-0.5">
+                    Revisits ({{ number_format($todayRevisits ?? 0) }}) + Reg ({{ number_format($todayRegistrations) }})
                 </div>
             </div>
-            <div class="w-12 h-12 rounded-2xl bg-purple-100/80 text-purple-600 flex items-center justify-center shrink-0 text-xl font-black">
+            <div class="w-12 h-12 rounded-2xl bg-amber-100/90 text-amber-600 flex items-center justify-center shrink-0 text-xl font-black">
                 ⚡
             </div>
         </div>
@@ -263,8 +282,8 @@
 
         {{-- Interactive Legend Bar & Range Summary --}}
         <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs">
-            <div class="flex flex-wrap items-center gap-3 sm:gap-4">
-                {{-- Registrations Legend --}}
+            <div class="flex flex-wrap items-center gap-2.5 sm:gap-3">
+                {{-- Registrations Legend (0) --}}
                 <button
                     type="button"
                     @click="toggleDataset(0)"
@@ -277,7 +296,7 @@
                     <span class="font-extrabold text-emerald-700" x-text="totals.registrations.toLocaleString()"></span>
                 </button>
 
-                {{-- Posts Legend --}}
+                {{-- Posts Legend (1) --}}
                 <button
                     type="button"
                     @click="toggleDataset(1)"
@@ -290,17 +309,30 @@
                     <span class="font-extrabold text-blue-700" x-text="totals.posts.toLocaleString()"></span>
                 </button>
 
-                {{-- Active Users Legend --}}
+                {{-- Revisits Legend (2) --}}
                 <button
                     type="button"
                     @click="toggleDataset(2)"
                     class="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg border border-purple-200 bg-purple-50/60 hover:bg-purple-100/70 transition"
                     :class="{ 'opacity-40 line-through': !isDatasetVisible(2) }"
-                    title="Click to toggle Active Users on chart"
+                    title="Click to toggle Revisits on chart"
                 >
                     <span class="w-3 h-3 rounded-full bg-purple-500 inline-block"></span>
-                    <span class="font-bold text-purple-900">Active Users:</span>
-                    <span class="font-extrabold text-purple-700" x-text="totals.active_users.toLocaleString()"></span>
+                    <span class="font-bold text-purple-900">Revisits:</span>
+                    <span class="font-extrabold text-purple-700" x-text="(totals.revisits || 0).toLocaleString()"></span>
+                </button>
+
+                {{-- Active Users Legend (3) --}}
+                <button
+                    type="button"
+                    @click="toggleDataset(3)"
+                    class="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg border border-amber-300 bg-amber-50/80 hover:bg-amber-100 transition shadow-2xs"
+                    :class="{ 'opacity-40 line-through': !isDatasetVisible(3) }"
+                    title="Click to toggle Active Users (Revisits + Registrations) on chart"
+                >
+                    <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
+                    <span class="font-bold text-amber-900">Active Users:</span>
+                    <span class="font-extrabold text-amber-700" x-text="totals.active_users.toLocaleString()"></span>
                 </button>
             </div>
 
@@ -351,7 +383,7 @@
                                         {{ $post->user->name ?? 'Anonymous' }}
                                     </td>
                                     <td class="p-3 text-slate-400 whitespace-nowrap">
-                                        {{ $post->created_at ? $post->created_at->copy()->setTimezone('Asia/Seoul')->format('d M Y, h:i A') : 'N/A' }}
+                                        {{ $post->created_at ? $post->created_at->format('d M Y, h:i A') : 'N/A' }}
                                     </td>
                                 </tr>
                             @empty
@@ -429,7 +461,7 @@
                                 </div>
                             </div>
                             <span class="text-[10px] text-slate-400 font-medium shrink-0">
-                                {{ $member->created_at ? $member->created_at->copy()->setTimezone('Asia/Seoul')->format('d M Y, h:i A') : 'N/A' }}
+                                {{ $member->created_at ? $member->created_at->format('d M Y, h:i A') : 'N/A' }}
                             </span>
                         </div>
                     @empty
@@ -488,9 +520,9 @@ document.addEventListener('alpine:init', () => {
         customEnd: initialData.end_date || '',
         showCustomPicker: false,
         isLoading: false,
-        totals: initialData.totals || { registrations: 0, posts: 0, active_users: 0 },
+        totals: initialData.totals || { registrations: 0, posts: 0, revisits: 0, active_users: 0 },
         tableRows: initialData.table_rows || [],
-        datasetVisible: { 0: true, 1: true, 2: true },
+        datasetVisible: { 0: true, 1: true, 2: true, 3: true },
 
         init() {
             this.$nextTick(() => {
@@ -553,7 +585,7 @@ document.addEventListener('alpine:init', () => {
                 return res.json();
             })
             .then(data => {
-                this.totals = data.totals || { registrations: 0, posts: 0, active_users: 0 };
+                this.totals = data.totals || { registrations: 0, posts: 0, revisits: 0, active_users: 0 };
                 this.startDate = data.start_date || '';
                 this.endDate = data.end_date || '';
                 this.tableRows = data.table_rows || [];
@@ -591,9 +623,13 @@ document.addEventListener('alpine:init', () => {
             postGrad.addColorStop(0, 'rgba(37, 99, 235, 0.20)');
             postGrad.addColorStop(1, 'rgba(37, 99, 235, 0.00)');
 
+            const revisitGrad = ctx.createLinearGradient(0, 0, 0, 320);
+            revisitGrad.addColorStop(0, 'rgba(124, 58, 237, 0.20)');
+            revisitGrad.addColorStop(1, 'rgba(124, 58, 237, 0.00)');
+
             const activeGrad = ctx.createLinearGradient(0, 0, 0, 320);
-            activeGrad.addColorStop(0, 'rgba(124, 58, 237, 0.20)');
-            activeGrad.addColorStop(1, 'rgba(124, 58, 237, 0.00)');
+            activeGrad.addColorStop(0, 'rgba(245, 158, 11, 0.25)');
+            activeGrad.addColorStop(1, 'rgba(245, 158, 11, 0.00)');
 
             analyticsChartInstance = new Chart(canvas, {
                 type: 'line',
@@ -629,16 +665,30 @@ document.addEventListener('alpine:init', () => {
                             pointBorderWidth: 2
                         },
                         {
-                            label: 'Active Users',
-                            data: data.datasets?.active_users || [],
+                            label: 'Revisits',
+                            data: data.datasets?.revisits || [],
                             borderColor: '#7c3aed',
-                            backgroundColor: activeGrad,
+                            backgroundColor: revisitGrad,
                             borderWidth: 2.5,
                             fill: true,
                             tension: 0.35,
                             pointRadius: 3.5,
                             pointHoverRadius: 6,
                             pointBackgroundColor: '#7c3aed',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2
+                        },
+                        {
+                            label: 'Active Users (Revisits + Reg)',
+                            data: data.datasets?.active_users || [],
+                            borderColor: '#f59e0b',
+                            backgroundColor: activeGrad,
+                            borderWidth: 2.5,
+                            fill: true,
+                            tension: 0.35,
+                            pointRadius: 3.5,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: '#f59e0b',
                             pointBorderColor: '#ffffff',
                             pointBorderWidth: 2
                         }
@@ -701,7 +751,8 @@ document.addEventListener('alpine:init', () => {
             analyticsChartInstance.data.labels = [...(data.labels || [])];
             analyticsChartInstance.data.datasets[0].data = [...(data.datasets?.registrations || [])];
             analyticsChartInstance.data.datasets[1].data = [...(data.datasets?.posts || [])];
-            analyticsChartInstance.data.datasets[2].data = [...(data.datasets?.active_users || [])];
+            analyticsChartInstance.data.datasets[2].data = [...(data.datasets?.revisits || [])];
+            analyticsChartInstance.data.datasets[3].data = [...(data.datasets?.active_users || [])];
             analyticsChartInstance.update();
         },
 

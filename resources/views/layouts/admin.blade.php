@@ -220,6 +220,7 @@
                 ===================================================== --}}
                 @php
                     $sidebarTotalUsers = \App\Models\User::count();
+                    $sidebarOnlineUsers = \App\Models\User::whereNotNull('last_seen_at')->where('last_seen_at', '>=', now()->subMinutes(5))->count();
                     $sidebarActiveUsers = \App\Models\User::where('status', 'active')->count();
                     $sidebarBlockedUsers = \App\Models\User::where('status', 'blocked')->count();
                     $isUserManagementActive = request()->routeIs('admin.users*') || request()->is('*admin/users*') || request()->routeIs('admin.profile-activities*');
@@ -292,8 +293,25 @@
                             </span>
                         </a>
 
+                        {{-- Online Users (Live in last 5 min) --}}
+                        <a
+                            href="{{ route('admin.users', ['status' => 'online']) }}"
+                            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors group
+                                   {{ $isUserManagementActive && request('status') === 'online'
+                                        ? 'bg-reiac-slate text-reiac-gold font-bold shadow-xs'
+                                        : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
+                        >
+                            <span class="flex items-center space-x-3">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                                <span>Online Users</span>
+                            </span>
 
-                        {{-- Active Users --}}
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                {{ $sidebarOnlineUsers }}
+                            </span>
+                        </a>
+
+                        {{-- Active Accounts --}}
                         <a
                             href="{{ route('admin.users', ['status' => 'active']) }}"
                             class="flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors group
@@ -302,13 +320,13 @@
                                         : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
                         >
                             <span class="flex items-center space-x-3">
-                                <svg class="w-4 h-4 shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-4 h-4 shrink-0 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                <span>Active Users</span>
+                                <span>Active Accounts</span>
                             </span>
 
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
                                 {{ $sidebarActiveUsers }}
                             </span>
                         </a>

@@ -35,13 +35,17 @@ class AdminDashboardController extends Controller
         $kstNow   = now('Asia/Seoul');
         $kstToday = $kstNow->toDateString(); // 'YYYY-MM-DD' in KST
 
-        $todayRegistrations = User::whereRaw("DATE(CONVERT_TZ(created_at, '+00:00', '+09:00')) = ?", [$kstToday])->count();
-        $todayPosts         = Post::whereRaw("DATE(CONVERT_TZ(created_at, '+00:00', '+09:00')) = ?", [$kstToday])->count();
+        // Timestamps in database are aligned to KST (Asia/Seoul)
+        $todayRegistrations = User::whereDate('created_at', $kstToday)->count();
+        $todayPosts         = Post::whereDate('created_at', $kstToday)->count();
 
-        // Active users today: users who visited pages or were active today in KST
-        $todayVisits    = DB::table('user_visits')->whereRaw("DATE(CONVERT_TZ(created_at, '+00:00', '+09:00')) = ?", [$kstToday])->pluck('user_id');
-        $todayLastSeens = DB::table('users')->whereNotNull('last_seen_at')->whereRaw("DATE(CONVERT_TZ(last_seen_at, '+00:00', '+09:00')) = ?", [$kstToday])->pluck('id');
-        $todayActiveUsers = $todayVisits->merge($todayLastSeens)->unique()->count();
+        // Revisits today: users who visited pages or were active today in KST
+        $todayVisits    = DB::table('user_visits')->whereDate('created_at', $kstToday)->pluck('user_id');
+        $todayLastSeens = DB::table('users')->whereNotNull('last_seen_at')->whereDate('last_seen_at', $kstToday)->pluck('id');
+        $todayRevisits  = $todayVisits->merge($todayLastSeens)->unique()->count();
+
+        // Today's Active Users = Revisits + Today's Registrations
+        $todayActiveUsers = $todayRevisits + $todayRegistrations;
 
         // Active today (legacy name kept for compatibility)
         $activeToday = $todayActiveUsers;
@@ -76,6 +80,7 @@ class AdminDashboardController extends Controller
             'activeToday',
             'todayRegistrations',
             'todayPosts',
+            'todayRevisits',
             'todayActiveUsers',
             'initialChartData',
             'recentPosts',
@@ -118,24 +123,17 @@ class AdminDashboardController extends Controller
         $KST = 'Asia/Seoul';
         $filter = strtolower(trim($request->get('filter', 'daily')));
 
-        // SQL expression: shift stored UTC timestamp into KST before grouping
-        $kstCreated = "CONVERT_TZ(created_at, '+00:00', '+09:00')";
-        $kstUpdated = "CONVERT_TZ(updated_at, '+00:00', '+09:00')";
-        $kstLastSeen = "CONVERT_TZ(last_seen_at, '+00:00', '+09:00')";
-
         if ($filter === 'monthly') {
             $startKst = now($KST)->subMonths(11)->startOfMonth();
             $endKst   = now($KST)->endOfMonth();
-            $groupByCreated = "DATE_FORMAT({$kstCreated}, '%Y-%m')";
-            $groupByUpdated = "DATE_FORMAT({$kstUpdated}, '%Y-%m')";
-            $groupByLastSeen = "DATE_FORMAT({$kstLastSeen}, '%Y-%m')";
+            $groupByCreated  = "DATE_FORMAT(created_at, '%Y-%m')";
+            $groupByLastSeen = "DATE_FORMAT(last_seen_at, '%Y-%m')";
             $intervalType = 'month';
         } elseif ($filter === 'yearly') {
             $startKst = now($KST)->subYears(4)->startOfYear();
             $endKst   = now($KST)->endOfYear();
-            $groupByCreated = "YEAR({$kstCreated})";
-            $groupByUpdated = "YEAR({$kstUpdated})";
-            $groupByLastSeen = "YEAR({$kstLastSeen})";
+            $groupByCreated  = "YEAR(created_at)";
+            $groupByLastSeen = "YEAR(last_seen_at)";
             $intervalType = 'year';
         } elseif ($filter === 'custom' && $request->filled('start_date') && $request->filled('end_date')) {
             try {
@@ -153,14 +151,12 @@ class AdminDashboardController extends Controller
             if ($diffDays > 90) {
                 $startKst = $startKst->copy()->startOfMonth();
                 $endKst   = $endKst->copy()->endOfMonth();
-                $groupByCreated = "DATE_FORMAT({$kstCreated}, '%Y-%m')";
-                $groupByUpdated = "DATE_FORMAT({$kstUpdated}, '%Y-%m')";
-                $groupByLastSeen = "DATE_FORMAT({$kstLastSeen}, '%Y-%m')";
+                $groupByCreated  = "DATE_FORMAT(created_at, '%Y-%m')";
+                $groupByLastSeen = "DATE_FORMAT(last_seen_at, '%Y-%m')";
                 $intervalType = 'month';
             } else {
-                $groupByCreated = "DATE({$kstCreated})";
-                $groupByUpdated = "DATE({$kstUpdated})";
-                $groupByLastSeen = "DATE({$kstLastSeen})";
+                $groupByCreated  = "DATE(created_at)";
+                $groupByLastSeen = "DATE(last_seen_at)";
                 $intervalType = 'day';
             }
         } else {
@@ -168,43 +164,42 @@ class AdminDashboardController extends Controller
             $filter   = 'daily';
             $startKst = now($KST)->subDays(13)->startOfDay();
             $endKst   = now($KST)->endOfDay();
-            $groupByCreated = "DATE({$kstCreated})";
-            $groupByUpdated = "DATE({$kstUpdated})";
-            $groupByLastSeen = "DATE({$kstLastSeen})";
+            $groupByCreated  = "DATE(created_at)";
+            $groupByLastSeen = "DATE(last_seen_at)";
             $intervalType = 'day';
         }
 
-        // Convert boundaries to UTC for querying the database
-        $utcStart = $startKst->copy()->setTimezone('UTC');
-        $utcEnd   = $endKst->copy()->setTimezone('UTC');
+        // KST boundary strings for query
+        $startStr = $startKst->format('Y-m-d 00:00:00');
+        $endStr   = $endKst->format('Y-m-d 23:59:59');
 
         // 1. Registrations
         $registrations = DB::table('users')
-            ->whereBetween('created_at', [$utcStart, $utcEnd])
+            ->whereBetween('created_at', [$startStr, $endStr])
             ->selectRaw("{$groupByCreated} as period_key, COUNT(*) as aggregate")
             ->groupBy('period_key')
             ->pluck('aggregate', 'period_key');
 
         // 2. Posts
         $posts = DB::table('posts')
-            ->whereBetween('created_at', [$utcStart, $utcEnd])
+            ->whereBetween('created_at', [$startStr, $endStr])
             ->selectRaw("{$groupByCreated} as period_key, COUNT(*) as aggregate")
             ->groupBy('period_key')
             ->pluck('aggregate', 'period_key');
 
-        // 3. Active Users (Users who visit pages / have active presence)
+        // 3. Revisits (Returning users who visit pages / have active presence)
         $visitActivity = DB::table('user_visits')
-            ->whereBetween('created_at', [$utcStart, $utcEnd])
+            ->whereBetween('created_at', [$startStr, $endStr])
             ->selectRaw("{$groupByCreated} as period_key, user_id");
 
         $lastSeenActivity = DB::table('users')
             ->whereNotNull('last_seen_at')
-            ->whereBetween('last_seen_at', [$utcStart, $utcEnd])
+            ->whereBetween('last_seen_at', [$startStr, $endStr])
             ->selectRaw("{$groupByLastSeen} as period_key, id as user_id");
 
         $union = $visitActivity->union($lastSeenActivity);
 
-        $activeUsers = DB::query()->fromSub($union, 't')
+        $revisits = DB::query()->fromSub($union, 't')
             ->selectRaw('period_key, COUNT(DISTINCT user_id) as aggregate')
             ->groupBy('period_key')
             ->pluck('aggregate', 'period_key');
@@ -213,6 +208,7 @@ class AdminDashboardController extends Controller
         $labels = [];
         $regData = [];
         $postData = [];
+        $revisitData = [];
         $activeData = [];
         $tableRows = [];
 
@@ -224,14 +220,17 @@ class AdminDashboardController extends Controller
                 $labels[] = $key;
                 $reg = (int) ($registrations[$key] ?? 0);
                 $pst = (int) ($posts[$key] ?? 0);
-                $act = (int) ($activeUsers[$key] ?? 0);
+                $rev = (int) ($revisits[$key] ?? 0);
+                $act = $rev + $reg; // Revisits + Today's Registrations
                 $regData[] = $reg;
                 $postData[] = $pst;
+                $revisitData[] = $rev;
                 $activeData[] = $act;
                 $tableRows[] = [
                     'date'          => $key,
                     'registrations' => $reg,
                     'posts'         => $pst,
+                    'revisits'      => $rev,
                     'active_users'  => $act,
                 ];
             }
@@ -244,14 +243,17 @@ class AdminDashboardController extends Controller
                 $labels[] = $label;
                 $reg = (int) ($registrations[$key] ?? 0);
                 $pst = (int) ($posts[$key] ?? 0);
-                $act = (int) ($activeUsers[$key] ?? 0);
+                $rev = (int) ($revisits[$key] ?? 0);
+                $act = $rev + $reg; // Revisits + Today's Registrations
                 $regData[] = $reg;
                 $postData[] = $pst;
+                $revisitData[] = $rev;
                 $activeData[] = $act;
                 $tableRows[] = [
                     'date'          => $label,
                     'registrations' => $reg,
                     'posts'         => $pst,
+                    'revisits'      => $rev,
                     'active_users'  => $act,
                 ];
                 $curr->addMonth();
@@ -266,14 +268,17 @@ class AdminDashboardController extends Controller
                 $labels[] = $label;
                 $reg = (int) ($registrations[$key] ?? 0);
                 $pst = (int) ($posts[$key] ?? 0);
-                $act = (int) ($activeUsers[$key] ?? 0);
+                $rev = (int) ($revisits[$key] ?? 0);
+                $act = $rev + $reg; // Revisits + Today's Registrations
                 $regData[] = $reg;
                 $postData[] = $pst;
+                $revisitData[] = $rev;
                 $activeData[] = $act;
                 $tableRows[] = [
                     'date'          => $curr->format('d M Y'),
                     'registrations' => $reg,
                     'posts'         => $pst,
+                    'revisits'      => $rev,
                     'active_users'  => $act,
                 ];
                 $curr->addDay();
@@ -288,12 +293,14 @@ class AdminDashboardController extends Controller
             'datasets'   => [
                 'registrations' => $regData,
                 'posts'         => $postData,
+                'revisits'      => $revisitData,
                 'active_users'  => $activeData,
             ],
             'table_rows' => $tableRows,
             'totals'     => [
                 'registrations' => array_sum($regData),
                 'posts'         => array_sum($postData),
+                'revisits'      => array_sum($revisitData),
                 'active_users'  => array_sum($activeData),
             ],
         ];

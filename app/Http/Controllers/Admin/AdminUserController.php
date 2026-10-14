@@ -11,7 +11,7 @@ class AdminUserController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::with(['profile.country', 'posts', 'comments']);
+        $query = User::with(['profile.country', 'posts', 'comments', 'latestDeviceToken']);
 
         if ($request->filled('search')) {
             $search = trim($request->input('search'));
@@ -25,15 +25,23 @@ class AdminUserController extends Controller
         }
 
         if ($request->filled('status') && $request->status !== 'all') {
-            $query->where('status', strtolower(trim($request->status)));
+            $status = strtolower(trim($request->status));
+            if ($status === 'online') {
+                $query->whereNotNull('last_seen_at')
+                      ->where('last_seen_at', '>=', now()->subMinutes(5))
+                      ->orderByDesc('last_seen_at');
+            } else {
+                $query->where('status', $status);
+            }
         }
 
-        $users = $query->latest()->paginate(10)->withQueryString();
+        $users = ($request->status === 'online' ? $query : $query->latest())->paginate(10)->withQueryString();
         $countries = Country::all();
 
         $stats = [
-            'total' => User::count(),
-            'active' => User::where('status', 'active')->count(),
+            'total'   => User::count(),
+            'online'  => User::whereNotNull('last_seen_at')->where('last_seen_at', '>=', now()->subMinutes(5))->count(),
+            'active'  => User::where('status', 'active')->count(),
             'blocked' => User::where('status', 'blocked')->count(),
         ];
 

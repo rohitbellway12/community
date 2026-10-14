@@ -306,6 +306,7 @@ public function activeGroups(): BelongsToMany
     public static function getTopContributors(int $limit = 5)
     {
         return static::query()
+            ->where('users.status', 'active')
             ->select([
                 'users.id',
                 'users.name',
@@ -381,6 +382,15 @@ public function activeGroups(): BelongsToMany
     }
 
     /**
+     * Scope a query to only include currently online users.
+     */
+    public function scopeOnline($query, int $minutes = 5)
+    {
+        return $query->whereNotNull('last_seen_at')
+                     ->where('last_seen_at', '>=', now()->subMinutes($minutes));
+    }
+
+    /**
      * Determine if the user is currently online (visited within specified minutes).
      */
     public function isOnline(int $minutes = 5): bool
@@ -404,20 +414,97 @@ public function activeGroups(): BelongsToMany
         return 'Offline • Never seen';
     }
 
+
     /**
-     * Get device type label with icon.
+     * Latest device token relationship.
      */
-    public function deviceTypeIcon(): string
+    public function latestDeviceToken(): HasOne
     {
-        return match ($this->device_type) {
+        return $this->hasOne(DeviceToken::class)->latestOfMany('last_used_at');
+    }
+
+    /**
+     * Get resolved device category: 'Mobile', 'Tablet', 'Desktop', or null.
+     */
+    public function getResolvedDeviceType(): ?string
+    {
+        $raw = strtolower(trim((string) $this->device_type));
+
+        if (in_array($raw, ['mobile', 'android', 'ios', 'phone'])) {
+            return 'Mobile';
+        }
+
+        if (in_array($raw, ['tablet', 'ipad'])) {
+            return 'Tablet';
+        }
+
+        if (in_array($raw, ['desktop', 'windows', 'mac', 'linux'])) {
+            return 'Desktop';
+        }
+
+        // Fallback: check device tokens registered via mobile app
+        $token = $this->relationLoaded('latestDeviceToken') ? $this->latestDeviceToken : $this->latestDeviceToken()->first();
+        if ($token) {
+            return 'Mobile';
+        }
+
+        return !empty($this->device_type) ? ucfirst($this->device_type) : null;
+    }
+
+    /**
+     * Get device type label for display in admin table.
+     */
+    public function deviceTypeLabel(): string
+    {
+        $raw = strtolower(trim((string) $this->device_type));
+
+        if ($raw === 'android') {
+            return 'Mobile (Android)';
+        }
+        if ($raw === 'ios') {
+            return 'Mobile (iOS)';
+        }
+        if ($raw === 'mobile') {
+            return 'Mobile';
+        }
+        if ($raw === 'tablet') {
+            return 'Tablet';
+        }
+        if ($raw === 'desktop') {
+            return 'Desktop';
+        }
+
+        if (!empty($this->device_type)) {
+            return ucfirst($this->device_type);
+        }
+
+        // Fallback to latest mobile device token
+        $token = $this->relationLoaded('latestDeviceToken') ? $this->latestDeviceToken : $this->latestDeviceToken()->first();
+        if ($token) {
+            $tType = strtolower(trim((string)$token->device_type));
+            return $tType === 'ios' ? 'Mobile (iOS)' : 'Mobile (Android)';
+        }
+
+        return '—';
+    }
+
+    /**
+     * Get device icon emoji.
+     */
+    public function deviceIcon(): string
+    {
+        $type = $this->getResolvedDeviceType();
+
+        return match ($type) {
             'Mobile' => '📱',
             'Tablet' => '📋',
-            default => '💻',
+            'Desktop' => '💻',
+            default  => !empty($this->device_type) ? '💻' : '—',
         };
     }
 
     /**
-     * Get formatted device info string.
+     * Get formatted device info string (OS & Browser / App version).
      */
     public function deviceInfo(): string
     {
@@ -426,29 +513,31 @@ public function activeGroups(): BelongsToMany
             $parts[] = $this->device_os;
         }
         if ($this->browser) {
-            $parts[] = '(' . $this->browser . ')';
+            $b = trim($this->browser);
+            if (str_starts_with($b, '(')) {
+                $parts[] = $b;
+            } elseif (str_starts_with($b, 'App')) {
+                $parts[] = '• ' . $b;
+            } else {
+                $parts[] = '(' . $b . ')';
+            }
         }
-        return implode(' ', $parts);
-    }
 
-    /**
-     * Get device type label.
-     */
-    public function deviceTypeLabel(): string
-    {
-        return $this->device_type ?? 'Desktop';
-    }
+        if (!empty($parts)) {
+            return implode(' ', $parts);
+        }
 
-    /**
-     * Get device icon HTML.
-     */
-    public function deviceIcon(): string
-    {
-        return match ($this->device_type) {
-            'Mobile' => '📱',
-            'Tablet' => '📋',
-            default => '💻',
-        };
+        // Fallback to latest device token (e.g. Android app version 1.0.4)
+        $token = $this->relationLoaded('latestDeviceToken') ? $this->latestDeviceToken : $this->latestDeviceToken()->first();
+        if ($token) {
+            $osName = strtolower((string)$token->device_type) === 'ios' ? 'iOS' : 'Android';
+            if ($token->app_version) {
+                return $osName . ' • App (v' . $token->app_version . ')';
+            }
+            return $osName . ' App';
+        }
+
+        return '';
     }
 
     /**

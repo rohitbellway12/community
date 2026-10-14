@@ -114,6 +114,7 @@ class Event extends Model
         $referralsW      = (float) $this->referrals_weight;
 
         return User::query()
+            ->where('users.status', 'active')
             ->select([
                 'users.id',
                 'users.name',
@@ -123,8 +124,8 @@ class Event extends Model
             ->with(['profile:id,user_id,username,avatar'])
             ->selectRaw("
                 (SELECT COUNT(*) FROM posts WHERE posts.user_id = users.id AND posts.deleted_at IS NULL AND posts.status = 'published' AND posts.created_at BETWEEN ? AND ?) AS posts_count,
-                (SELECT COUNT(*) FROM comments WHERE comments.user_id = users.id AND comments.deleted_at IS NULL AND comments.created_at BETWEEN ? AND ?) AS comments_count,
-                (SELECT COUNT(*) FROM likes INNER JOIN posts ON posts.id = likes.post_id WHERE posts.user_id = users.id AND posts.deleted_at IS NULL AND likes.created_at BETWEEN ? AND ?) AS likes_count,
+                (SELECT COUNT(*) FROM comments INNER JOIN posts ON posts.id = comments.post_id WHERE comments.user_id = users.id AND comments.deleted_at IS NULL AND posts.deleted_at IS NULL AND posts.status = 'published' AND comments.created_at BETWEEN ? AND ?) AS comments_count,
+                (SELECT COUNT(*) FROM likes INNER JOIN posts ON posts.id = likes.post_id WHERE posts.user_id = users.id AND posts.deleted_at IS NULL AND posts.status = 'published' AND likes.created_at BETWEEN ? AND ?) AS likes_count,
                 (SELECT COUNT(*) FROM referrals WHERE referrals.referrer_id = users.id AND referrals.created_at BETWEEN ? AND ?) AS referrals_count
             ", [
                 $startAt, $endAt,
@@ -136,9 +137,9 @@ class Event extends Model
                 (
                     COALESCE((SELECT COUNT(*) FROM posts WHERE posts.user_id = users.id AND posts.deleted_at IS NULL AND posts.status = 'published' AND posts.created_at BETWEEN ? AND ?), 0) * ?
                     +
-                    COALESCE((SELECT COUNT(*) FROM comments WHERE comments.user_id = users.id AND comments.deleted_at IS NULL AND comments.created_at BETWEEN ? AND ?), 0) * ?
+                    COALESCE((SELECT COUNT(*) FROM comments INNER JOIN posts ON posts.id = comments.post_id WHERE comments.user_id = users.id AND comments.deleted_at IS NULL AND posts.deleted_at IS NULL AND posts.status = 'published' AND comments.created_at BETWEEN ? AND ?), 0) * ?
                     +
-                    COALESCE((SELECT COUNT(*) FROM likes INNER JOIN posts ON posts.id = likes.post_id WHERE posts.user_id = users.id AND posts.deleted_at IS NULL AND likes.created_at BETWEEN ? AND ?), 0) * ?
+                    COALESCE((SELECT COUNT(*) FROM likes INNER JOIN posts ON posts.id = likes.post_id WHERE posts.user_id = users.id AND posts.deleted_at IS NULL AND posts.status = 'published' AND likes.created_at BETWEEN ? AND ?), 0) * ?
                     +
                     COALESCE((SELECT COUNT(*) FROM referrals WHERE referrals.referrer_id = users.id AND referrals.created_at BETWEEN ? AND ?), 0) * ?
                 ) AS event_score
@@ -178,15 +179,19 @@ class Event extends Model
             ->count();
 
         $comments = \DB::table('comments')
-            ->where('user_id', $user->id)
-            ->whereNull('deleted_at')
-            ->whereBetween('created_at', [$startAt, $endAt])
+            ->join('posts', 'posts.id', '=', 'comments.post_id')
+            ->where('comments.user_id', $user->id)
+            ->whereNull('comments.deleted_at')
+            ->whereNull('posts.deleted_at')
+            ->where('posts.status', 'published')
+            ->whereBetween('comments.created_at', [$startAt, $endAt])
             ->count();
 
         $likes = \DB::table('likes')
             ->join('posts', 'posts.id', '=', 'likes.post_id')
             ->where('posts.user_id', $user->id)
             ->whereNull('posts.deleted_at')
+            ->where('posts.status', 'published')
             ->whereBetween('likes.created_at', [$startAt, $endAt])
             ->count();
 

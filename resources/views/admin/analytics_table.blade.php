@@ -144,13 +144,13 @@
     </div>
 
     {{-- SUMMARY KPI CARDS --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {{-- Registrations --}}
         <div class="bg-white p-5 rounded-2xl border border-emerald-100 shadow-xs flex items-center justify-between">
             <div>
-                <div class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Total Registrations</div>
+                <div class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Registrations</div>
                 <div class="text-2xl font-black text-slate-900 mt-1" x-text="totals.registrations.toLocaleString()"></div>
-                <div class="text-[11px] text-slate-400 mt-0.5">In selected period</div>
+                <div class="text-[11px] text-slate-400 mt-0.5">New accounts</div>
             </div>
             <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black text-lg">
                 👥
@@ -162,33 +162,45 @@
             <div>
                 <div class="text-[11px] font-bold text-blue-800 uppercase tracking-wider">Posts Created</div>
                 <div class="text-2xl font-black text-slate-900 mt-1" x-text="totals.posts.toLocaleString()"></div>
-                <div class="text-[11px] text-slate-400 mt-0.5">Discussions started</div>
+                <div class="text-[11px] text-slate-400 mt-0.5">Discussions</div>
             </div>
             <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-lg">
                 ✍️
             </div>
         </div>
 
-        {{-- Active Users --}}
+        {{-- Revisits --}}
         <div class="bg-white p-5 rounded-2xl border border-purple-100 shadow-xs flex items-center justify-between">
             <div>
-                <div class="text-[11px] font-bold text-purple-800 uppercase tracking-wider">Active Users</div>
-                <div class="text-2xl font-black text-slate-900 mt-1" x-text="totals.active_users.toLocaleString()"></div>
-                <div class="text-[11px] text-slate-400 mt-0.5">Engaged members</div>
+                <div class="text-[11px] font-bold text-purple-800 uppercase tracking-wider">Revisits</div>
+                <div class="text-2xl font-black text-slate-900 mt-1" x-text="(totals.revisits || 0).toLocaleString()"></div>
+                <div class="text-[11px] text-slate-400 mt-0.5">Returning members</div>
             </div>
             <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-black text-lg">
+                🔄
+            </div>
+        </div>
+
+        {{-- Active Users --}}
+        <div class="bg-white p-5 rounded-2xl border border-amber-200 shadow-xs flex items-center justify-between">
+            <div>
+                <div class="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Active Users</div>
+                <div class="text-2xl font-black text-slate-900 mt-1" x-text="totals.active_users.toLocaleString()"></div>
+                <div class="text-[11px] text-amber-600 font-semibold mt-0.5">Revisits + Reg</div>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-black text-lg">
                 ⚡
             </div>
         </div>
 
         {{-- Total Combined Actions --}}
-        <div class="bg-white p-5 rounded-2xl border border-amber-100 shadow-xs flex items-center justify-between">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
             <div>
-                <div class="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Combined Total</div>
-                <div class="text-2xl font-black text-slate-900 mt-1" x-text="(totals.registrations + totals.posts + totals.active_users).toLocaleString()"></div>
-                <div class="text-[11px] text-slate-400 mt-0.5">Total recorded interactions</div>
+                <div class="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Combined Total</div>
+                <div class="text-2xl font-black text-slate-900 mt-1" x-text="(totals.registrations + totals.posts + (totals.revisits || 0)).toLocaleString()"></div>
+                <div class="text-[11px] text-slate-400 mt-0.5">Total interactions</div>
             </div>
-            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-black text-lg">
+            <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-black text-lg">
                 📊
             </div>
         </div>
@@ -227,18 +239,24 @@
                         <th class="p-3.5 text-emerald-800">
                             <span class="inline-flex items-center gap-1">
                                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                New Registrations
+                                Registrations
                             </span>
                         </th>
                         <th class="p-3.5 text-blue-800">
                             <span class="inline-flex items-center gap-1">
                                 <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                                Posts Created
+                                Posts
                             </span>
                         </th>
                         <th class="p-3.5 text-purple-800">
                             <span class="inline-flex items-center gap-1">
                                 <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+                                Revisits
+                            </span>
+                        </th>
+                        <th class="p-3.5 text-amber-800">
+                            <span class="inline-flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
                                 Active Users
                             </span>
                         </th>
@@ -267,15 +285,22 @@
                             <td class="p-3.5">
                                 <span
                                     class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-bold"
-                                    :class="row.active_users > 0 ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'text-slate-400'"
+                                    :class="row.revisits > 0 ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'text-slate-400'"
+                                    x-text="row.revisits || 0"
+                                ></span>
+                            </td>
+                            <td class="p-3.5">
+                                <span
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-bold"
+                                    :class="row.active_users > 0 ? 'bg-amber-50 text-amber-700 border border-amber-300 font-black' : 'text-slate-400'"
                                     x-text="row.active_users"
                                 ></span>
                             </td>
-                            <td class="p-3.5 text-right font-extrabold text-slate-900" x-text="(row.registrations + row.posts + row.active_users).toLocaleString()"></td>
+                            <td class="p-3.5 text-right font-extrabold text-slate-900" x-text="(row.registrations + row.posts + (row.revisits || 0)).toLocaleString()"></td>
                         </tr>
                     </template>
                     <tr x-show="filteredRows.length === 0">
-                        <td colspan="6" class="p-8 text-center text-slate-400">
+                        <td colspan="7" class="p-8 text-center text-slate-400">
                             No records matching your search or selected date range.
                         </td>
                     </tr>
@@ -285,10 +310,13 @@
                         <td colspan="2" class="p-3.5 uppercase tracking-wider text-[11px] text-slate-600">Grand Total Sum</td>
                         <td class="p-3.5 text-emerald-700 font-black text-sm" x-text="totals.registrations.toLocaleString()"></td>
                         <td class="p-3.5 text-blue-700 font-black text-sm" x-text="totals.posts.toLocaleString()"></td>
-                        <td class="p-3.5 text-purple-700 font-black text-sm" x-text="totals.active_users.toLocaleString()"></td>
-                        <td class="p-3.5 text-right font-black text-slate-950 text-sm" x-text="(totals.registrations + totals.posts + totals.active_users).toLocaleString()"></td>
+                        <td class="p-3.5 text-purple-700 font-black text-sm" x-text="(totals.revisits || 0).toLocaleString()"></td>
+                        <td class="p-3.5 text-amber-700 font-black text-sm" x-text="totals.active_users.toLocaleString()"></td>
+                        <td class="p-3.5 text-right font-black text-slate-950 text-sm" x-text="(totals.registrations + totals.posts + (totals.revisits || 0)).toLocaleString()"></td>
                     </tr>
                 </tfoot>
+            </table>
+        </div>
             </table>
         </div>
 
@@ -341,7 +369,7 @@ document.addEventListener('alpine:init', () => {
         customEnd: initialData.end_date || '',
         showCustomPicker: (initialData.filter === 'custom'),
         isLoading: false,
-        totals: initialData.totals || { registrations: 0, posts: 0, active_users: 0 },
+        totals: initialData.totals || { registrations: 0, posts: 0, revisits: 0, active_users: 0 },
         tableRows: initialData.table_rows || [],
         searchQuery: '',
         currentPage: 1,
@@ -408,7 +436,7 @@ document.addEventListener('alpine:init', () => {
                 return res.json();
             })
             .then(data => {
-                this.totals = data.totals || { registrations: 0, posts: 0, active_users: 0 };
+                this.totals = data.totals || { registrations: 0, posts: 0, revisits: 0, active_users: 0 };
                 this.startDate = data.start_date || '';
                 this.endDate = data.end_date || '';
                 this.tableRows = data.table_rows || [];
@@ -431,20 +459,22 @@ document.addEventListener('alpine:init', () => {
                 alert('No data to export.');
                 return;
             }
-            const headers = ['Date / Interval', 'Registrations', 'Posts Created', 'Active Users', 'Combined Total'];
+            const headers = ['Date / Interval', 'Registrations', 'Posts Created', 'Revisits', 'Active Users', 'Combined Total'];
             const rows = this.tableRows.map(r => [
                 `"${r.date}"`,
                 r.registrations,
                 r.posts,
+                r.revisits || 0,
                 r.active_users,
-                r.registrations + r.posts + r.active_users
+                r.registrations + r.posts + (r.revisits || 0)
             ]);
             rows.push([
                 '"TOTAL"',
                 this.totals.registrations,
                 this.totals.posts,
+                this.totals.revisits || 0,
                 this.totals.active_users,
-                this.totals.registrations + this.totals.posts + this.totals.active_users
+                this.totals.registrations + this.totals.posts + (this.totals.revisits || 0)
             ]);
             const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
             const encodedUri = encodeURI(csvContent);

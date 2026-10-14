@@ -36,6 +36,18 @@ class DeviceTokenController extends Controller
             ]
         );
 
+        // Also sync device information to users table for accurate admin tracking
+        $rawType = strtolower($validated['device_type'] ?? 'android');
+        $osName = $rawType === 'ios' ? 'iOS' : 'Android';
+        $appVer = !empty($validated['app_version']) ? 'App (v' . $validated['app_version'] . ')' : 'App';
+
+        \Illuminate\Support\Facades\DB::table('users')->where('id', $user->id)->update([
+            'device_type' => 'Mobile',
+            'device_os'   => $osName,
+            'browser'     => $appVer,
+            'ip_address'  => $request->ip(),
+        ]);
+
         return $this->successResponse(
             ['registered' => true],
             'Device token registered successfully.',

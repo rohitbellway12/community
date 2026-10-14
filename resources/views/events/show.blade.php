@@ -297,16 +297,21 @@
                     @auth
                         <div class="bg-[#0B132B] rounded-2xl p-4 text-white border border-amber-500/30 shadow-md space-y-3">
                             <div class="flex items-center justify-between">
+                                @php
+                                    $myProfileUrl = route('community.profile', $currentUser->profile?->username ?? $currentUser->id);
+                                @endphp
                                 <div class="flex items-center gap-2.5">
-                                    <div class="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 font-black text-sm flex items-center justify-center overflow-hidden shadow-xs">
+                                    <a href="{{ $myProfileUrl }}" class="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 font-black text-sm flex items-center justify-center overflow-hidden shadow-xs hover:opacity-90 transition">
                                         @if($currentUser?->profile?->avatar)
                                             <img src="{{ asset('storage/' . $currentUser->profile->avatar) }}" alt="{{ $currentUser->name }}" class="w-full h-full object-cover">
                                         @else
                                             {{ strtoupper(substr($currentUser->name, 0, 1)) }}
                                         @endif
-                                    </div>
+                                    </a>
                                     <div>
-                                        <div class="text-xs font-bold text-white truncate max-w-[140px]">{{ $currentUser->name }}</div>
+                                        <div class="text-xs font-bold text-white truncate max-w-[140px]">
+                                            <a href="{{ $myProfileUrl }}" class="hover:text-amber-300 hover:underline transition">{{ $currentUser->name }}</a>
+                                        </div>
                                         <div class="text-[10px] text-amber-300 font-medium">Participant</div>
                                     </div>
                                 </div>
@@ -387,6 +392,7 @@
                                     $isFirst = $podiumIndex === 0;
                                     $isSecond = $podiumIndex === 1;
                                     $isThird = $podiumIndex === 2;
+                                    $pProfileUrl = route('community.profile', $pUser->profile?->username ?? $pUser->id);
                                 @endphp
                                 <div class="relative rounded-xl p-3 text-center border transition {{ $isFirst ? 'bg-gradient-to-b from-amber-50 to-white border-amber-300 shadow-xs sm:-translate-y-1 col-span-2 sm:col-span-1 order-1 sm:order-2' : ($isSecond ? 'bg-slate-50/70 border-slate-200 order-2 sm:order-1' : 'bg-slate-50/70 border-slate-200 order-3') }}">
                                     
@@ -400,7 +406,7 @@
                                         @endif
                                     </div>
 
-                                    <div class="w-11 h-11 rounded-full mx-auto overflow-hidden bg-white border-2 {{ $isFirst ? 'border-amber-400 ring-2 ring-amber-300/40' : 'border-slate-200' }} shadow-xs">
+                                    <a href="{{ $pProfileUrl }}" class="block w-11 h-11 rounded-full mx-auto overflow-hidden bg-white border-2 hover:opacity-90 hover:scale-105 transition {{ $isFirst ? 'border-amber-400 ring-2 ring-amber-300/40' : 'border-slate-200' }} shadow-xs">
                                         @if(!empty($pUser->avatar))
                                             <img src="{{ $pUser->avatar }}" alt="{{ $pUser->name }}" class="w-full h-full object-cover">
                                         @else
@@ -408,9 +414,13 @@
                                                 {{ strtoupper(substr($pUser->name, 0, 1)) }}
                                             </div>
                                         @endif
-                                    </div>
+                                    </a>
 
-                                    <h3 class="font-bold text-slate-900 text-xs mt-2 truncate">{{ $pUser->name }}</h3>
+                                    <h3 class="font-bold text-slate-900 text-xs mt-2 truncate">
+                                        <a href="{{ $pProfileUrl }}" class="hover:text-amber-600 hover:underline transition">
+                                            {{ $pUser->name }}
+                                        </a>
+                                    </h3>
                                     
                                     @if(!empty($pUser->referral_code))
                                         <div class="text-[9px] text-slate-400 font-mono">{{ $pUser->referral_code }}</div>
@@ -438,6 +448,9 @@
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 bg-white">
                                     @foreach($topUsers as $rIdx => $u)
+                                        @php
+                                            $uProfileUrl = route('community.profile', $u->profile?->username ?? $u->id);
+                                        @endphp
                                         <tr class="hover:bg-amber-50/15 transition {{ $rIdx < 3 ? 'bg-amber-50/5' : '' }}">
                                             <td class="py-2.5 px-3 whitespace-nowrap">
                                                 <span class="inline-flex w-6 h-6 rounded-lg items-center justify-center font-bold text-xs {{ $rIdx === 0 ? 'bg-amber-400 text-slate-950' : ($rIdx === 1 ? 'bg-slate-200 text-slate-700' : ($rIdx === 2 ? 'bg-amber-700 text-white' : 'bg-slate-100 text-slate-600')) }}">
@@ -446,7 +459,7 @@
                                             </td>
                                             <td class="py-2.5 px-3 whitespace-nowrap">
                                                 <div class="flex items-center gap-2">
-                                                    <div class="w-7 h-7 rounded-full overflow-hidden bg-slate-100 shrink-0 border border-slate-200">
+                                                    <a href="{{ $uProfileUrl }}" class="w-7 h-7 rounded-full overflow-hidden bg-slate-100 shrink-0 border border-slate-200 hover:opacity-85 hover:scale-105 transition">
                                                         @if(!empty($u->avatar))
                                                             <img src="{{ $u->avatar }}" alt="{{ $u->name }}" class="w-full h-full object-cover">
                                                         @else
@@ -454,9 +467,13 @@
                                                                 {{ strtoupper(substr($u->name, 0, 1)) }}
                                                             </div>
                                                         @endif
-                                                    </div>
+                                                    </a>
                                                     <div class="min-w-0">
-                                                        <div class="font-bold text-slate-900 text-xs truncate max-w-[120px] sm:max-w-xs">{{ $u->name }}</div>
+                                                        <div class="font-bold text-slate-900 text-xs truncate max-w-[120px] sm:max-w-xs">
+                                                            <a href="{{ $uProfileUrl }}" class="hover:text-amber-600 hover:underline transition">
+                                                                {{ $u->name }}
+                                                            </a>
+                                                        </div>
                                                         @if(!empty($u->referral_code))
                                                             <div class="text-[9px] text-slate-400 font-mono">{{ $u->referral_code }}</div>
                                                         @endif
@@ -553,16 +570,21 @@
                         <div class="bg-[#0B132B] rounded-2xl p-5 text-white border border-amber-500/30 shadow-md space-y-4">
                             
                             {{-- User Info --}}
+                            @php
+                                $myProfileUrl = route('community.profile', $currentUser->profile?->username ?? $currentUser->id);
+                            @endphp
                             <div class="flex items-center gap-3 pb-3 border-b border-white/10">
-                                <div class="w-11 h-11 rounded-xl bg-amber-400 text-slate-950 font-black text-sm flex items-center justify-center overflow-hidden shadow-xs">
+                                <a href="{{ $myProfileUrl }}" class="w-11 h-11 rounded-xl bg-amber-400 text-slate-950 font-black text-sm flex items-center justify-center overflow-hidden shadow-xs hover:opacity-90 transition">
                                     @if($currentUser?->profile?->avatar)
                                         <img src="{{ asset('storage/' . $currentUser->profile->avatar) }}" alt="{{ $currentUser->name }}" class="w-full h-full object-cover">
                                     @else
                                         {{ strtoupper(substr($currentUser->name, 0, 1)) }}
                                     @endif
-                                </div>
+                                </a>
                                 <div class="min-w-0">
-                                    <h3 class="text-xs font-bold text-white truncate">{{ $currentUser->name }}</h3>
+                                    <h3 class="text-xs font-bold text-white truncate">
+                                        <a href="{{ $myProfileUrl }}" class="hover:text-amber-300 hover:underline transition">{{ $currentUser->name }}</a>
+                                    </h3>
                                     <span class="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/30 mt-0.5">
                                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                                         Participant

@@ -58,19 +58,32 @@ class UpdateUserLastSeen
 
                     // For API requests: check custom headers first, then request body
                     if ($request->is('api/*')) {
-                        $deviceType = $request->header('X-Device-Type') ?: $request->input('device_type');
+                        $rawType = $request->header('X-Device-Type') ?: $request->input('device_type');
                         $deviceOs = $request->header('X-Device-OS') ?: $request->input('device_os');
                         $browser = $request->header('X-Browser') ?: $request->input('browser');
+
+                        if ($rawType) {
+                            $lower = strtolower(trim($rawType));
+                            if (in_array($lower, ['android', 'ios', 'mobile', 'phone'])) {
+                                $deviceType = 'Mobile';
+                                $deviceOs = $deviceOs ?: ($lower === 'ios' ? 'iOS' : 'Android');
+                                $browser = $browser ?: 'App';
+                            } elseif (in_array($lower, ['tablet', 'ipad'])) {
+                                $deviceType = 'Tablet';
+                            } else {
+                                $deviceType = ucfirst($rawType);
+                            }
+                        }
                     }
 
-                    // For web requests: use jenssegers/agent
+                    // For web requests or fallback: use jenssegers/agent
                     if (!$deviceType) {
                         $agent = new Agent();
                         $agent->setUserAgent($request->header('User-Agent'));
 
                         $deviceType = $agent->isMobile() ? 'Mobile' : ($agent->isTablet() ? 'Tablet' : 'Desktop');
-                        $deviceOs = $agent->platform() ?: null;
-                        $browser = $agent->browser() ?: null;
+                        $deviceOs = $deviceOs ?: ($agent->platform() ?: null);
+                        $browser = $browser ?: ($agent->browser() ?: null);
                     }
 
                     DB::table('users')->where('id', $user->id)->update([

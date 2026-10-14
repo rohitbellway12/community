@@ -73,7 +73,8 @@
     </div>
 
     {{-- SUMMARY STAT CARDS --}}
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {{-- 1. All Members --}}
         <a href="{{ route('admin.users') }}"
            class="bg-white p-5 rounded-2xl border transition shadow-xs {{ !request('status') ? 'border-reiac-navy ring-2 ring-reiac-navy/10' : 'border-slate-200 hover:border-slate-300' }}">
             <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">All Members</div>
@@ -81,18 +82,34 @@
             <div class="text-[11px] text-slate-500 font-semibold mt-0.5">Total registered accounts</div>
         </a>
 
-        <a href="{{ route('admin.users', ['status' => 'active']) }}"
-           class="bg-white p-5 rounded-2xl border transition shadow-xs {{ request('status') === 'active' ? 'border-emerald-500 ring-2 ring-emerald-500/10' : 'border-slate-200 hover:border-emerald-300' }}">
-            <div class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Active Members</div>
-            <div class="text-2xl font-extrabold text-emerald-600 mt-1.5">{{ number_format($stats['active'] ?? 0) }}</div>
-            <div class="text-[11px] text-emerald-700 font-semibold mt-0.5">Can login, post & comment</div>
+        {{-- 2. Online Now --}}
+        <a href="{{ route('admin.users', ['status' => 'online']) }}"
+           class="bg-white p-5 rounded-2xl border transition shadow-xs {{ request('status') === 'online' ? 'border-emerald-500 ring-2 ring-emerald-500/10 bg-emerald-50/20' : 'border-slate-200 hover:border-emerald-300' }}">
+            <div class="flex items-center justify-between">
+                <div class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Online Now
+                </div>
+                <span class="text-xs px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-700">Live</span>
+            </div>
+            <div class="text-2xl font-extrabold text-emerald-600 mt-1.5">{{ number_format($stats['online'] ?? 0) }}</div>
+            <div class="text-[11px] text-emerald-700 font-semibold mt-0.5">Active in last 5 minutes</div>
         </a>
 
+        {{-- 3. Active Accounts --}}
+        <a href="{{ route('admin.users', ['status' => 'active']) }}"
+           class="bg-white p-5 rounded-2xl border transition shadow-xs {{ request('status') === 'active' ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-slate-200 hover:border-blue-300' }}">
+            <div class="text-[11px] font-bold text-blue-600 uppercase tracking-wider">Active Accounts</div>
+            <div class="text-2xl font-extrabold text-blue-600 mt-1.5">{{ number_format($stats['active'] ?? 0) }}</div>
+            <div class="text-[11px] text-blue-700 font-semibold mt-0.5">Allowed / Not blocked</div>
+        </a>
+
+        {{-- 4. Blocked Accounts --}}
         <a href="{{ route('admin.users', ['status' => 'blocked']) }}"
            class="bg-white p-5 rounded-2xl border transition shadow-xs {{ request('status') === 'blocked' ? 'border-rose-500 ring-2 ring-rose-500/10' : 'border-slate-200 hover:border-rose-300' }}">
-            <div class="text-[11px] font-bold text-rose-600 uppercase tracking-wider">Blocked / Deactivated</div>
+            <div class="text-[11px] font-bold text-rose-600 uppercase tracking-wider">Blocked Accounts</div>
             <div class="text-2xl font-extrabold text-rose-600 mt-1.5">{{ number_format($stats['blocked'] ?? 0) }}</div>
-            <div class="text-[11px] text-rose-700 font-semibold mt-0.5">Suspended accounts</div>
+            <div class="text-[11px] text-rose-700 font-semibold mt-0.5">Suspended / Deactivated</div>
         </a>
     </div>
 
@@ -101,15 +118,20 @@
         {{-- Status Filter Tabs --}}
         <div class="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto">
             <a href="{{ route('admin.users', array_filter(['search' => request('search')])) }}"
-               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition {{ !request('status') ? 'bg-reiac-slate text-white' : 'text-slate-600 hover:bg-slate-100' }}">
+               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap {{ !request('status') ? 'bg-reiac-slate text-white' : 'text-slate-600 hover:bg-slate-100' }}">
                 All ({{ $stats['total'] ?? $users->total() }})
             </a>
+            <a href="{{ route('admin.users', array_filter(['status' => 'online', 'search' => request('search')])) }}"
+               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap inline-flex items-center gap-1.5 {{ request('status') === 'online' ? 'bg-emerald-600 text-white' : 'text-emerald-700 hover:bg-emerald-50' }}">
+                <span class="w-1.5 h-1.5 rounded-full {{ request('status') === 'online' ? 'bg-white' : 'bg-emerald-500' }}"></span>
+                Online Now ({{ $stats['online'] ?? 0 }})
+            </a>
             <a href="{{ route('admin.users', array_filter(['status' => 'active', 'search' => request('search')])) }}"
-               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition {{ request('status') === 'active' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100' }}">
-                Active ({{ $stats['active'] ?? 0 }})
+               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap {{ request('status') === 'active' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100' }}">
+                Active Accounts ({{ $stats['active'] ?? 0 }})
             </a>
             <a href="{{ route('admin.users', array_filter(['status' => 'blocked', 'search' => request('search')])) }}"
-               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition {{ request('status') === 'blocked' ? 'bg-rose-600 text-white' : 'text-slate-600 hover:bg-slate-100' }}">
+               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap {{ request('status') === 'blocked' ? 'bg-rose-600 text-white' : 'text-slate-600 hover:bg-slate-100' }}">
                 Blocked ({{ $stats['blocked'] ?? 0 }})
             </a>
         </div>
@@ -219,13 +241,17 @@
 
                             {{-- Device --}}
                             <td class="py-3.5 px-4 text-center whitespace-nowrap">
-                                <div class="flex items-center justify-center gap-1">
-                                    <span class="text-sm">{{ $user->deviceIcon() }}</span>
-                                    <span class="text-[10px] font-semibold text-slate-600">{{ $user->deviceTypeLabel() }}</span>
-                                </div>
-                                <div class="text-[9px] text-slate-400 truncate max-w-[100px] mx-auto mt-0.5">
-                                    {{ $user->deviceInfo() ?: '—' }}
-                                </div>
+                                @if($user->deviceTypeLabel() !== '—')
+                                    <div class="flex items-center justify-center gap-1">
+                                        <span class="text-sm">{{ $user->deviceIcon() }}</span>
+                                        <span class="text-[10px] font-semibold text-slate-600">{{ $user->deviceTypeLabel() }}</span>
+                                    </div>
+                                    <div class="text-[9px] text-slate-400 truncate max-w-[150px] mx-auto mt-0.5" title="{{ $user->deviceInfo() }}">
+                                        {{ $user->deviceInfo() ?: '—' }}
+                                    </div>
+                                @else
+                                    <span class="text-slate-300 font-bold text-base" title="No device recorded (Inactive / Never logged in)">—</span>
+                                @endif
                             </td>
 
                             {{-- Activity --}}
