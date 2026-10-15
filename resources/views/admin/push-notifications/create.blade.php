@@ -97,55 +97,22 @@
             {{-- Simple Tap Action (Where to open in App on Click) --}}
             <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/60 space-y-3" x-data="{ redirectType: 'home' }">
                 <div>
-                    <label class="text-xs font-bold text-slate-800 block mb-1">When user taps notification, open:</label>
-                    <p class="text-[11px] text-slate-400 mb-2">Select where the mobile app should navigate when this notification is clicked.</p>
+                    <label class="text-xs font-bold text-slate-800 block mb-1">When user taps notification, open in app:</label>
+                    <p class="text-[11px] text-slate-400 mb-2">Select which section of the mobile app to open when this notification is clicked.</p>
                     
                     <select name="redirect_type" x-model="redirectType"
                             class="w-full text-xs font-semibold bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 py-2.5 px-3 transition">
-                        <option value="home">🏠 Normal App Home Screen (Default)</option>
-                        <option value="test">📝 Specific Online Test</option>
-                        <option value="group">👥 Specific Community Group</option>
-                        <option value="event">🏆 Events & Referral Contest</option>
+                        <option value="home">🏠 App Home Screen</option>
+                        <option value="test">📝 Online Tests Screen</option>
+                        <option value="group">👥 Community Groups Screen</option>
+                        <option value="event">🏆 Events & Contest Screen</option>
                         <option value="web_url">🔗 External Website / Web Link</option>
-                    </select>
-                </div>
-
-                {{-- If Test is selected --}}
-                <div x-show="redirectType === 'test'" x-cloak class="pt-2 border-t border-slate-200/80">
-                    <label class="text-xs font-bold text-slate-700 block mb-1">Select Online Test:</label>
-                    <select name="redirect_test_id" class="w-full text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 py-2 px-3">
-                        <option value="">-- Choose Test --</option>
-                        @foreach($tests as $t)
-                            <option value="{{ $t->id }}">{{ $t->title }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                {{-- If Group is selected --}}
-                <div x-show="redirectType === 'group'" x-cloak class="pt-2 border-t border-slate-200/80">
-                    <label class="text-xs font-bold text-slate-700 block mb-1">Select Community Group:</label>
-                    <select name="redirect_group_id" class="w-full text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 py-2 px-3">
-                        <option value="">-- Choose Group --</option>
-                        @foreach($groups as $g)
-                            <option value="{{ $g->id }}">{{ $g->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                {{-- If Event is selected --}}
-                <div x-show="redirectType === 'event'" x-cloak class="pt-2 border-t border-slate-200/80">
-                    <label class="text-xs font-bold text-slate-700 block mb-1">Select Event / Contest:</label>
-                    <select name="redirect_event_id" class="w-full text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 py-2 px-3">
-                        <option value="">-- Choose Event --</option>
-                        @foreach($events as $e)
-                            <option value="{{ $e->id }}">{{ $e->title }}</option>
-                        @endforeach
                     </select>
                 </div>
 
                 {{-- If External Link is selected --}}
                 <div x-show="redirectType === 'web_url'" x-cloak class="pt-2 border-t border-slate-200/80">
-                    <label class="text-xs font-bold text-slate-700 block mb-1">Enter Website URL:</label>
+                    <label class="text-xs font-bold text-slate-700 block mb-1">Enter Website / Play Store URL:</label>
                     <input type="url" name="redirect_url" placeholder="https://example.com/page"
                            class="w-full text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 py-2 px-3">
                 </div>
@@ -410,11 +377,17 @@
                 </label>
             </div>
 
-            <div x-show="sendType === 'schedule'" x-cloak class="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2">
-                <label class="text-xs font-bold text-slate-800 block">Select Date and Time <span class="text-rose-500">*</span></label>
-                <input type="datetime-local" name="scheduled_at" x-model="scheduledAt"
-                       class="text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 py-2 px-3 shadow-2xs">
-                <p class="text-[11px] text-slate-400">The scheduler will automatically pick up and broadcast this notification when the scheduled time arrives.</p>
+            <div x-show="sendType === 'schedule'" x-cloak class="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-bold text-slate-800 block">Select Date and Time (KST) <span class="text-rose-500">*</span></label>
+                    <span class="text-[11px] font-bold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-lg border border-purple-200 flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></span>
+                        <span>Current KST: <strong x-text="currentKstTime"></strong></span>
+                    </span>
+                </div>
+                <input type="datetime-local" name="scheduled_at" x-model="scheduledAt" :min="minDateTime"
+                       class="text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 py-2.5 px-3.5 shadow-2xs font-bold text-slate-900">
+                <p class="text-[11px] text-slate-500">The entire system operates in <strong>KST (Korea Standard Time, UTC+9)</strong>. The notification will broadcast automatically at this scheduled KST time.</p>
             </div>
         </div>
 
@@ -466,7 +439,7 @@
                     <span class="text-slate-500 font-bold flex items-center gap-1.5">
                         <span class="text-slate-400">⏰</span> Delivery Mode
                     </span>
-                    <span class="font-bold text-slate-800" x-text="sendType === 'now' ? 'Immediate Broadcast' : 'Scheduled (' + (scheduledAt || 'N/A') + ')'"></span>
+                    <span class="font-bold text-slate-800" x-text="sendType === 'now' ? 'Immediate Broadcast' : 'Scheduled (' + (scheduledAt || 'N/A') + ' KST)'"></span>
                 </div>
                 <div class="pt-1">
                     <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Title Preview</span>
@@ -520,6 +493,8 @@ function pushNotificationComposer() {
         isSearching: false,
         sendType: 'now',
         scheduledAt: '',
+        currentKstTime: '',
+        minDateTime: '',
         showConfirmModal: false,
         isSubmitting: false,
         recipientMessage: 'Estimating active recipients...',
@@ -549,8 +524,23 @@ function pushNotificationComposer() {
             return 'None';
         },
 
+        getKstDateTime(d = new Date()) {
+            return d.toLocaleString('sv-SE', { timeZone: 'Asia/Seoul' }).replace(' ', 'T').slice(0, 16);
+        },
+
         init() {
             this.refreshRecipientCount();
+
+            // Set min datetime to current KST time
+            const now = new Date();
+            this.minDateTime = this.getKstDateTime(now);
+            this.currentKstTime = now.toLocaleTimeString('en-US', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit' });
+
+            // If empty, pre-fill scheduledAt with current KST + 30 minutes
+            if (!this.scheduledAt) {
+                const inThirtyMins = new Date(Date.now() + 30 * 60 * 1000);
+                this.scheduledAt = this.getKstDateTime(inThirtyMins);
+            }
         },
 
         setAudienceType(type) {

@@ -66,23 +66,28 @@ class SendAdminPushBroadcastJob implements ShouldQueue
         $failedCount = 0;
 
         // Resolve deep-linking keys for Mobile Apps (Flutter, Android, iOS)
-        $actionLink = $notification->action_link ?? 'home';
+        $rawAction = $notification->action_link ?? 'home';
         $targetType = 'home';
         $targetId = '';
         $url = '';
+        $actionLink = 'home';
 
-        if (str_starts_with($actionLink, 'test:')) {
+        if (str_starts_with($rawAction, 'test:') || $rawAction === 'test') {
             $targetType = 'test';
-            $targetId = substr($actionLink, 5);
-        } elseif (str_starts_with($actionLink, 'group:')) {
+            $actionLink = 'test';
+        } elseif (str_starts_with($rawAction, 'group:') || $rawAction === 'group') {
             $targetType = 'group';
-            $targetId = substr($actionLink, 6);
-        } elseif (str_starts_with($actionLink, 'event:')) {
+            $actionLink = 'group';
+        } elseif (str_starts_with($rawAction, 'event:') || $rawAction === 'event') {
             $targetType = 'event';
-            $targetId = substr($actionLink, 6);
-        } elseif (str_starts_with($actionLink, 'http://') || str_starts_with($actionLink, 'https://')) {
+            $actionLink = 'event';
+        } elseif (str_starts_with($rawAction, 'http://') || str_starts_with($rawAction, 'https://')) {
             $targetType = 'web_url';
-            $url = $actionLink;
+            $url = $rawAction;
+            $actionLink = $rawAction;
+        } else {
+            $targetType = 'home';
+            $actionLink = 'home';
         }
 
         $customData = array_filter([
@@ -105,7 +110,7 @@ class SendAdminPushBroadcastJob implements ShouldQueue
             $userTokens = $tokensByUser->get($userId);
 
             // In-app Notification creation (FR-14: Student can see past notifications in an in-app notification list)
-            $this->createInAppNotification($userId, $notification);
+            $this->createInAppNotification($userId, $notification, $targetType, $targetId, $url, $actionLink);
 
             if (!$userTokens || $userTokens->isEmpty()) {
                 // User has no registered/active device token
@@ -239,7 +244,7 @@ class SendAdminPushBroadcastJob implements ShouldQueue
     /**
      * Store in-app notification in standard Laravel notifications table
      */
-    protected function createInAppNotification(int $userId, PushNotification $notification): void
+    protected function createInAppNotification(int $userId, PushNotification $notification, string $targetType = 'home', string $targetId = '', string $url = '', string $actionLink = 'home'): void
     {
         try {
             DB::table('notifications')->insert([
@@ -248,13 +253,18 @@ class SendAdminPushBroadcastJob implements ShouldQueue
                 'notifiable_type' => 'App\\Models\\User',
                 'notifiable_id'   => $userId,
                 'data'            => json_encode([
+                    'type'            => 'admin_broadcast',
                     'title'           => $notification->title,
+                    'message'         => $notification->description,
                     'body'            => $notification->description,
                     'image'           => $notification->image_url,
                     'banner'          => $notification->banner_url,
-                    'action_link'     => $notification->action_link,
+                    'target_type'     => $targetType,
+                    'target_id'       => $targetId ?: null,
+                    'url'             => $url ?: null,
+                    'action_link'     => $actionLink,
                     'notification_id' => $notification->id,
-                    'created_at'      => now()->toIso8601String(),
+                    'created_at'      => now('Asia/Seoul')->toIso8601String(),
                 ]),
                 'read_at'         => null,
                 'created_at'      => now(),

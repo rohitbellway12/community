@@ -11,7 +11,7 @@ Artisan::command('inspire', function () {
     $dueNotifications = \App\Models\PushNotification::scheduled()->get();
     foreach ($dueNotifications as $notification) {
         $notification->update(['status' => 'draft']);
-        \App\Jobs\SendAdminPushBroadcastJob::dispatch($notification);
+        \App\Jobs\SendAdminPushBroadcastJob::dispatchSync($notification);
     }
 })->everyMinute()->name('send-scheduled-push-notifications');
 

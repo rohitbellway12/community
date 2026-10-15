@@ -273,18 +273,8 @@ class CommunityController extends Controller
                 'user_id' => $user->id,
             ]);
             $post->increment('likes_count');
-
             $liked = true;
-
-            // Don't notify yourself
-            if ((int) $post->user_id !== (int) $user->id) {
-                $post->loadMissing(['user', 'group']);
-                if ($post->user) {
-                    $post->user->notify(
-                        new PostLikedNotification($user, $post)
-                    );
-                }
-            }
+            // Post like notification disabled per requirement
         }
 
         return response()->json([

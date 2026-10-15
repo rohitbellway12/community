@@ -114,25 +114,20 @@ class AdminPushNotificationController extends Controller
             'image'             => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:1024'], // 1MB
             'banner'            => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'], // 2MB
             'redirect_type'     => ['nullable', 'in:home,test,group,event,web_url'],
-            'redirect_test_id'  => ['nullable', 'integer'],
-            'redirect_group_id' => ['nullable', 'integer'],
-            'redirect_event_id' => ['nullable', 'integer'],
             'redirect_url'      => ['nullable', 'string', 'max:1024'],
             'send_type'         => ['required', 'in:now,schedule'],
-            'scheduled_at'      => ['required_if:send_type,schedule', 'nullable', 'date', 'after:now'],
+            'scheduled_at'      => ['required_if:send_type,schedule', 'nullable', 'date'],
+            'user_timezone'     => ['nullable', 'string'],
         ]);
 
-        // Resolve clean action_link for mobile app deep-linking
-        $actionLink = 'home';
+        // Resolve clean action_link for mobile app deep-linking (simple string format: home, test, group, event, or URL)
         $redirectType = $validated['redirect_type'] ?? 'home';
-        if ($redirectType === 'test' && !empty($validated['redirect_test_id'])) {
-            $actionLink = 'test:' . $validated['redirect_test_id'];
-        } elseif ($redirectType === 'group' && !empty($validated['redirect_group_id'])) {
-            $actionLink = 'group:' . $validated['redirect_group_id'];
-        } elseif ($redirectType === 'event' && !empty($validated['redirect_event_id'])) {
-            $actionLink = 'event:' . $validated['redirect_event_id'];
-        } elseif ($redirectType === 'web_url' && !empty($validated['redirect_url'])) {
+        if ($redirectType === 'web_url' && !empty($validated['redirect_url'])) {
             $actionLink = $validated['redirect_url'];
+        } elseif (in_array($redirectType, ['test', 'group', 'event'])) {
+            $actionLink = $redirectType;
+        } else {
+            $actionLink = 'home';
         }
 
         // Upload media files if provided
@@ -150,7 +145,23 @@ class AdminPushNotificationController extends Controller
 
         $isScheduled = ($validated['send_type'] === 'schedule');
         $status = $isScheduled ? 'scheduled' : 'draft';
-        $scheduledAt = $isScheduled ? $validated['scheduled_at'] : null;
+        $scheduledAt = null;
+
+        if ($isScheduled && !empty($validated['scheduled_at'])) {
+            try {
+                // Input is submitted in KST (Asia/Seoul)
+                $scheduledAt = \Carbon\Carbon::parse($validated['scheduled_at'], 'Asia/Seoul');
+            } catch (\Exception $e) {
+                $scheduledAt = \Carbon\Carbon::parse($validated['scheduled_at']);
+            }
+
+            // Ensure scheduled time is not in the past in KST (allow 1 minute grace margin)
+            if ($scheduledAt->isPast() && $scheduledAt->diffInMinutes(now('Asia/Seoul')) > 1) {
+                return back()
+                    ->withInput()
+                    ->withErrors(['scheduled_at' => 'The scheduled time must be in the future (KST). Please select a future date and time.']);
+            }
+        }
 
         $notification = PushNotification::create([
             'title'            => $validated['title'],

@@ -19,7 +19,8 @@ class PostLikedNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database'];
+        // Disabled: Post like notifications are turned off
+        return [];
     }
 
     public function toArray(object $notifiable): array

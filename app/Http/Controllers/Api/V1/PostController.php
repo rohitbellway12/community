@@ -435,15 +435,7 @@ class PostController extends Controller
             $post->likes()->create(['user_id' => $user->id]);
             $post->increment('likes_count');
             $liked = true;
-
-            if ((int) $post->user_id !== (int) $user->id) {
-                $post->loadMissing('user');
-                if ($post->user) {
-                    $post->user->notify(
-                        new \App\Notifications\PostLikedNotification($user, $post)
-                    );
-                }
-            }
+            // Post like notification disabled per requirement
         }
 
         $post->loadCount('likes');
