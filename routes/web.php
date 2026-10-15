@@ -440,6 +440,16 @@ Route::group([], function () {
              Route::delete('/events/{event}', [AdminEventController::class, 'destroy'])->name('events.destroy');
              Route::get('/events/{event}/leaderboard', [AdminEventController::class, 'leaderboard'])->name('events.leaderboard');
 
+            // Push Notifications Module (Broadcast campaigns, targeting, preview, logs)
+            Route::get('/push-notifications', [\App\Http\Controllers\Admin\AdminPushNotificationController::class, 'index'])->name('push-notifications.index');
+            Route::get('/push-notifications/create', [\App\Http\Controllers\Admin\AdminPushNotificationController::class, 'create'])->name('push-notifications.create');
+            Route::post('/push-notifications', [\App\Http\Controllers\Admin\AdminPushNotificationController::class, 'store'])->name('push-notifications.store');
+            Route::get('/push-notifications/recipient-count', [\App\Http\Controllers\Admin\AdminPushNotificationController::class, 'recipientCount'])->name('push-notifications.recipient-count');
+            Route::get('/push-notifications/search-users', [\App\Http\Controllers\Admin\AdminPushNotificationController::class, 'searchUsers'])->name('push-notifications.search-users');
+            Route::get('/push-notifications/{pushNotification}', [\App\Http\Controllers\Admin\AdminPushNotificationController::class, 'show'])->name('push-notifications.show');
+            Route::post('/push-notifications/{pushNotification}/resend', [\App\Http\Controllers\Admin\AdminPushNotificationController::class, 'resend'])->name('push-notifications.resend');
+            Route::delete('/push-notifications/{pushNotification}', [\App\Http\Controllers\Admin\AdminPushNotificationController::class, 'destroy'])->name('push-notifications.destroy');
+
             // Notification Templates (combined: push toggles + message editing + Firebase settings)
             Route::get('/notification-templates', [\App\Http\Controllers\Admin\AdminNotificationTemplateController::class, 'index'])->name('notification-templates.index');
             Route::post('/notification-templates/bulk-update', [\App\Http\Controllers\Admin\AdminNotificationTemplateController::class, 'updateAll'])->name('notification-templates.bulk-update');

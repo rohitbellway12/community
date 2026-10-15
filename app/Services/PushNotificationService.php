@@ -57,10 +57,25 @@ class PushNotificationService
         string $token,
         string $title,
         string $body,
-        array $data = []
+        array $data = [],
+        ?string $imageUrl = null
     ): bool {
+        $result = $this->sendToDeviceDetailed($token, $title, $body, $data, $imageUrl);
+        return $result['success'];
+    }
+
+    /**
+     * Send a push notification with detailed error/result reporting.
+     */
+    public function sendToDeviceDetailed(
+        string $token,
+        string $title,
+        string $body,
+        array $data = [],
+        ?string $imageUrl = null
+    ): array {
         if (!$this->isEnabled()) {
-            return false;
+            return ['success' => false, 'error' => 'Push notification service is disabled in settings.'];
         }
 
         $stringData = $this->stringifyData(array_merge([
@@ -68,10 +83,10 @@ class PushNotificationService
         ], $data));
 
         if ($this->credentialsJson()) {
-            return $this->sendViaV1($token, $title, $body, $stringData);
+            return $this->sendViaV1WithResult($token, $title, $body, $stringData, $imageUrl);
         }
 
-        return $this->sendViaLegacy($token, $title, $body, $stringData);
+        return $this->sendViaLegacyWithResult($token, $title, $body, $stringData, $imageUrl);
     }
 
     /**
@@ -81,11 +96,12 @@ class PushNotificationService
         array $tokens,
         string $title,
         string $body,
-        array $data = []
+        array $data = [],
+        ?string $imageUrl = null
     ): int {
         $sent = 0;
         foreach ($tokens as $token) {
-            if ($this->sendToDevice($token, $title, $body, $data)) {
+            if ($this->sendToDevice($token, $title, $body, $data, $imageUrl)) {
                 $sent++;
             }
         }
@@ -94,39 +110,60 @@ class PushNotificationService
     }
 
     /**
-     * FCM HTTP v1 API using OAuth2 service-account JWT.
+     * FCM HTTP v1 API using OAuth2 service-account JWT with result.
      */
-    protected function sendViaV1(string $token, string $title, string $body, array $data): bool
-    {
+    protected function sendViaV1WithResult(
+        string $token,
+        string $title,
+        string $body,
+        array $data,
+        ?string $imageUrl = null
+    ): array {
         $accessToken = $this->getAccessTokenV1();
 
         if (!$accessToken) {
             Log::warning('FCM push failed: could not obtain access token.');
-            return false;
+            return ['success' => false, 'error' => 'Could not obtain OAuth2 access token.'];
+        }
+
+        $notificationPayload = [
+            'title' => $title,
+            'body'  => $body,
+        ];
+        if (!empty($imageUrl)) {
+            $notificationPayload['image'] = $imageUrl;
+        }
+
+        $androidNotification = [
+            'icon'         => $this->config('default_icon', 'notification_icon'),
+            'color'        => $this->config('default_color', '#0D8ABC'),
+            'click_action' => $data['click_action'] ?? 'FLUTTER_NOTIFICATION_CLICK',
+        ];
+        if (!empty($imageUrl)) {
+            $androidNotification['image'] = $imageUrl;
+        }
+
+        $apnsPayload = [
+            'aps' => [
+                'badge'           => 1,
+                'sound'           => 'default',
+                'mutable-content' => 1,
+            ],
+        ];
+        if (!empty($imageUrl)) {
+            $apnsPayload['fcm_options'] = ['image' => $imageUrl];
         }
 
         $payload = [
             'message' => [
                 'token'        => $token,
-                'notification' => [
-                    'title' => $title,
-                    'body'  => $body,
+                'notification' => $notificationPayload,
+                'data'         => $data,
+                'android'      => [
+                    'notification' => $androidNotification,
                 ],
-                'data' => $data,
-                'android' => [
-                    'notification' => [
-                        'icon'  => $this->config('default_icon', 'notification_icon'),
-                        'color' => $this->config('default_color', '#0D8ABC'),
-                        'click_action' => $data['click_action'] ?? 'FLUTTER_NOTIFICATION_CLICK',
-                    ],
-                ],
-                'apns' => [
-                    'payload' => [
-                        'aps' => [
-                            'badge' => 1,
-                            'sound' => 'default',
-                        ],
-                    ],
+                'apns'         => [
+                    'payload' => $apnsPayload,
                 ],
             ],
         ];
@@ -139,24 +176,51 @@ class PushNotificationService
             ->post("https://fcm.googleapis.com/v1/projects/" . $this->projectId() . "/messages:send", $payload);
 
         if ($response->failed()) {
-            Log::warning('FCM v1 push failed: ' . $response->body());
+            $bodyStr = $response->body();
+            Log::warning('FCM v1 push failed: ' . $bodyStr);
+
+            // Deactivate invalid or unregistered token
+            if (str_contains($bodyStr, 'UNREGISTERED') || $response->status() === 404) {
+                \App\Models\DeviceToken::where('token', $token)->update(['is_active' => false]);
+            }
+
+            return ['success' => false, 'error' => $bodyStr];
         }
 
-        return $response->successful();
+        return ['success' => true, 'error' => null];
     }
 
     /**
-     * FCM legacy HTTP API (server key).
+     * Backward compatible wrapper for sendViaV1
      */
-    protected function sendViaLegacy(string $token, string $title, string $body, array $data): bool
+    protected function sendViaV1(string $token, string $title, string $body, array $data): bool
     {
+        $res = $this->sendViaV1WithResult($token, $title, $body, $data);
+        return $res['success'];
+    }
+
+    /**
+     * FCM legacy HTTP API with result.
+     */
+    protected function sendViaLegacyWithResult(
+        string $token,
+        string $title,
+        string $body,
+        array $data,
+        ?string $imageUrl = null
+    ): array {
+        $notification = [
+            'title' => $title,
+            'body'  => $body,
+        ];
+        if (!empty($imageUrl)) {
+            $notification['image'] = $imageUrl;
+        }
+
         $payload = [
             'to'           => $token,
-            'notification' => [
-                'title' => $title,
-                'body'  => $body,
-            ],
-            'data'   => $data,
+            'notification' => $notification,
+            'data'         => $data,
         ];
 
         $response = Http::withHeaders([
@@ -165,10 +229,30 @@ class PushNotificationService
         ])->post('https://fcm.googleapis.com/fcm/send', $payload);
 
         if ($response->failed()) {
-            Log::warning('FCM legacy push failed: ' . $response->body());
+            $err = $response->body();
+            Log::warning('FCM legacy push failed: ' . $err);
+            return ['success' => false, 'error' => $err];
         }
 
-        return $response->successful();
+        $result = $response->json();
+        if (isset($result['failure']) && $result['failure'] > 0) {
+            $errMsg = $result['results'][0]['error'] ?? 'Legacy FCM sending error';
+            if (in_array($errMsg, ['NotRegistered', 'InvalidRegistration'], true)) {
+                \App\Models\DeviceToken::where('token', $token)->update(['is_active' => false]);
+            }
+            return ['success' => false, 'error' => $errMsg];
+        }
+
+        return ['success' => true, 'error' => null];
+    }
+
+    /**
+     * FCM legacy HTTP API (server key).
+     */
+    protected function sendViaLegacy(string $token, string $title, string $body, array $data): bool
+    {
+        $res = $this->sendViaLegacyWithResult($token, $title, $body, $data);
+        return $res['success'];
     }
 
     /**

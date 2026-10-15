@@ -16,6 +16,61 @@
         [x-cloak] {
             display: none !important;
         }
+
+        /* Modern SweetAlert2 Styling */
+        .swal2-popup {
+            border-radius: 1.5rem !important;
+            padding: 1.75rem !important;
+            font-family: inherit !important;
+            border: 1px solid #f1f5f9 !important;
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25) !important;
+        }
+        .swal2-title {
+            font-size: 1.15rem !important;
+            font-weight: 800 !important;
+            color: #0f172a !important;
+            padding-top: 0.5rem !important;
+        }
+        .swal2-html-container {
+            font-size: 0.8125rem !important;
+            color: #475569 !important;
+            line-height: 1.5 !important;
+            margin: 0.75rem 0 0 !important;
+        }
+        .swal2-actions {
+            display: flex !important;
+            gap: 0.75rem !important;
+            margin-top: 1.5rem !important;
+            width: 100% !important;
+            justify-content: center !important;
+        }
+        .swal2-styled.swal2-confirm {
+            border-radius: 0.75rem !important;
+            font-weight: 800 !important;
+            font-size: 0.8125rem !important;
+            letter-spacing: 0.025em !important;
+            padding: 0.7rem 1.4rem !important;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12) !important;
+            transition: all 0.15s ease !important;
+            margin: 0 !important;
+            cursor: pointer !important;
+        }
+        .swal2-styled.swal2-cancel {
+            border-radius: 0.75rem !important;
+            font-weight: 700 !important;
+            font-size: 0.8125rem !important;
+            padding: 0.7rem 1.4rem !important;
+            background-color: #f1f5f9 !important;
+            color: #334155 !important;
+            border: 1px solid #e2e8f0 !important;
+            transition: all 0.15s ease !important;
+            margin: 0 !important;
+            cursor: pointer !important;
+        }
+        .swal2-styled.swal2-confirm:hover,
+        .swal2-styled.swal2-cancel:hover {
+            transform: translateY(-1px) !important;
+        }
     </style>
 </head>
 
@@ -836,6 +891,22 @@
 
                          </a>
 
+                         {{-- Push Notifications Module --}}
+                         <a
+                             href="{{ route('admin.push-notifications.index') }}"
+                             class="flex items-center space-x-3 px-3 py-2
+                                    rounded-lg text-sm
+                                    {{ request()->routeIs('admin.push-notifications*')
+                                         ? 'bg-reiac-slate text-reiac-gold font-semibold'
+                                         : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
+                          >
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                              </svg>
+                              <span>Push Notifications</span>
+                          </a>
+
                          {{-- Notification Templates (push toggle + message editing) --}}
                          <a
                              href="{{ route('admin.notification-templates.index') }}"
@@ -1279,7 +1350,7 @@
 
             Swal.fire({
                 title: `Delete ${itemType}?`,
-                text: message,
+                html: `<span class="text-xs text-slate-600">${message}</span>`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Yes, Delete',
@@ -1287,11 +1358,44 @@
                 confirmButtonColor: '#E11D48',
                 cancelButtonColor: '#64748B',
                 reverseButtons: true,
-                customClass: {
-                    popup: 'rounded-3xl p-6 shadow-2xl border border-slate-100',
-                    confirmButton: 'rounded-xl font-bold px-5 py-2.5 shadow-xs',
-                    cancelButton: 'rounded-xl font-bold px-5 py-2.5'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
                 }
+            });
+        }
+
+        function confirmPushResend(form, notificationTitle = '') {
+            if (!form) return;
+            Swal.fire({
+                title: 'Re-broadcast Push Notification?',
+                html: `Are you sure you want to re-broadcast ${notificationTitle ? `<b>"${notificationTitle}"</b>` : 'this notification'}?<br><span class="text-xs text-slate-500 mt-1 block">This will immediately deliver notifications to all registered device tokens.</span>`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Re-broadcast Now',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#F59E0B',
+                cancelButtonColor: '#64748B',
+                reverseButtons: true,
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        }
+
+        function confirmPushDelete(form, notificationTitle = '') {
+            if (!form) return;
+            Swal.fire({
+                title: 'Delete Push Notification?',
+                html: `Are you sure you want to delete ${notificationTitle ? `<b>"${notificationTitle}"</b>` : 'this notification'}?<br><span class="text-xs text-rose-500 mt-1 block font-medium">All associated delivery logs will be permanently deleted.</span>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Delete',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#E11D48',
+                cancelButtonColor: '#64748B',
+                reverseButtons: true,
             }).then((result) => {
                 if (result.isConfirmed) {
                     form.submit();
