@@ -252,12 +252,13 @@
         .seal-ref { font-size: 8px; font-family: monospace; color: #64748b; margin-top: 4px; }
 
         .foot {
-            border-top: 1px solid #f1f5f9;
+            border-top: 1px solid #cbd5e1;
             margin-top: 14px;
             padding-top: 8px;
             text-align: center;
-            font-size: 8px;
-            color: #94a3b8;
+            font-size: 8.5px;
+            font-weight: bold;
+            color: #334155;
         }
     </style>
 </head>
@@ -308,18 +309,18 @@
                         <div class="sub">This is to officially certify that</div>
 
                         @if($showPhoto)
-                            <table style="width:100%; margin: 8px 0;">
+                            <table style="margin: 8px auto; border-collapse: collapse;" align="center">
                                 <tr>
-                                    <td style="width:88px; vertical-align:middle;">
+                                    <td style="vertical-align:middle; padding-right: 14px;">
                                         @if($hasCandidatePhoto)
-                                            <img src="{{ $candidatePhotoPath }}" style="width:78px;height:98px;border-radius:8px;border:2px solid #cbd5e1;">
+                                            <img src="{{ $candidatePhotoPath }}" style="width:68px;height:84px;border-radius:6px;border:2px solid #cbd5e1;">
                                         @else
-                                            <div style="width:78px;height:98px;border-radius:8px;background:#f8fafc;border:2px dashed #cbd5e1;text-align:center;padding-top:36px;color:#94a3b8;font-size:9px;" class="med">PHOTO</div>
+                                            <div style="width:68px;height:84px;border-radius:6px;background:#f8fafc;border:2px dashed #cbd5e1;text-align:center;padding-top:30px;color:#94a3b8;font-size:8px;" class="med">PHOTO</div>
                                         @endif
                                     </td>
-                                    <td style="text-align:center; vertical-align:middle; padding-right:88px;">
-                                        <div class="name-line"><span class="name black">{{ $attempt->user->name ?? 'Candidate' }}</span></div>
-                                        <div class="cand-id med">Candidate ID / Username: <span style="font-family:monospace;color:#1e293b;">{{ $attempt->user->username ?? ('ID-'.$attempt->user_id) }}</span></div>
+                                    <td style="text-align:left; vertical-align:middle;">
+                                        <div class="name-line" style="text-align:left;"><span class="name black">{{ $attempt->user->name ?? 'Candidate' }}</span></div>
+                                        <div class="cand-id med" style="text-align:left; margin-top:3px;">Candidate ID / Username: <span style="font-family:monospace;color:#1e293b;">{{ $attempt->user->username ?? ('ID-'.$attempt->user_id) }}</span></div>
                                     </td>
                                 </tr>
                             </table>
@@ -394,7 +395,7 @@
                         </tr>
                     </table>
 
-                    <div class="foot">This is an official system-verified electronic certificate issued by {{ $agencyName }}.</div>
+                    <div class="foot">This certificate is issued by {{ $agencyName }} for internal testing purposes only and is not an official score or certificate.</div>
                 </div>
             </td>
         </tr>

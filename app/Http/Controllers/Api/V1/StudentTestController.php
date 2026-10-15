@@ -759,7 +759,9 @@ class StudentTestController extends Controller
     protected function handleCandidatePhoto(Request $request): ?string
     {
         if ($request->hasFile('candidate_photo') && $request->file('candidate_photo')->isValid()) {
-            return $request->file('candidate_photo')->store('test-attempts/photos', 'public');
+            $path = $request->file('candidate_photo')->store('test-attempts/photos', 'public');
+            $this->autoCorrectOrientation(storage_path('app/public/' . $path));
+            return $path;
         }
 
         $base64 = $request->input('candidate_photo_base64') ?? $request->input('candidate_photo');
@@ -770,12 +772,48 @@ class StudentTestController extends Controller
                 if ($data !== false) {
                     $filename = 'test-attempts/photos/' . uniqid('photo_') . '_' . time() . '.jpg';
                     Storage::disk('public')->put($filename, $data);
+                    $this->autoCorrectOrientation(storage_path('app/public/' . $filename));
                     return $filename;
                 }
             }
         }
 
         return null;
+    }
+
+    protected function autoCorrectOrientation(string $filePath): void
+    {
+        if (!file_exists($filePath) || !function_exists('exif_read_data') || !function_exists('imagerotate')) {
+            return;
+        }
+
+        try {
+            $exif = @exif_read_data($filePath);
+            if (!empty($exif['Orientation'])) {
+                $image = @imagecreatefromstring(file_get_contents($filePath));
+                if (!$image) return;
+
+                switch ((int) $exif['Orientation']) {
+                    case 3:
+                        $image = imagerotate($image, 180, 0);
+                        break;
+                    case 6:
+                        $image = imagerotate($image, -90, 0);
+                        break;
+                    case 8:
+                        $image = imagerotate($image, 90, 0);
+                        break;
+                    default:
+                        imagedestroy($image);
+                        return;
+                }
+
+                imagejpeg($image, $filePath, 90);
+                imagedestroy($image);
+            }
+        } catch (\Throwable $e) {
+            // Ignore if orientation correction fails
+        }
     }
 
     /**

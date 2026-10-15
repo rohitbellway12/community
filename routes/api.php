@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\StudentTestController;
 use App\Http\Controllers\Api\V1\TagController;
 use App\Http\Controllers\Api\V1\UserProfileController;
+use App\Http\Controllers\Api\V1\VisaCalculatorController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -37,13 +38,17 @@ Route::prefix('v1')->group(function () {
     // PUBLIC APIs (No Auth Required)
     // ============================================================
 
-    // Countries, Categories, Tags, Banners, Guidelines
+    // Countries, Categories, Tags, Banners, Guidelines, Visa Calculator
     Route::get('countries', [CountryController::class, 'index'])->name('api.v1.countries.index');
     Route::get('categories', [CategoryController::class, 'index'])->name('api.v1.categories.index');
     Route::get('tags', [TagController::class, 'index'])->name('api.v1.tags.index');
     Route::get('banners', [BannerController::class, 'index'])->name('api.v1.banners.index');
     Route::get('guidelines', [GuidelineController::class, 'index'])->name('api.v1.guidelines.index');
     Route::get('leaderboard', [UserProfileController::class, 'topContributors'])->name('api.v1.leaderboard');
+
+    // F-2-7 Visa Points Calculator
+    Route::get('visa-calculator/options', [VisaCalculatorController::class, 'options'])->name('api.v1.visa-calculator.options');
+    Route::post('visa-calculator/calculate', [VisaCalculatorController::class, 'calculate'])->name('api.v1.visa-calculator.calculate');
 
     // Events (Public)
     Route::get('active-event', [EventController::class, 'activeEvent'])->name('api.v1.active-event');
