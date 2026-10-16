@@ -493,6 +493,14 @@ Route::group([], function () {
             Route::get('documents/{document}/download', [\App\Http\Controllers\Admin\AdminDocumentController::class, 'download'])->name('documents.download');
             Route::delete('documents/{document}/files/{file}', [\App\Http\Controllers\Admin\AdminDocumentController::class, 'deleteFile'])->name('documents.files.destroy');
             Route::resource('documents', \App\Http\Controllers\Admin\AdminDocumentController::class);
+
+            // Services & WhatsApp Integration
+            Route::patch('/services/{service}/toggle-publish', [\App\Http\Controllers\Admin\AdminServiceController::class, 'togglePublish'])->name('services.toggle-publish');
+            Route::post('/services/reorder', [\App\Http\Controllers\Admin\AdminServiceController::class, 'reorder'])->name('services.reorder');
+            Route::resource('services', \App\Http\Controllers\Admin\AdminServiceController::class);
+
+            // Service Categories
+            Route::resource('service-categories', \App\Http\Controllers\Admin\AdminServiceCategoryController::class)->except(['create', 'show', 'edit']);
         });
 
     Route::middleware('auth')->group(function () {

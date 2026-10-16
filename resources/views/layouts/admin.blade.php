@@ -818,6 +818,96 @@
                 </div>
 
                 {{-- ====================================================
+                     SERVICES & WHATSAPP INTEGRATION
+                ===================================================== --}}
+                @php
+                    $isServicesMenuOpen = request()->is('*admin/services*') || request()->is('*admin/service-categories*');
+                    $sidebarServicesCount = \App\Models\Service::count();
+                    $sidebarCategoriesCount = \App\Models\ServiceCategory::count();
+                @endphp
+                <div x-data="{ open: {{ $isServicesMenuOpen ? 'true' : 'true' }} }">
+                    <button
+                        @click="open = !open"
+                        type="button"
+                        class="w-full flex items-center justify-between px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors
+                               {{ $isServicesMenuOpen ? 'text-reiac-gold' : 'text-slate-400 hover:text-white' }}"
+                    >
+                        <span class="flex items-center space-x-2">
+                            <svg class="w-3.5 h-3.5 {{ $isServicesMenuOpen ? 'text-reiac-gold' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            <span>Services & WhatsApp</span>
+                        </span>
+
+                        <svg
+                            class="w-3.5 h-3.5 transform transition-transform duration-200"
+                            :class="open ? 'rotate-90' : ''"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+
+                    <div x-show="open" x-collapse class="mt-2 space-y-1 pl-2">
+                        {{-- All Services --}}
+                        <a
+                            href="{{ route('admin.services.index') }}"
+                            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors group
+                                   {{ request()->routeIs('admin.services.index') || (request()->routeIs('admin.services*') && !request()->routeIs('admin.services.create'))
+                                        ? 'bg-reiac-slate text-reiac-gold font-bold shadow-xs'
+                                        : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
+                        >
+                            <span class="flex items-center space-x-2.5">
+                                <svg class="w-4 h-4 {{ request()->routeIs('admin.services.index') ? 'text-reiac-gold' : 'text-emerald-400 group-hover:text-white' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                                </svg>
+                                <span>All Services</span>
+                            </span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-slate-300">
+                                {{ $sidebarServicesCount }}
+                            </span>
+                        </a>
+
+                        {{-- Add Service --}}
+                        <a
+                            href="{{ route('admin.services.create') }}"
+                            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors group
+                                   {{ request()->routeIs('admin.services.create')
+                                        ? 'bg-reiac-slate text-reiac-gold font-bold shadow-xs'
+                                        : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
+                        >
+                            <span class="flex items-center space-x-2.5">
+                                <svg class="w-4 h-4 {{ request()->routeIs('admin.services.create') ? 'text-reiac-gold' : 'text-amber-400 group-hover:text-white' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                                <span>Add Service</span>
+                            </span>
+                        </a>
+
+                        {{-- Service Categories --}}
+                        <a
+                            href="{{ route('admin.service-categories.index') }}"
+                            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors group
+                                   {{ request()->routeIs('admin.service-categories*')
+                                        ? 'bg-reiac-slate text-reiac-gold font-bold shadow-xs'
+                                        : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
+                        >
+                            <span class="flex items-center space-x-2.5">
+                                <svg class="w-4 h-4 {{ request()->routeIs('admin.service-categories*') ? 'text-reiac-gold' : 'text-cyan-400 group-hover:text-white' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                </svg>
+                                <span>Categories</span>
+                            </span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-slate-300">
+                                {{ $sidebarCategoriesCount }}
+                            </span>
+                        </a>
+                    </div>
+                </div>
+
+                {{-- ====================================================
                      DOCUMENTS & RESOURCES
                 ===================================================== --}}
                 @php
