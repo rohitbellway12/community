@@ -33,12 +33,22 @@ class AdminServiceController extends Controller
             $query->where('service_category_id', $request->category_id);
         }
 
-        // Filter by publication status
+        // Filter by status (active, hold, inactive)
         if ($request->filled('status') && $request->status !== 'all') {
-            if ($request->status === 'published') {
-                $query->where('is_published', true);
-            } elseif ($request->status === 'draft') {
-                $query->where('is_published', false);
+            if ($request->status === 'active' || $request->status === 'published') {
+                $query->where(function ($q) {
+                    $q->where('status', 'active')->orWhere(function ($sub) {
+                        $sub->whereNull('status')->where('is_published', true);
+                    });
+                });
+            } elseif ($request->status === 'hold' || $request->status === 'on_hold') {
+                $query->where('status', 'hold');
+            } elseif ($request->status === 'inactive' || $request->status === 'draft') {
+                $query->where(function ($q) {
+                    $q->where('status', 'inactive')->orWhere(function ($sub) {
+                        $sub->whereNull('status')->where('is_published', false);
+                    });
+                });
             }
         }
 
@@ -50,8 +60,19 @@ class AdminServiceController extends Controller
 
         // Metrics
         $totalServices = Service::count();
-        $publishedCount = Service::where('is_published', true)->count();
-        $draftCount = Service::where('is_published', false)->count();
+        $activeCount = Service::where(function ($q) {
+            $q->where('status', 'active')->orWhere(function ($sub) {
+                $sub->whereNull('status')->where('is_published', true);
+            });
+        })->count();
+        $holdCount = Service::where('status', 'hold')->count();
+        $inactiveCount = Service::where(function ($q) {
+            $q->where('status', 'inactive')->orWhere(function ($sub) {
+                $sub->whereNull('status')->where('is_published', false);
+            });
+        })->count();
+        $publishedCount = $activeCount;
+        $draftCount = $inactiveCount;
         $totalCategories = ServiceCategory::count();
         $totalClicks = Service::sum('click_count');
 
@@ -61,6 +82,9 @@ class AdminServiceController extends Controller
             'services',
             'categories',
             'totalServices',
+            'activeCount',
+            'holdCount',
+            'inactiveCount',
             'publishedCount',
             'draftCount',
             'totalCategories',
@@ -94,6 +118,7 @@ class AdminServiceController extends Controller
             'phone' => 'nullable|string|max:30',
             'email' => 'nullable|email|max:150',
             'sort_order' => 'nullable|integer',
+            'status' => 'nullable|in:active,hold,inactive',
             'is_published' => 'nullable|boolean',
         ]);
 
@@ -117,6 +142,10 @@ class AdminServiceController extends Controller
             $whatsappMessage = "Hello REIAC Consultancy, I am interested in {$validated['title']}. Please guide me with more information.";
         }
 
+        // Determine status
+        $status = $validated['status'] ?? ($request->has('is_published') && $request->is_published ? 'active' : 'inactive');
+        $isPublished = ($status === 'active');
+
         Service::create([
             'title' => $validated['title'],
             'slug' => $slug,
@@ -129,7 +158,8 @@ class AdminServiceController extends Controller
             'phone' => $validated['phone'] ?? null,
             'email' => $validated['email'] ?? null,
             'sort_order' => $validated['sort_order'] ?? 0,
-            'is_published' => $request->has('is_published') ? (bool)$request->is_published : true,
+            'status' => $status,
+            'is_published' => $isPublished,
         ]);
 
         return redirect()->route('admin.services.index')
@@ -162,6 +192,7 @@ class AdminServiceController extends Controller
             'phone' => 'nullable|string|max:30',
             'email' => 'nullable|email|max:150',
             'sort_order' => 'nullable|integer',
+            'status' => 'nullable|in:active,hold,inactive',
             'is_published' => 'nullable|boolean',
         ]);
 
@@ -193,6 +224,10 @@ class AdminServiceController extends Controller
             $whatsappMessage = "Hello REIAC Consultancy, I am interested in {$validated['title']}. Please guide me with more information.";
         }
 
+        // Determine status
+        $status = $validated['status'] ?? ($request->has('is_published') && $request->is_published ? 'active' : 'inactive');
+        $isPublished = ($status === 'active');
+
         $service->update([
             'title' => $validated['title'],
             'slug' => $slug,
@@ -205,7 +240,8 @@ class AdminServiceController extends Controller
             'phone' => $validated['phone'] ?? null,
             'email' => $validated['email'] ?? null,
             'sort_order' => $validated['sort_order'] ?? 0,
-            'is_published' => $request->has('is_published') ? (bool)$request->is_published : false,
+            'status' => $status,
+            'is_published' => $isPublished,
         ]);
 
         return redirect()->route('admin.services.index')
@@ -228,24 +264,61 @@ class AdminServiceController extends Controller
     }
 
     /**
-     * Toggle publish/unpublish status
+     * Update service status (active, hold, inactive) directly
      */
-    public function togglePublish(Request $request, Service $service)
+    public function updateStatus(Request $request, Service $service)
     {
-        $service->is_published = !$service->is_published;
+        $validated = $request->validate([
+            'status' => 'required|in:active,hold,inactive',
+        ]);
+
+        $service->status = $validated['status'];
+        $service->is_published = ($validated['status'] === 'active');
         $service->save();
 
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
+                'status' => $service->status,
+                'status_label' => $service->status_label,
                 'is_published' => $service->is_published,
-                'message' => $service->is_published ? 'Service published successfully.' : 'Service unpublished.',
+                'message' => "Service status updated to {$service->status_label} successfully.",
             ]);
         }
 
         return redirect()->back()->with(
             'success',
-            $service->is_published ? 'Service published successfully.' : 'Service unpublished.'
+            "Service status updated to {$service->status_label} successfully."
+        );
+    }
+
+    /**
+     * Toggle publish/unpublish status
+     */
+    public function togglePublish(Request $request, Service $service)
+    {
+        if ($service->status === 'active') {
+            $service->status = 'inactive';
+            $service->is_published = false;
+        } else {
+            $service->status = 'active';
+            $service->is_published = true;
+        }
+        $service->save();
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'status' => $service->status,
+                'status_label' => $service->status_label,
+                'is_published' => $service->is_published,
+                'message' => $service->status === 'active' ? 'Service activated & published.' : 'Service deactivated.',
+            ]);
+        }
+
+        return redirect()->back()->with(
+            'success',
+            $service->status === 'active' ? 'Service activated & published.' : 'Service deactivated.'
         );
     }
 

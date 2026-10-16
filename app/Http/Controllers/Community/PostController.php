@@ -338,6 +338,12 @@ public function index(Request $request)
         ->filter()
         ->values();
 
+    $featuredServices = \App\Models\Service::published()
+        ->with('category')
+        ->ordered()
+        ->take(8)
+        ->get();
+
     return view('community.index', compact(
         'posts',
         'categories',
@@ -358,7 +364,8 @@ public function index(Request $request)
         'documents',
         'documentsTotal',
         'documentCategories',
-        'activeTab'
+        'activeTab',
+        'featuredServices'
     ));
 }
 

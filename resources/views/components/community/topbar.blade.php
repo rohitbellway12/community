@@ -303,36 +303,46 @@
                             x-transition:leave="transition ease-in duration-100"
                             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
                             x-transition:leave-end="opacity-0 -translate-y-2 scale-95"
-                            class="absolute left-1/2 -translate-x-1/2 top-full mt-6 w-[230px] bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50"
+                        <div
+                            x-show="servicesOpen"
+                            x-cloak
+                            x-transition:enter="transition ease-out duration-150"
+                            x-transition:enter-start="opacity-0 -translate-y-2 scale-95"
+                            x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                            x-transition:leave="transition ease-in duration-100"
+                            x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                            x-transition:leave-end="opacity-0 -translate-y-2 scale-95"
+                            class="absolute left-1/2 -translate-x-1/2 top-full mt-6 w-[240px] bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50 py-1"
                             style="display: none;"
                         >
-                            <a
-                                href="https://www.reiaconsultancy.com/services/university-admissions"
-                                class="block px-5 py-4 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-amber-500 transition"
-                            >
-                                University Admissions
-                            </a>
+                            @php
+                                $topbarServiceCategories = \App\Models\ServiceCategory::where('is_active', true)->ordered()->take(5)->get();
+                            @endphp
+                            @forelse($topbarServiceCategories as $tsc)
+                                <a
+                                    href="{{ route('services.index', ['category' => $tsc->slug]) }}"
+                                    class="block px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-amber-600 transition"
+                                >
+                                    {{ $tsc->name }}
+                                </a>
+                            @empty
+                                <a
+                                    href="{{ route('services.index') }}"
+                                    class="block px-4 py-2.5 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-amber-500 transition"
+                                >
+                                    Consultancy Services
+                                </a>
+                            @endforelse
 
-                            <a
-                                href="https://www.reiaconsultancy.com/services/visa-documentation"
-                                class="block px-5 py-4 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-amber-500 transition"
-                            >
-                                Visa & Documentation
-                            </a>
-
-                            <a
-                                href="https://www.reiaconsultancy.com/services/institutional-partnerships"
-                                class="block px-5 py-4 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-amber-500 transition"
-                            >
-                                Institutional Partnerships
-                            </a>
-
-                            <a
-                                href="https://www.reiaconsultancy.com/services/career-counseling"
-                                class="block px-5 py-4 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-amber-500 transition"
-                            >
-                                Career Counseling
-                            </a>
+                            <div class="border-t border-slate-100 mt-1 pt-1">
+                                <a
+                                    href="{{ route('services.index') }}"
+                                    class="block px-4 py-2 text-xs font-black text-emerald-700 hover:bg-emerald-50 transition flex items-center justify-between"
+                                >
+                                    <span>Browse All Services</span>
+                                    <span>&rarr;</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
 

@@ -41,7 +41,7 @@ class AppServiceProvider extends ServiceProvider
             return null;
         });
 
-        Event::listen(NotificationSending::class, SendPushNotification::class);
+        // Event::listen(NotificationSending::class, SendPushNotification::class);
 
         View::composer('components.community.sidebar', function ($view) {
         $view->with('categories', Category::all());

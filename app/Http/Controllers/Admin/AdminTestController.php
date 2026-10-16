@@ -130,6 +130,7 @@ class AdminTestController extends Controller
                     ->orWhere('role', '!=', \App\Enums\UserRole::ADMIN->value)
                     ->get();
             }
+            $students = $students->unique('id');
             if ($students->isNotEmpty()) {
                 Notification::send($students, new NewTestNotification($test));
             }
@@ -225,6 +226,7 @@ class AdminTestController extends Controller
             } else {
                 $students = User::where('role', '!=', \App\Enums\UserRole::ADMIN->value)->get();
             }
+            $students = $students->unique('id');
             if ($students->isNotEmpty()) {
                 Notification::send($students, new NewTestNotification($test));
             }

@@ -31,6 +31,8 @@ class SendPushNotification
         $tokens = $notifiable->deviceTokens()
             ->active()
             ->pluck('token')
+            ->unique()
+            ->values()
             ->all();
 
         if (empty($tokens)) {

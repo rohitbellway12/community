@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PostController;
 use App\Http\Controllers\Api\V1\ReferralController;
 use App\Http\Controllers\Api\V1\ReportController;
+use App\Http\Controllers\Api\V1\ServiceController;
 use App\Http\Controllers\Api\V1\StudentTestController;
 use App\Http\Controllers\Api\V1\TagController;
 use App\Http\Controllers\Api\V1\UserProfileController;
@@ -81,6 +82,12 @@ Route::prefix('v1')->group(function () {
     Route::get('documents', [DocumentController::class, 'index'])->name('api.v1.documents.index');
     Route::get('documents/{document}', [DocumentController::class, 'show'])->whereNumber('document')->name('api.v1.documents.show');
     Route::get('documents/{document}/download', [DocumentController::class, 'download'])->whereNumber('document')->name('api.v1.documents.download');
+
+    // Consultancy Services (Mobile App)
+    Route::get('services', [ServiceController::class, 'index'])->name('api.v1.services.index');
+    Route::get('services/{id_or_slug}', [ServiceController::class, 'show'])->name('api.v1.services.show');
+    Route::post('services/{id_or_slug}/inquiry', [ServiceController::class, 'recordInquiry'])->name('api.v1.services.inquiry');
+    Route::get('service-categories', [ServiceController::class, 'categories'])->name('api.v1.service-categories.index');
 
     // ============================================================
     // AUTHENTICATION

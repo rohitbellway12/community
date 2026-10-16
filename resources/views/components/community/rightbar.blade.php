@@ -257,6 +257,42 @@
 
     </div>
 
+    {{-- EXPERT SERVICES WIDGET --}}
+    @php
+        $sidebarServices = \App\Models\Service::published()->with('category')->ordered()->take(3)->get();
+    @endphp
+    @if($sidebarServices->isNotEmpty())
+        <div class="bg-gradient-to-br from-[#0c1b33] via-slate-900 to-slate-950 text-white p-5 rounded-2xl shadow-[0_4px_20px_-4px_rgba(15,23,42,0.12)] border border-slate-800">
+            <div class="flex items-center justify-between mb-2.5">
+                <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">💼</span>
+                    <h3 class="font-bold text-white text-sm tracking-tight">Need Consultation?</h3>
+                </div>
+                <a href="{{ route('services.index') }}" class="text-[11px] font-bold text-amber-400 hover:text-amber-300">View All</a>
+            </div>
+            <p class="text-[11px] text-slate-300 mb-3">Get direct guidance for visa, admissions, or test prep via WhatsApp.</p>
+            <div class="space-y-2">
+                @foreach($sidebarServices as $sbService)
+                    <div class="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-amber-400/40 transition">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="min-w-0 flex-1">
+                                <span class="text-[9px] font-black uppercase tracking-wider text-amber-400 block truncate">{{ $sbService->category?->name ?? 'Consultancy' }}</span>
+                                <a href="{{ route('services.show', $sbService->slug) }}" class="text-xs font-bold text-slate-100 hover:text-amber-300 truncate block mt-0.5">
+                                    {{ $sbService->title }}
+                                </a>
+                            </div>
+                            @if(!empty($sbService->whatsapp_number))
+                                <a href="{{ route('services.inquiry', $sbService) }}" target="_blank" class="p-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shrink-0 transition shadow-2xs" title="Chat on WhatsApp">
+                                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.698c.969.587 1.771.884 2.796.885 3.183 0 5.767-2.587 5.768-5.766.001-3.181-2.583-5.772-5.768-5.772zm3.387 8.163c-.14.394-.807.747-1.118.777-.312.03-.709.137-2.317-.525-1.936-.795-3.189-2.772-3.285-2.9-.096-.129-.785-1.045-.785-1.993 0-.948.497-1.414.673-1.608.176-.194.384-.243.513-.243.129 0 .258.002.37.008.118.006.276-.045.431.328.156.373.535 1.306.582 1.402.047.096.079.208.016.333-.062.125-.094.204-.187.312-.093.109-.197.243-.281.327-.094.093-.192.195-.082.383.11.188.487.804 1.047 1.302.721.642 1.329.841 1.517.935.188.094.298.082.408-.045.11-.127.472-.549.598-.737.126-.188.252-.157.424-.094.172.063 1.09.514 1.277.608.187.094.312.141.359.22.047.078.047.452-.093.846z"/></svg>
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     {{-- Community Guidelines Card --}}
     @php
         $sidebarGuidelines = \App\Models\CommunityGuideline::where('is_active', true)

@@ -78,35 +78,35 @@
                 </span>
             </div>
             <div class="text-2xl font-black text-slate-800 mt-2">{{ $totalServices }}</div>
-            <div class="text-[11px] text-slate-400 mt-0.5">{{ $publishedCount }} active &bull; {{ $draftCount }} drafts</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">{{ $totalCategories }} categories catalog</div>
         </div>
 
-        {{-- Categories --}}
+        {{-- Active / Published --}}
         <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-xs">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Categories</span>
-                <span class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-sm">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                    </svg>
-                </span>
-            </div>
-            <div class="text-2xl font-black text-slate-800 mt-2">{{ $totalCategories }}</div>
-            <div class="text-[11px] text-slate-400 mt-0.5">Organized groups</div>
-        </div>
-
-        {{-- Published Listings --}}
-        <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-xs">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Published</span>
+                <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider">Active &amp; Live</span>
                 <span class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </span>
             </div>
-            <div class="text-2xl font-black text-emerald-600 mt-2">{{ $publishedCount }}</div>
-            <div class="text-[11px] text-slate-400 mt-0.5">Visible to users</div>
+            <div class="text-2xl font-black text-emerald-600 mt-2">{{ $activeCount }}</div>
+            <div class="text-[11px] text-emerald-700/80 mt-0.5">Live on app &amp; web</div>
+        </div>
+
+        {{-- Inactive / Drafts --}}
+        <div class="bg-white border border-slate-100 rounded-2xl p-4 shadow-xs">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Inactive</span>
+                <span class="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                </span>
+            </div>
+            <div class="text-2xl font-black text-slate-600 mt-2">{{ $inactiveCount }}</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">Draft or deactivated</div>
         </div>
 
         {{-- WhatsApp Inquiries --}}
@@ -161,15 +161,15 @@
                 </div>
 
                 {{-- Status Filter --}}
-                <div class="w-full sm:w-40">
+                <div class="w-full sm:w-44">
                     <select
                         name="status"
                         onchange="this.form.submit()"
-                        class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-reiac-gold/40 focus:border-reiac-gold outline-hidden text-slate-700 bg-white"
+                        class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:ring-2 focus:ring-reiac-gold/40 focus:border-reiac-gold outline-hidden text-slate-700 bg-white font-semibold"
                     >
                         <option value="all">All Statuses</option>
-                        <option value="published" {{ request('status') === 'published' ? 'selected' : '' }}>Published Only</option>
-                        <option value="draft" {{ request('status') === 'draft' ? 'selected' : '' }}>Drafts Only</option>
+                        <option value="active" {{ (request('status') === 'active' || request('status') === 'published') ? 'selected' : '' }}>🟢 Active Only</option>
+                        <option value="inactive" {{ (request('status') === 'inactive' || request('status') === 'draft') ? 'selected' : '' }}>⚫ Inactive Only</option>
                     </select>
                 </div>
             </div>
@@ -312,20 +312,26 @@
                                 </div>
                             </td>
 
-                            {{-- Status Toggle --}}
+                            {{-- Status Toggle Switch (Active / Inactive) --}}
                             <td class="py-4 px-4 text-center">
-                                <form method="POST" action="{{ route('admin.services.toggle-publish', $service) }}">
+                                @php
+                                    $isActive = ($service->status === 'active' || (!$service->status && $service->is_published));
+                                @endphp
+                                <form method="POST" action="{{ route('admin.services.toggle-publish', $service) }}" class="inline-flex flex-col items-center gap-1">
                                     @csrf
                                     @method('PATCH')
                                     <button
                                         type="submit"
-                                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black transition cursor-pointer active:scale-95
-                                            {{ $service->is_published ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}"
-                                        title="Click to toggle publish status"
+                                        role="switch"
+                                        aria-checked="{{ $isActive ? 'true' : 'false' }}"
+                                        class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus:ring-2 focus:ring-emerald-500/30 {{ $isActive ? 'bg-emerald-500' : 'bg-slate-300' }}"
+                                        title="{{ $isActive ? 'Currently Active - Click to Deactivate' : 'Currently Inactive - Click to Activate' }}"
                                     >
-                                        <span class="w-1.5 h-1.5 rounded-full {{ $service->is_published ? 'bg-emerald-500' : 'bg-slate-400' }}"></span>
-                                        <span>{{ $service->is_published ? 'Published' : 'Draft' }}</span>
+                                        <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out {{ $isActive ? 'translate-x-5' : 'translate-x-0' }}"></span>
                                     </button>
+                                    <span class="text-[10px] font-black tracking-tight {{ $isActive ? 'text-emerald-700' : 'text-slate-400' }}">
+                                        {{ $isActive ? 'Active' : 'Inactive' }}
+                                    </span>
                                 </form>
                             </td>
 

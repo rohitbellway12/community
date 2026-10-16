@@ -87,6 +87,11 @@ Route::group([], function () {
         return redirect('/tests/student/' . ($path ?? ''), 301);
     })->where('path', '.*');
 
+    // Public Consultancy Services
+    Route::get('/services', [\App\Http\Controllers\PublicServiceController::class, 'index'])->name('services.index');
+    Route::get('/services/{slug}', [\App\Http\Controllers\PublicServiceController::class, 'show'])->name('services.show');
+    Route::match(['GET', 'POST'], '/services/{service}/inquiry', [\App\Http\Controllers\PublicServiceController::class, 'inquiry'])->name('services.inquiry');
+
     Route::get('/', [PostController::class, 'index'])
         ->name('community.index');
 
@@ -495,6 +500,7 @@ Route::group([], function () {
             Route::resource('documents', \App\Http\Controllers\Admin\AdminDocumentController::class);
 
             // Services & WhatsApp Integration
+            Route::patch('/services/{service}/status', [\App\Http\Controllers\Admin\AdminServiceController::class, 'updateStatus'])->name('services.update-status');
             Route::patch('/services/{service}/toggle-publish', [\App\Http\Controllers\Admin\AdminServiceController::class, 'togglePublish'])->name('services.toggle-publish');
             Route::post('/services/reorder', [\App\Http\Controllers\Admin\AdminServiceController::class, 'reorder'])->name('services.reorder');
             Route::resource('services', \App\Http\Controllers\Admin\AdminServiceController::class);

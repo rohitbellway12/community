@@ -25,6 +25,7 @@ class Service extends Model
         'phone',
         'email',
         'sort_order',
+        'status',
         'is_published',
         'click_count',
     ];
@@ -38,6 +39,7 @@ class Service extends Model
     protected $appends = [
         'image_url',
         'whatsapp_url',
+        'status_label',
     ];
 
     /**
@@ -51,7 +53,41 @@ class Service extends Model
             if (empty($service->slug)) {
                 $service->slug = Str::slug($service->title);
             }
+            if (empty($service->status)) {
+                $service->status = 'active';
+            }
         });
+    }
+
+    /**
+     * Status Helpers
+     */
+    public function isActive(): bool
+    {
+        return ($this->status ?? 'active') === 'active';
+    }
+
+    public function isInactive(): bool
+    {
+        return $this->status === 'inactive';
+    }
+
+    public function isHold(): bool
+    {
+        return $this->status === 'hold';
+    }
+
+    /**
+     * Status Label Accessor
+     */
+    public function getStatusLabelAttribute(): string
+    {
+        return match($this->status) {
+            'active' => 'Active',
+            'hold' => 'On Hold',
+            'inactive' => 'Inactive',
+            default => 'Active',
+        };
     }
 
     /**
@@ -63,11 +99,40 @@ class Service extends Model
     }
 
     /**
-     * Scope for published services
+     * Scope for published / active services
      */
     public function scopePublished($query)
     {
-        return $query->where('is_published', true);
+        return $query->where(function ($q) {
+            $q->where('status', 'active')
+              ->orWhere(function ($sub) {
+                  $sub->whereNull('status')->where('is_published', true);
+              });
+        });
+    }
+
+    /**
+     * Scope active
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    /**
+     * Scope inactive
+     */
+    public function scopeInactive($query)
+    {
+        return $query->where('status', 'inactive');
+    }
+
+    /**
+     * Scope hold
+     */
+    public function scopeHold($query)
+    {
+        return $query->where('status', 'hold');
     }
 
     /**
