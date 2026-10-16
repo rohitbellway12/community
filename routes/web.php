@@ -507,6 +507,14 @@ Route::group([], function () {
 
             // Service Categories
             Route::resource('service-categories', \App\Http\Controllers\Admin\AdminServiceCategoryController::class)->except(['create', 'show', 'edit']);
+
+            // Website & System Settings
+            Route::get('/website-settings', [\App\Http\Controllers\Admin\AdminAnalyticsSettingController::class, 'edit'])->name('website-settings.index');
+            Route::put('/website-settings', [\App\Http\Controllers\Admin\AdminAnalyticsSettingController::class, 'update'])->name('website-settings.update');
+
+            // Aliases / Legacy redirects
+            Route::get('/analytics-settings', fn () => redirect()->route('admin.website-settings.index'))->name('analytics-settings.edit');
+            Route::put('/analytics-settings', fn () => redirect()->route('admin.website-settings.index'))->name('analytics-settings.update');
         });
 
     Route::middleware('auth')->group(function () {

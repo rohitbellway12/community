@@ -47,7 +47,7 @@ class AdminTestController extends Controller
     {
         $levels = TestLevel::where('status', 'active')->orderBy('name')->get();
         $questions = Question::where('status', 'active')->orderBy('id')->get();
-        $groups = \App\Models\Group::orderBy('name')->get(['id', 'name']);
+        $groups = \App\Models\Group::withCount('users')->orderBy('name')->get();
         $students = User::where('role', '!=', \App\Enums\UserRole::ADMIN->value)
             ->orderBy('name')
             ->get(['id', 'name', 'email']);
@@ -74,8 +74,12 @@ class AdminTestController extends Controller
             'tab_switch_limit' => 'required|integer|min:0',
             'status' => 'required|in:draft,scheduled,published,archived',
             'target_type' => 'required|in:all,group,user',
-            'target_group_id' => 'nullable|required_if:target_type,group|exists:groups,id',
-            'target_user_id' => 'nullable|required_if:target_type,user|exists:users,id',
+            'target_group_id' => 'nullable|exists:groups,id',
+            'target_group_ids' => 'nullable|array',
+            'target_group_ids.*' => 'integer|exists:groups,id',
+            'target_user_id' => 'nullable|exists:users,id',
+            'target_user_ids' => 'nullable|array',
+            'target_user_ids.*' => 'integer|exists:users,id',
             'require_camera_photo' => 'nullable|boolean',
             'agency_name' => 'nullable|string|max:255',
             'controller_name' => 'nullable|string|max:255',
@@ -86,6 +90,28 @@ class AdminTestController extends Controller
                 Rule::exists('questions', 'id')->where('status', 'active'),
             ],
         ]);
+
+        $targetGroupIds = [];
+        if ($validated['target_type'] === 'group') {
+            $rawGroupIds = $request->input('target_group_ids', []);
+            if (!empty($rawGroupIds) && is_array($rawGroupIds)) {
+                $targetGroupIds = array_values(array_unique(array_filter(array_map('intval', $rawGroupIds))));
+            } elseif (!empty($request->target_group_id)) {
+                $targetGroupIds = [(int) $request->target_group_id];
+            }
+        }
+        $primaryGroupId = !empty($targetGroupIds) ? $targetGroupIds[0] : null;
+
+        $targetUserIds = [];
+        if ($validated['target_type'] === 'user') {
+            $rawIds = $request->input('target_user_ids', []);
+            if (!empty($rawIds) && is_array($rawIds)) {
+                $targetUserIds = array_values(array_unique(array_filter(array_map('intval', $rawIds))));
+            } elseif (!empty($request->target_user_id)) {
+                $targetUserIds = [(int) $request->target_user_id];
+            }
+        }
+        $primaryUserId = !empty($targetUserIds) ? $targetUserIds[0] : null;
 
         $test = Test::create([
             'test_level_id' => $validated['test_level_id'],
@@ -104,8 +130,10 @@ class AdminTestController extends Controller
             'tab_switch_limit' => $validated['tab_switch_limit'],
             'status' => $validated['status'],
             'target_type' => $validated['target_type'],
-            'target_group_id' => $validated['target_type'] === 'group' ? $validated['target_group_id'] : null,
-            'target_user_id' => $validated['target_type'] === 'user' ? $validated['target_user_id'] : null,
+            'target_group_id' => $validated['target_type'] === 'group' ? $primaryGroupId : null,
+            'target_group_ids' => $validated['target_type'] === 'group' ? $targetGroupIds : null,
+            'target_user_id' => $validated['target_type'] === 'user' ? $primaryUserId : null,
+            'target_user_ids' => $validated['target_type'] === 'user' ? $targetUserIds : null,
             'require_camera_photo' => $request->boolean('require_camera_photo'),
             'agency_name' => !empty($validated['agency_name']) ? $validated['agency_name'] : 'REIAC Test Assessment Center',
             'controller_name' => !empty($validated['controller_name']) ? $validated['controller_name'] : 'Kang Min-Seok',
@@ -121,10 +149,20 @@ class AdminTestController extends Controller
 
         // Notify students about the new/updated test
         if ($test->status === 'published') {
-            if ($test->target_type === 'user' && $test->target_user_id) {
-                $students = User::where('id', $test->target_user_id)->get();
-            } elseif ($test->target_type === 'group' && $test->target_group_id) {
-                $students = $test->targetGroup ? $test->targetGroup->users()->wherePivot('status', 'active')->get() : collect();
+            if ($test->target_type === 'user') {
+                $ids = !empty($test->target_user_ids) ? $test->target_user_ids : ($test->target_user_id ? [$test->target_user_id] : []);
+                $students = !empty($ids) ? User::whereIn('id', $ids)->get() : collect();
+            } elseif ($test->target_type === 'group') {
+                $groupIds = !empty($test->target_group_ids) ? $test->target_group_ids : ($test->target_group_id ? [$test->target_group_id] : []);
+                if (!empty($groupIds)) {
+                    $students = User::whereHas('groups', function($q) use ($groupIds) {
+                        $q->whereIn('groups.id', $groupIds)->where('group_user.status', 'active');
+                    })->orWhereIn('id', function($q) use ($groupIds) {
+                        $q->select('owner_id')->from('groups')->whereIn('id', $groupIds);
+                    })->get();
+                } else {
+                    $students = collect();
+                }
             } else {
                 $students = User::where('role', \App\Enums\UserRole::USER->value)
                     ->orWhere('role', '!=', \App\Enums\UserRole::ADMIN->value)
@@ -148,7 +186,7 @@ class AdminTestController extends Controller
             ->orWhereIn('id', $attachedIds)
             ->orderBy('id')
             ->get();
-        $groups = \App\Models\Group::orderBy('name')->get(['id', 'name']);
+        $groups = \App\Models\Group::withCount('users')->orderBy('name')->get();
         $students = User::where('role', '!=', \App\Enums\UserRole::ADMIN->value)
             ->orderBy('name')
             ->get(['id', 'name', 'email']);
@@ -175,8 +213,12 @@ class AdminTestController extends Controller
             'tab_switch_limit' => 'required|integer|min:0',
             'status' => 'required|in:draft,scheduled,published,archived',
             'target_type' => 'required|in:all,group,user',
-            'target_group_id' => 'nullable|required_if:target_type,group|exists:groups,id',
-            'target_user_id' => 'nullable|required_if:target_type,user|exists:users,id',
+            'target_group_id' => 'nullable|exists:groups,id',
+            'target_group_ids' => 'nullable|array',
+            'target_group_ids.*' => 'integer|exists:groups,id',
+            'target_user_id' => 'nullable|exists:users,id',
+            'target_user_ids' => 'nullable|array',
+            'target_user_ids.*' => 'integer|exists:users,id',
             'require_camera_photo' => 'nullable|boolean',
             'agency_name' => 'nullable|string|max:255',
             'controller_name' => 'nullable|string|max:255',
@@ -184,6 +226,28 @@ class AdminTestController extends Controller
             'questions' => 'required|array|min:1',
             'questions.*' => 'exists:questions,id',
         ]);
+
+        $targetGroupIds = [];
+        if ($validated['target_type'] === 'group') {
+            $rawGroupIds = $request->input('target_group_ids', []);
+            if (!empty($rawGroupIds) && is_array($rawGroupIds)) {
+                $targetGroupIds = array_values(array_unique(array_filter(array_map('intval', $rawGroupIds))));
+            } elseif (!empty($request->target_group_id)) {
+                $targetGroupIds = [(int) $request->target_group_id];
+            }
+        }
+        $primaryGroupId = !empty($targetGroupIds) ? $targetGroupIds[0] : null;
+
+        $targetUserIds = [];
+        if ($validated['target_type'] === 'user') {
+            $rawIds = $request->input('target_user_ids', []);
+            if (!empty($rawIds) && is_array($rawIds)) {
+                $targetUserIds = array_values(array_unique(array_filter(array_map('intval', $rawIds))));
+            } elseif (!empty($request->target_user_id)) {
+                $targetUserIds = [(int) $request->target_user_id];
+            }
+        }
+        $primaryUserId = !empty($targetUserIds) ? $targetUserIds[0] : null;
 
         $test->update([
             'test_level_id' => $validated['test_level_id'],
@@ -202,8 +266,10 @@ class AdminTestController extends Controller
             'tab_switch_limit' => $validated['tab_switch_limit'],
             'status' => $validated['status'],
             'target_type' => $validated['target_type'],
-            'target_group_id' => $validated['target_type'] === 'group' ? $validated['target_group_id'] : null,
-            'target_user_id' => $validated['target_type'] === 'user' ? $validated['target_user_id'] : null,
+            'target_group_id' => $validated['target_type'] === 'group' ? $primaryGroupId : null,
+            'target_group_ids' => $validated['target_type'] === 'group' ? $targetGroupIds : null,
+            'target_user_id' => $validated['target_type'] === 'user' ? $primaryUserId : null,
+            'target_user_ids' => $validated['target_type'] === 'user' ? $targetUserIds : null,
             'require_camera_photo' => $request->boolean('require_camera_photo'),
             'agency_name' => !empty($validated['agency_name']) ? $validated['agency_name'] : 'REIAC Test Assessment Center',
             'controller_name' => !empty($validated['controller_name']) ? $validated['controller_name'] : 'Kang Min-Seok',
@@ -219,10 +285,20 @@ class AdminTestController extends Controller
 
         // Notify students if test is published
         if ($test->status === 'published') {
-            if ($test->target_type === 'user' && $test->target_user_id) {
-                $students = User::where('id', $test->target_user_id)->get();
-            } elseif ($test->target_type === 'group' && $test->target_group_id) {
-                $students = $test->targetGroup ? $test->targetGroup->users()->wherePivot('status', 'active')->get() : collect();
+            if ($test->target_type === 'user') {
+                $ids = !empty($test->target_user_ids) ? $test->target_user_ids : ($test->target_user_id ? [$test->target_user_id] : []);
+                $students = !empty($ids) ? User::whereIn('id', $ids)->get() : collect();
+            } elseif ($test->target_type === 'group') {
+                $groupIds = !empty($test->target_group_ids) ? $test->target_group_ids : ($test->target_group_id ? [$test->target_group_id] : []);
+                if (!empty($groupIds)) {
+                    $students = User::whereHas('groups', function($q) use ($groupIds) {
+                        $q->whereIn('groups.id', $groupIds)->where('group_user.status', 'active');
+                    })->orWhereIn('id', function($q) use ($groupIds) {
+                        $q->select('owner_id')->from('groups')->whereIn('id', $groupIds);
+                    })->get();
+                } else {
+                    $students = collect();
+                }
             } else {
                 $students = User::where('role', '!=', \App\Enums\UserRole::ADMIN->value)->get();
             }

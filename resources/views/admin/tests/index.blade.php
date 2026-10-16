@@ -113,11 +113,28 @@
                             </td>
                             <td class="py-3 px-4">
                                 <div class="font-bold text-slate-900 text-sm">{{ $test->title }}</div>
-                                @if($test->open_date)
-                                    <div class="text-[11px] text-slate-400 mt-0.5">
-                                        Opens: {{ $test->open_date->format('M d, Y') }}
-                                    </div>
-                                @endif
+                                <div class="flex flex-wrap items-center gap-1.5 mt-1">
+                                    @if($test->target_type === 'user')
+                                        @php $count = !empty($test->target_user_ids) ? count($test->target_user_ids) : ($test->target_user_id ? 1 : 0); @endphp
+                                        <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                            👤 {{ $count }} Candidate{{ $count > 1 ? 's' : '' }}
+                                        </span>
+                                    @elseif($test->target_type === 'group')
+                                        @php $grpCount = !empty($test->target_group_ids) ? count($test->target_group_ids) : ($test->target_group_id ? 1 : 0); @endphp
+                                        <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                                            👥 {{ $grpCount > 1 ? $grpCount . ' Groups' : ($test->targetGroup->name ?? '1 Group') }}
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                                            🌐 All Students
+                                        </span>
+                                    @endif
+                                    @if($test->open_date)
+                                        <span class="text-[10px] text-slate-400">
+                                            • Opens: {{ $test->open_date->format('M d, Y') }} {{ $test->open_time ? $test->open_time->format('H:i') : '' }}
+                                        </span>
+                                    @endif
+                                </div>
                             </td>
                             <td class="py-3 px-4">
                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">

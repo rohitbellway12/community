@@ -106,23 +106,49 @@ class SendAdminPushBroadcastJob implements ShouldQueue
         $imageUrlToSend = $notification->banner_url ?: $notification->image_url;
 
         // 3. Process each targeted user
+        $inAppNotifications = [];
+        $pushLogs = [];
+        $usedTokenIds = [];
+
         foreach ($targetUserIds as $userId) {
             $userTokens = $tokensByUser->get($userId);
 
-            // In-app Notification creation (FR-14: Student can see past notifications in an in-app notification list)
-            $this->createInAppNotification($userId, $notification, $targetType, $targetId, $url, $actionLink);
+            // In-app Notification creation (FR-14)
+            $inAppNotifications[] = [
+                'id'              => (string) Str::uuid(),
+                'type'            => 'App\\Notifications\\AdminBroadcastNotification',
+                'notifiable_type' => 'App\\Models\\User',
+                'notifiable_id'   => $userId,
+                'data'            => json_encode([
+                    'type'            => 'admin_broadcast',
+                    'title'           => $notification->title,
+                    'message'         => $notification->description,
+                    'body'            => $notification->description,
+                    'image'           => $notification->image_url,
+                    'banner'          => $notification->banner_url,
+                    'action_link'     => $actionLink,
+                    'target_type'     => $targetType,
+                    'target_id'       => (string) $targetId,
+                    'url'             => (string) $url,
+                    'notification_id' => $notification->id,
+                ]),
+                'read_at'         => null,
+                'created_at'      => now(),
+                'updated_at'      => now(),
+            ];
 
             if (!$userTokens || $userTokens->isEmpty()) {
-                // User has no registered/active device token
                 $failedCount++;
-                PushNotificationLog::create([
+                $pushLogs[] = [
                     'notification_id' => $notification->id,
                     'user_id'         => $userId,
                     'device_token'    => null,
                     'status'          => 'failed',
                     'error_message'   => 'No active device token registered on device.',
                     'delivered_at'    => null,
-                ]);
+                    'created_at'      => now(),
+                    'updated_at'      => now(),
+                ];
                 continue;
             }
 
@@ -141,25 +167,29 @@ class SendAdminPushBroadcastJob implements ShouldQueue
 
                 if ($result['success']) {
                     $userHadSuccess = true;
-                    $tokenModel->update(['last_used_at' => now()]);
+                    $usedTokenIds[] = $tokenModel->id;
 
-                    PushNotificationLog::create([
+                    $pushLogs[] = [
                         'notification_id' => $notification->id,
                         'user_id'         => $userId,
                         'device_token'    => $tokenString,
                         'status'          => 'sent',
                         'error_message'   => null,
                         'delivered_at'    => now(),
-                    ]);
+                        'created_at'      => now(),
+                        'updated_at'      => now(),
+                    ];
                 } else {
-                    PushNotificationLog::create([
+                    $pushLogs[] = [
                         'notification_id' => $notification->id,
                         'user_id'         => $userId,
                         'device_token'    => $tokenString,
                         'status'          => 'failed',
                         'error_message'   => $result['error'] ?? 'FCM send failed',
                         'delivered_at'    => null,
-                    ]);
+                        'created_at'      => now(),
+                        'updated_at'      => now(),
+                    ];
                 }
             }
 
@@ -167,6 +197,25 @@ class SendAdminPushBroadcastJob implements ShouldQueue
                 $successCount++;
             } else {
                 $failedCount++;
+            }
+        }
+
+        // 1. Bulk update used tokens in 1 query
+        if (!empty($usedTokenIds)) {
+            DeviceToken::whereIn('id', $usedTokenIds)->update(['last_used_at' => now()]);
+        }
+
+        // 2. Bulk insert in-app notifications in chunks of 100
+        if (!empty($inAppNotifications)) {
+            foreach (array_chunk($inAppNotifications, 100) as $chunk) {
+                DB::table('notifications')->insert($chunk);
+            }
+        }
+
+        // 3. Bulk insert delivery logs in chunks of 100
+        if (!empty($pushLogs)) {
+            foreach (array_chunk($pushLogs, 100) as $chunk) {
+                PushNotificationLog::insert($chunk);
             }
         }
 
@@ -194,10 +243,15 @@ class SendAdminPushBroadcastJob implements ShouldQueue
         $type = $notification->audience_type;
 
         if ($type === 'all_students') {
-            return User::query()
-                ->where('status', 'active')
-                ->where('role', 'user')
-                ->pluck('id')
+            // Push notifications are strictly for devices with active tokens (Mobile App).
+            // Filter only users who have registered active device tokens to avoid processing thousands of web-only users.
+            return DB::table('device_tokens')
+                ->join('users', 'device_tokens.user_id', '=', 'users.id')
+                ->where('device_tokens.is_active', true)
+                ->where('users.status', 'active')
+                ->pluck('users.id')
+                ->unique()
+                ->values()
                 ->all();
         }
 
@@ -213,11 +267,14 @@ class SendAdminPushBroadcastJob implements ShouldQueue
 
             return DB::table('group_user')
                 ->join('users', 'group_user.user_id', '=', 'users.id')
+                ->join('device_tokens', 'device_tokens.user_id', '=', 'users.id')
                 ->whereIn('group_user.group_id', $groupIds)
                 ->where('group_user.status', 'active')
                 ->where('users.status', 'active')
+                ->where('device_tokens.is_active', true)
                 ->pluck('users.id')
                 ->unique()
+                ->values()
                 ->all();
         }
 

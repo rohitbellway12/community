@@ -205,8 +205,8 @@
 
             {{-- All Students Notice --}}
             <div x-show="audienceType === 'all_students'" x-cloak class="p-3.5 rounded-xl border border-purple-200/80 bg-purple-50/60 text-xs flex items-center gap-2.5 text-purple-900 font-medium">
-                <span class="text-base">📢</span>
-                <span>Broadcasting to <strong>all active students</strong> in the platform. No group or individual selection required.</span>
+                <span class="text-base">📱</span>
+                <span>Broadcasting to all registered mobile app devices (<strong>{{ number_format($activeDeviceTokensCount) }} active devices</strong>). Web-only users without mobile app are skipped automatically.</span>
             </div>
 
             {{-- 2. Specific Groups Searchable Multi-Select Dropdown --}}

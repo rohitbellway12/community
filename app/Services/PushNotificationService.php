@@ -168,7 +168,8 @@ class PushNotificationService
             ],
         ];
 
-        $response = Http::withToken($accessToken)
+        $response = Http::timeout(5)
+            ->withToken($accessToken)
             ->withHeaders([
                 'Content-Type'  => 'application/json',
                 'project_id'    => $this->projectId(),
@@ -260,36 +261,38 @@ class PushNotificationService
      */
     protected function getAccessTokenV1(): ?string
     {
-        $credentials = json_decode($this->credentialsJson(), true);
+        return cache()->remember('fcm_v1_oauth_access_token', 3300, function () {
+            $credentials = json_decode($this->credentialsJson(), true);
 
-        if (!$credentials || empty($credentials['private_key']) || empty($credentials['client_email'])) {
-            return null;
-        }
+            if (!$credentials || empty($credentials['private_key']) || empty($credentials['client_email'])) {
+                return null;
+            }
 
-        $now = time();
-        $payload = [
-            'iss'   => $credentials['client_email'],
-            'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
-            'aud'   => 'https://oauth2.googleapis.com/token',
-            'exp'   => $now + 3600,
-            'iat'   => $now,
-        ];
+            $now = time();
+            $payload = [
+                'iss'   => $credentials['client_email'],
+                'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
+                'aud'   => 'https://oauth2.googleapis.com/token',
+                'exp'   => $now + 3600,
+                'iat'   => $now,
+            ];
 
-        $jwt = $this->encodeJwt($payload, $credentials['private_key']);
+            $jwt = $this->encodeJwt($payload, $credentials['private_key']);
 
-        $response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
-            'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-            'assertion'  => $jwt,
-        ]);
+            $response = Http::timeout(5)->asForm()->post('https://oauth2.googleapis.com/token', [
+                'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+                'assertion'  => $jwt,
+            ]);
 
-        $token = $response->json('access_token');
+            $token = $response->json('access_token');
 
-        if ($response->failed() || empty($token)) {
-            Log::warning('FCM token exchange failed: ' . $response->body());
-            return null;
-        }
+            if ($response->failed() || empty($token)) {
+                Log::warning('FCM token exchange failed: ' . $response->body());
+                return null;
+            }
 
-        return $token;
+            return $token;
+        });
     }
 
     /**

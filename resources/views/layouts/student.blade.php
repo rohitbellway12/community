@@ -32,6 +32,7 @@
             }
         }
     </script>
+    <x-analytics-tracker />
 </head>
 <body class="h-full font-sans antialiased text-slate-800 flex flex-col min-h-screen">
 

@@ -2,6 +2,8 @@
     'notificationsCount' => 0,
 ])
 
+<x-analytics-tracker />
+
 <style>
     .language-switcher {
         display: flex;

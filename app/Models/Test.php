@@ -31,7 +31,9 @@ class Test extends Model
         'status',
         'target_type',
         'target_group_id',
+        'target_group_ids',
         'target_user_id',
+        'target_user_ids',
         'require_camera_photo',
         'agency_name',
         'controller_name',
@@ -49,6 +51,8 @@ class Test extends Model
         'open_date' => 'date',
         'close_date' => 'date',
         'target_type' => 'string',
+        'target_group_ids' => 'array',
+        'target_user_ids' => 'array',
         'require_camera_photo' => 'boolean',
     ];
 
@@ -96,21 +100,36 @@ class Test extends Model
         }
 
         if ($this->target_type === 'group') {
-            if (!$this->target_group_id) {
+            $groupIds = !empty($this->target_group_ids) && is_array($this->target_group_ids)
+                ? array_values(array_filter(array_map('intval', $this->target_group_ids)))
+                : ($this->target_group_id ? [(int) $this->target_group_id] : []);
+
+            if (empty($groupIds)) {
                 return true;
             }
-            $group = $this->targetGroup;
-            if (!$group) {
+
+            // Check if user is owner of any targeted group
+            $isOwner = \App\Models\Group::whereIn('id', $groupIds)->where('owner_id', $user->id)->exists();
+            if ($isOwner) {
                 return true;
             }
-            if ((int) $group->owner_id === (int) $user->id) {
-                return true;
-            }
-            return $group->users()->where('users.id', $user->id)->wherePivot('status', 'active')->exists();
+
+            // Check if user is active member of any targeted group
+            return \DB::table('group_user')
+                ->whereIn('group_id', $groupIds)
+                ->where('user_id', $user->id)
+                ->where('status', 'active')
+                ->exists();
         }
 
         if ($this->target_type === 'user') {
-            return (int) $this->target_user_id === (int) $user->id;
+            if (!empty($this->target_user_ids) && is_array($this->target_user_ids)) {
+                return in_array((int) $user->id, array_map('intval', $this->target_user_ids), true);
+            }
+            if ($this->target_user_id) {
+                return (int) $this->target_user_id === (int) $user->id;
+            }
+            return false;
         }
 
         return true;
