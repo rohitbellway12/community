@@ -27,4 +27,9 @@ class PushNotificationTarget extends Model
     {
         return $this->belongsTo(Group::class, 'target_id');
     }
+
+    public function country(): BelongsTo
+    {
+        return $this->belongsTo(Country::class, 'target_id');
+    }
 }

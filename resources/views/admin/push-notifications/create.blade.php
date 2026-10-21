@@ -164,10 +164,10 @@
                 </div>
             </div>
 
-            {{-- 1. Audience Type 3 Segmented Tabs --}}
+            {{-- 1. Audience Type 4 Segmented Tabs --}}
             <div>
                 <label class="text-xs font-bold text-slate-800 block mb-2">Who should receive this notification? <span class="text-rose-500">*</span></label>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/60">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/60">
                     {{-- Tab 1: All Students --}}
                     <button type="button" @click="setAudienceType('all_students')"
                             :class="audienceType === 'all_students'
@@ -185,7 +185,7 @@
                                 : 'text-slate-600 font-bold hover:text-slate-900'"
                             class="py-2.5 px-3 rounded-xl text-xs transition flex items-center justify-center gap-2">
                         <span>🏢</span>
-                        <span>Specific Groups</span>
+                        <span>Groups</span>
                         <span x-show="selectedGroups.length > 0" class="px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black" x-text="selectedGroups.length"></span>
                     </button>
 
@@ -196,8 +196,19 @@
                                 : 'text-slate-600 font-bold hover:text-slate-900'"
                             class="py-2.5 px-3 rounded-xl text-xs transition flex items-center justify-center gap-2">
                         <span>👤</span>
-                        <span>Individual Students</span>
+                        <span>Students</span>
                         <span x-show="selectedUsers.length > 0" class="px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black" x-text="selectedUsers.length"></span>
+                    </button>
+
+                    {{-- Tab 4: Target Countries --}}
+                    <button type="button" @click="setAudienceType('country')"
+                            :class="audienceType === 'country'
+                                ? 'bg-white text-slate-950 font-extrabold shadow-xs border border-slate-200/80 ring-1 ring-amber-500/40'
+                                : 'text-slate-600 font-bold hover:text-slate-900'"
+                            class="py-2.5 px-3 rounded-xl text-xs transition flex items-center justify-center gap-2">
+                        <span>🌍</span>
+                        <span>By Country</span>
+                        <span x-show="selectedCountries.length > 0" class="px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black" x-text="selectedCountries.length"></span>
                     </button>
                 </div>
                 <input type="hidden" name="audience_type" :value="audienceType">
@@ -327,6 +338,77 @@
                             <span x-text="u.name"></span>
                             <button type="button" @click="removeUser(u.id)" class="text-slate-400 hover:text-rose-600 font-bold">✕</button>
                             <input type="hidden" name="users[]" :value="u.id">
+                        </span>
+                    </template>
+                </div>
+            </div>
+
+            {{-- 4. Target Countries Searchable Multi-Select Dropdown --}}
+            <div x-show="audienceType === 'country'" x-cloak class="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-3">
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-bold text-slate-800">Select Target Countries <span class="text-rose-500">*</span></label>
+                    <div class="flex items-center gap-2 text-[11px]">
+                        <button type="button" @click="selectAllCountries()" class="text-amber-600 hover:text-amber-700 font-bold">Select All</button>
+                        <span class="text-slate-300">•</span>
+                        <button type="button" @click="clearAllCountries()" class="text-slate-500 hover:text-slate-700 font-bold">Clear All</button>
+                    </div>
+                </div>
+
+                {{-- Dropdown Container --}}
+                <div class="relative" @click.away="countryDropdownOpen = false">
+                    {{-- Dropdown Toggle Bar --}}
+                    <button type="button" @click="countryDropdownOpen = !countryDropdownOpen"
+                            class="w-full text-left bg-white border border-slate-200 rounded-xl py-2 px-3.5 text-xs font-medium flex items-center justify-between shadow-2xs hover:border-slate-300 transition">
+                        <span class="text-slate-700" x-text="selectedCountries.length > 0 ? selectedCountries.length + ' Countries Selected' : 'Click to choose countries...'"></span>
+                        <svg class="w-4 h-4 text-slate-400 transition-transform duration-200" :class="countryDropdownOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    {{-- Dropdown Menu with Search --}}
+                    <div x-show="countryDropdownOpen" x-cloak
+                         class="absolute z-30 left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl p-2.5 space-y-2 max-h-72 flex flex-col">
+                        {{-- Search Filter --}}
+                        <div class="relative">
+                            <input type="text" x-model="countrySearchQuery" placeholder="Search countries..."
+                                   class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-amber-500">
+                            <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+
+                        {{-- Countries List with Checkboxes --}}
+                        <div class="overflow-y-auto space-y-1 divide-y divide-slate-50 flex-1 pr-1">
+                            @foreach($countries as $country)
+                                <label x-show="matchesCountrySearch('{{ addslashes(strtolower($country->name)) }}', '{{ strtolower($country->code ?? '') }}')"
+                                       class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 cursor-pointer text-xs transition">
+                                    <div class="flex items-center gap-2.5">
+                                        <input type="checkbox" name="countries[]" value="{{ $country->id }}"
+                                               @change="toggleCountry({{ $country->id }}, '{{ addslashes($country->name) }}', '{{ $country->flag ?? '🌍' }}')"
+                                               :checked="selectedCountries.includes({{ $country->id }})"
+                                               class="rounded text-amber-500 focus:ring-amber-500">
+                                        <span class="text-sm">{{ $country->flag ?? '🌍' }}</span>
+                                        <span class="font-bold text-slate-800">{{ $country->name }}</span>
+                                        @if($country->code)
+                                            <span class="text-[10px] text-slate-400 font-semibold uppercase">({{ $country->code }})</span>
+                                        @endif
+                                    </div>
+                                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                                        {{ $country->students_count ?? 0 }} active students
+                                    </span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Selected Country Chips --}}
+                <div class="flex flex-wrap gap-1.5 pt-1" x-show="selectedCountryItems.length > 0">
+                    <template x-for="c in selectedCountryItems" :key="c.id">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-slate-200 text-slate-800 rounded-lg text-xs font-bold shadow-2xs">
+                            <span x-text="c.flag || '🌍'"></span>
+                            <span x-text="c.name"></span>
+                            <button type="button" @click="toggleCountry(c.id, c.name, c.flag)" class="text-slate-400 hover:text-rose-600 font-bold">✕</button>
                         </span>
                     </template>
                 </div>
@@ -486,6 +568,10 @@ function pushNotificationComposer() {
         groupSearchQuery: '',
         selectedGroups: [],
         selectedGroupItems: [],
+        countryDropdownOpen: false,
+        countrySearchQuery: '',
+        selectedCountries: [],
+        selectedCountryItems: [],
         userDropdownOpen: false,
         searchQuery: '',
         searchResults: [],
@@ -501,9 +587,11 @@ function pushNotificationComposer() {
         recipientCountText: 'Calculating...',
 
         allGroups: @json($groups),
+        allCountries: @json($countries),
 
         get isAudienceValid() {
             if (this.audienceType === 'all_students') return true;
+            if (this.audienceType === 'country') return this.selectedCountries.length > 0;
             if (this.audienceType === 'group') return this.selectedGroups.length > 0;
             if (this.audienceType === 'individual') return this.selectedUsers.length > 0;
             return false;
@@ -519,6 +607,7 @@ function pushNotificationComposer() {
 
         get audienceLabel() {
             if (this.audienceType === 'all_students') return 'All Active Students';
+            if (this.audienceType === 'country') return this.selectedCountries.length + ' Countries Selected';
             if (this.audienceType === 'group') return this.selectedGroups.length + ' Groups Selected';
             if (this.audienceType === 'individual') return this.selectedUsers.length + ' Students Selected';
             return 'None';
@@ -547,12 +636,14 @@ function pushNotificationComposer() {
             this.audienceType = type;
             this.groupDropdownOpen = false;
             this.userDropdownOpen = false;
+            this.countryDropdownOpen = false;
             this.refreshRecipientCount();
         },
 
         onAudienceTypeChange() {
             this.groupDropdownOpen = false;
             this.userDropdownOpen = false;
+            this.countryDropdownOpen = false;
             this.refreshRecipientCount();
         },
 
@@ -594,6 +685,36 @@ function pushNotificationComposer() {
         clearAllGroups() {
             this.selectedGroups = [];
             this.selectedGroupItems = [];
+            this.refreshRecipientCount();
+        },
+
+        // Country Handlers
+        matchesCountrySearch(name, code) {
+            if (!this.countrySearchQuery.trim()) return true;
+            const q = this.countrySearchQuery.toLowerCase().trim();
+            return name.includes(q) || (code && code.includes(q));
+        },
+
+        toggleCountry(countryId, countryName, countryFlag) {
+            if (this.selectedCountries.includes(countryId)) {
+                this.selectedCountries = this.selectedCountries.filter(id => id !== countryId);
+                this.selectedCountryItems = this.selectedCountryItems.filter(c => c.id !== countryId);
+            } else {
+                this.selectedCountries.push(countryId);
+                this.selectedCountryItems.push({ id: countryId, name: countryName, flag: countryFlag });
+            }
+            this.refreshRecipientCount();
+        },
+
+        selectAllCountries() {
+            this.selectedCountries = this.allCountries.map(c => c.id);
+            this.selectedCountryItems = this.allCountries.map(c => ({ id: c.id, name: c.name, flag: c.flag }));
+            this.refreshRecipientCount();
+        },
+
+        clearAllCountries() {
+            this.selectedCountries = [];
+            this.selectedCountryItems = [];
             this.refreshRecipientCount();
         },
 
@@ -644,7 +765,9 @@ function pushNotificationComposer() {
             const params = new URLSearchParams();
             params.append('audience_type', this.audienceType);
 
-            if (this.audienceType === 'group') {
+            if (this.audienceType === 'country') {
+                this.selectedCountries.forEach(id => params.append('countries[]', id));
+            } else if (this.audienceType === 'group') {
                 this.selectedGroups.forEach(id => params.append('groups[]', id));
             } else if (this.audienceType === 'individual') {
                 this.selectedUsers.forEach(u => params.append('users[]', u.id));

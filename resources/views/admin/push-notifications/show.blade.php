@@ -137,6 +137,10 @@
                                 <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200 inline-block">
                                     👥 All Active Students
                                 </span>
+                            @elseif($pushNotification->audience_type === 'country')
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 inline-block">
+                                    🌍 Countries ({{ $pushNotification->targets->count() }})
+                                </span>
                             @elseif($pushNotification->audience_type === 'group')
                                 <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 inline-block">
                                     🏢 Groups ({{ $pushNotification->targets->count() }})
@@ -145,6 +149,27 @@
                                 <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 inline-block">
                                     👤 Individual Users ({{ $pushNotification->targets->count() }})
                                 </span>
+                            @endif
+
+                            @if($pushNotification->targets->isNotEmpty() && $pushNotification->audience_type !== 'all_students')
+                                <div class="flex flex-wrap gap-1 mt-2">
+                                    @foreach($pushNotification->targets as $target)
+                                        @if($pushNotification->audience_type === 'country' && $target->country)
+                                            <span class="inline-flex items-center gap-1 text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md border border-slate-200">
+                                                <span>{{ $target->country->flag ?? '🌍' }}</span>
+                                                <span>{{ $target->country->name }}</span>
+                                            </span>
+                                        @elseif($pushNotification->audience_type === 'group' && $target->group)
+                                            <span class="inline-flex items-center gap-1 text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md border border-slate-200">
+                                                <span>🏢 {{ $target->group->name }}</span>
+                                            </span>
+                                        @elseif($target->user)
+                                            <span class="inline-flex items-center gap-1 text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md border border-slate-200">
+                                                <span>👤 {{ $target->user->name }}</span>
+                                            </span>
+                                        @endif
+                                    @endforeach
+                                </div>
                             @endif
                         </div>
                     </div>

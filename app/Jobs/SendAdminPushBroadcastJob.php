@@ -255,6 +255,28 @@ class SendAdminPushBroadcastJob implements ShouldQueue
                 ->all();
         }
 
+        if ($type === 'country') {
+            $countryIds = $notification->targets()
+                ->where('target_type', 'country')
+                ->pluck('target_id')
+                ->all();
+
+            if (empty($countryIds)) {
+                return [];
+            }
+
+            return DB::table('profiles')
+                ->join('users', 'profiles.user_id', '=', 'users.id')
+                ->join('device_tokens', 'device_tokens.user_id', '=', 'users.id')
+                ->whereIn('profiles.country_id', $countryIds)
+                ->where('users.status', 'active')
+                ->where('device_tokens.is_active', true)
+                ->pluck('users.id')
+                ->unique()
+                ->values()
+                ->all();
+        }
+
         if ($type === 'group') {
             $groupIds = $notification->targets()
                 ->where('target_type', 'group')

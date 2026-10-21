@@ -158,6 +158,7 @@
                 <select name="audience_type" class="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition">
                     <option value="">All Audiences</option>
                     <option value="all_students" {{ request('audience_type') === 'all_students' ? 'selected' : '' }}>All Students</option>
+                    <option value="country" {{ request('audience_type') === 'country' ? 'selected' : '' }}>By Country</option>
                     <option value="group" {{ request('audience_type') === 'group' ? 'selected' : '' }}>Specific Groups</option>
                     <option value="individual" {{ request('audience_type') === 'individual' ? 'selected' : '' }}>Individual Users</option>
                 </select>
@@ -251,6 +252,10 @@
                                 @if($item->audience_type === 'all_students')
                                     <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200/70">
                                         👥 All Students
+                                    </span>
+                                @elseif($item->audience_type === 'country')
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200/70">
+                                        🌍 {{ $item->targets->count() }} Countries
                                     </span>
                                 @elseif($item->audience_type === 'group')
                                     <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200/70">

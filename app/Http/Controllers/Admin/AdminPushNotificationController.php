@@ -95,7 +95,16 @@ class AdminPushNotificationController extends Controller
             ->where('is_active', true)
             ->count();
 
-        return view('admin.push-notifications.create', compact('groups', 'tests', 'events', 'totalActiveStudents', 'activeDeviceTokensCount'));
+        $countries = \App\Models\Country::where('status', true)
+            ->withCount(['profiles as students_count' => function ($q) {
+                $q->whereHas('user', function ($uq) {
+                    $uq->where('status', 'active');
+                });
+            }])
+            ->orderBy('name')
+            ->get();
+
+        return view('admin.push-notifications.create', compact('groups', 'tests', 'events', 'countries', 'totalActiveStudents', 'activeDeviceTokensCount'));
     }
 
     /**
@@ -106,11 +115,13 @@ class AdminPushNotificationController extends Controller
         $validated = $request->validate([
             'title'             => ['required', 'string', 'max:65'],
             'description'       => ['required', 'string', 'max:240'],
-            'audience_type'     => ['required', 'in:all_students,group,individual'],
+            'audience_type'     => ['required', 'in:all_students,group,individual,country'],
             'groups'            => ['required_if:audience_type,group', 'array'],
             'groups.*'          => ['integer', 'exists:groups,id'],
             'users'             => ['required_if:audience_type,individual', 'array'],
             'users.*'           => ['integer', 'exists:users,id'],
+            'countries'         => ['required_if:audience_type,country', 'array'],
+            'countries.*'       => ['integer', 'exists:countries,id'],
             'image'             => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:1024'], // 1MB
             'banner'            => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'], // 2MB
             'redirect_type'     => ['nullable', 'in:home,test,group,event,web_url'],
@@ -177,7 +188,15 @@ class AdminPushNotificationController extends Controller
         ]);
 
         // Store Target Rows
-        if ($validated['audience_type'] === 'group' && !empty($validated['groups'])) {
+        if ($validated['audience_type'] === 'country' && !empty($validated['countries'])) {
+            foreach ($validated['countries'] as $countryId) {
+                PushNotificationTarget::create([
+                    'notification_id' => $notification->id,
+                    'target_type'     => 'country',
+                    'target_id'       => $countryId,
+                ]);
+            }
+        } elseif ($validated['audience_type'] === 'group' && !empty($validated['groups'])) {
             foreach ($validated['groups'] as $groupId) {
                 PushNotificationTarget::create([
                     'notification_id' => $notification->id,
@@ -219,7 +238,7 @@ class AdminPushNotificationController extends Controller
      */
     public function show(PushNotification $pushNotification, Request $request): View
     {
-        $pushNotification->load(['creator', 'targets']);
+        $pushNotification->load(['creator', 'targets.group', 'targets.user', 'targets.country']);
 
         $logsQuery = $pushNotification->logs()->with('user')->latest();
 
@@ -300,6 +319,19 @@ class AdminPushNotificationController extends Controller
                 ->pluck('users.id')
                 ->unique()
                 ->all();
+        } elseif ($audienceType === 'country') {
+            $countryIds = $request->input('countries', []);
+            if (!empty($countryIds)) {
+                $userIds = DB::table('profiles')
+                    ->join('users', 'profiles.user_id', '=', 'users.id')
+                    ->join('device_tokens', 'device_tokens.user_id', '=', 'users.id')
+                    ->whereIn('profiles.country_id', $countryIds)
+                    ->where('users.status', 'active')
+                    ->where('device_tokens.is_active', true)
+                    ->pluck('users.id')
+                    ->unique()
+                    ->all();
+            }
         } elseif ($audienceType === 'group') {
             $groupIds = $request->input('groups', []);
             if (!empty($groupIds)) {
