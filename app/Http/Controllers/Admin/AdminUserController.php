@@ -35,14 +35,68 @@ class AdminUserController extends Controller
             }
         }
 
-        $users = ($request->status === 'online' ? $query : $query->latest())->paginate(10)->withQueryString();
+        // Platform & Device filter (Separating Play Store Android vs App Store iOS)
+        if ($request->filled('platform') && $request->platform !== 'all') {
+            $platform = strtolower(trim($request->platform));
+            if ($platform === 'play_store' || $platform === 'android_app') {
+                // Play Store (Android App) Users
+                $query->whereHas('deviceTokens', function ($q) {
+                    $q->where('is_active', true)
+                      ->where('device_type', 'android');
+                });
+            } elseif ($platform === 'app_store' || $platform === 'ios_app') {
+                // App Store (iOS App) Users
+                $query->whereHas('deviceTokens', function ($q) {
+                    $q->where('is_active', true)
+                      ->where('device_type', 'ios');
+                });
+            } elseif ($platform === 'app') {
+                // All Mobile Apps
+                $query->whereHas('deviceTokens', function ($q) {
+                    $q->where('is_active', true);
+                });
+            } elseif ($platform === 'web') {
+                // Web only users (no active mobile app token)
+                $query->whereDoesntHave('deviceTokens', function ($q) {
+                    $q->where('is_active', true);
+                });
+            } elseif ($platform === 'ios_web') {
+                // Web users on iPhone / iPad / Mac Safari
+                $query->where(function ($q) {
+                    $q->where('device_os', 'iOS')
+                      ->orWhere('device_os', 'OS X');
+                })->whereDoesntHave('deviceTokens', function ($dq) {
+                    $dq->where('is_active', true);
+                });
+            } elseif ($platform === 'android_web') {
+                // Web users on Android Phone Browser
+                $query->where('device_os', 'Android')
+                      ->whereDoesntHave('deviceTokens', function ($dq) {
+                          $dq->where('is_active', true);
+                      });
+            } elseif ($platform === 'desktop') {
+                // Desktop Web users
+                $query->where(function ($q) {
+                    $q->where('device_type', 'Desktop')
+                      ->orWhereIn('device_os', ['Windows', 'Linux', 'Ubuntu']);
+                });
+            }
+        }
+
+        $users = ($request->status === 'online' ? $query : $query->latest())->paginate(15)->withQueryString();
         $countries = Country::all();
 
         $stats = [
-            'total'   => User::count(),
-            'online'  => User::whereNotNull('last_seen_at')->where('last_seen_at', '>=', now()->subMinutes(5))->count(),
-            'active'  => User::where('status', 'active')->count(),
-            'blocked' => User::where('status', 'blocked')->count(),
+            'total'      => User::count(),
+            'online'     => User::whereNotNull('last_seen_at')->where('last_seen_at', '>=', now()->subMinutes(5))->count(),
+            'active'     => User::where('status', 'active')->count(),
+            'blocked'    => User::where('status', 'blocked')->count(),
+            'play_store' => User::whereHas('deviceTokens', fn($q) => $q->where('is_active', true)->where('device_type', 'android'))->count(),
+            'app_store'  => User::whereHas('deviceTokens', fn($q) => $q->where('is_active', true)->where('device_type', 'ios'))->count(),
+            'mobile_app' => User::whereHas('deviceTokens', fn($q) => $q->where('is_active', true))->count(),
+            'web_only'   => User::whereDoesntHave('deviceTokens', fn($q) => $q->where('is_active', true))->count(),
+            'ios_web'    => User::where(fn($q) => $q->where('device_os', 'iOS')->orWhere('device_os', 'OS X'))->whereDoesntHave('deviceTokens', fn($dq) => $dq->where('is_active', true))->count(),
+            'desktop'    => User::where(fn($q) => $q->where('device_type', 'Desktop')->orWhereIn('device_os', ['Windows', 'Linux', 'Ubuntu']))->count(),
         ];
 
         return view('admin.users', compact('users', 'countries', 'stats'));

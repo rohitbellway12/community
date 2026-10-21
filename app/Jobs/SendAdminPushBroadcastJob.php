@@ -288,10 +288,14 @@ class SendAdminPushBroadcastJob implements ShouldQueue
                 return [];
             }
 
-            return User::query()
-                ->whereIn('id', $userIds)
-                ->where('status', 'active')
-                ->pluck('id')
+            return DB::table('device_tokens')
+                ->join('users', 'device_tokens.user_id', '=', 'users.id')
+                ->whereIn('users.id', $userIds)
+                ->where('users.status', 'active')
+                ->where('device_tokens.is_active', true)
+                ->pluck('users.id')
+                ->unique()
+                ->values()
                 ->all();
         }
 

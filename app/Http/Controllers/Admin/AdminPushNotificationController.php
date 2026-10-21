@@ -202,11 +202,11 @@ class AdminPushNotificationController extends Controller
         }
 
         if (!$isScheduled) {
-            // Dispatch immediately for instant broadcast without queue worker delay
-            SendAdminPushBroadcastJob::dispatchSync($notification);
+            // Dispatch to queue for instant background delivery without blocking the web page
+            SendAdminPushBroadcastJob::dispatch($notification);
             return redirect()
                 ->route('admin.push-notifications.show', $notification)
-                ->with('success', 'Push notification dispatched and delivered to devices successfully.');
+                ->with('success', 'Push notification broadcast has been queued and is being delivered in the background.');
         }
 
         return redirect()
@@ -259,9 +259,9 @@ class AdminPushNotificationController extends Controller
         // Clean previous logs if any
         $pushNotification->logs()->delete();
 
-        SendAdminPushBroadcastJob::dispatchSync($pushNotification);
+        SendAdminPushBroadcastJob::dispatch($pushNotification);
 
-        return back()->with('success', 'Notification broadcast has been delivered successfully.');
+        return back()->with('success', 'Notification broadcast has been queued for redelivery in the background.');
     }
 
     /**
@@ -293,19 +293,23 @@ class AdminPushNotificationController extends Controller
         $userIds = [];
 
         if ($audienceType === 'all_students') {
-            $userIds = User::query()
-                ->where('status', 'active')
-                ->where('role', 'user')
-                ->pluck('id')
+            $userIds = DB::table('device_tokens')
+                ->join('users', 'device_tokens.user_id', '=', 'users.id')
+                ->where('device_tokens.is_active', true)
+                ->where('users.status', 'active')
+                ->pluck('users.id')
+                ->unique()
                 ->all();
         } elseif ($audienceType === 'group') {
             $groupIds = $request->input('groups', []);
             if (!empty($groupIds)) {
                 $userIds = DB::table('group_user')
                     ->join('users', 'group_user.user_id', '=', 'users.id')
+                    ->join('device_tokens', 'device_tokens.user_id', '=', 'users.id')
                     ->whereIn('group_user.group_id', $groupIds)
                     ->where('group_user.status', 'active')
                     ->where('users.status', 'active')
+                    ->where('device_tokens.is_active', true)
                     ->pluck('users.id')
                     ->unique()
                     ->all();
@@ -313,10 +317,13 @@ class AdminPushNotificationController extends Controller
         } elseif ($audienceType === 'individual') {
             $requestedUsers = $request->input('users', []);
             if (!empty($requestedUsers)) {
-                $userIds = User::query()
-                    ->whereIn('id', $requestedUsers)
-                    ->where('status', 'active')
-                    ->pluck('id')
+                $userIds = DB::table('device_tokens')
+                    ->join('users', 'device_tokens.user_id', '=', 'users.id')
+                    ->whereIn('users.id', $requestedUsers)
+                    ->where('users.status', 'active')
+                    ->where('device_tokens.is_active', true)
+                    ->pluck('users.id')
+                    ->unique()
                     ->all();
             }
         }
@@ -354,6 +361,9 @@ class AdminPushNotificationController extends Controller
             ->where(function ($q) use ($query) {
                 $q->where('name', 'like', "%{$query}%")
                   ->orWhere('email', 'like', "%{$query}%");
+            })
+            ->whereHas('deviceTokens', function ($dq) {
+                $dq->where('is_active', true);
             })
             ->withCount(['deviceTokens' => function ($dq) {
                 $dq->where('is_active', true);

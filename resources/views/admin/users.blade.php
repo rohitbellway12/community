@@ -73,101 +73,199 @@
     </div>
 
     {{-- SUMMARY STAT CARDS --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {{-- 1. All Members --}}
         <a href="{{ route('admin.users') }}"
-           class="bg-white p-5 rounded-2xl border transition shadow-xs {{ !request('status') ? 'border-reiac-navy ring-2 ring-reiac-navy/10' : 'border-slate-200 hover:border-slate-300' }}">
-            <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">All Members</div>
-            <div class="text-2xl font-extrabold text-slate-900 mt-1.5">{{ number_format($stats['total'] ?? $users->total()) }}</div>
-            <div class="text-[11px] text-slate-500 font-semibold mt-0.5">Total registered accounts</div>
+           class="bg-white p-4 rounded-2xl border transition shadow-xs {{ !request('status') && !request('platform') ? 'border-reiac-navy ring-2 ring-reiac-navy/10' : 'border-slate-200 hover:border-slate-300' }}">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">All Members</div>
+            <div class="text-xl font-black text-slate-900 mt-1">{{ number_format($stats['total'] ?? $users->total()) }}</div>
+            <div class="text-[10px] text-slate-400 font-semibold truncate mt-0.5">Total accounts</div>
         </a>
 
-        {{-- 2. Online Now --}}
-        <a href="{{ route('admin.users', ['status' => 'online']) }}"
-           class="bg-white p-5 rounded-2xl border transition shadow-xs {{ request('status') === 'online' ? 'border-emerald-500 ring-2 ring-emerald-500/10 bg-emerald-50/20' : 'border-slate-200 hover:border-emerald-300' }}">
+        {{-- 2. Play Store (Android App) --}}
+        <a href="{{ route('admin.users', array_filter(['platform' => 'play_store', 'search' => request('search')])) }}"
+           class="bg-white p-4 rounded-2xl border transition shadow-xs {{ request('platform') === 'play_store' ? 'border-emerald-500 ring-2 ring-emerald-500/10 bg-emerald-50/20' : 'border-slate-200 hover:border-emerald-300' }}">
             <div class="flex items-center justify-between">
-                <div class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Online Now
+                <div class="text-[10px] font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1">
+                    <span>🤖</span> Play Store
                 </div>
-                <span class="text-xs px-2 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-700">Live</span>
+                <span class="text-[9px] px-1.5 py-0.2 rounded-full font-bold bg-emerald-100 text-emerald-800">Android</span>
             </div>
-            <div class="text-2xl font-extrabold text-emerald-600 mt-1.5">{{ number_format($stats['online'] ?? 0) }}</div>
-            <div class="text-[11px] text-emerald-700 font-semibold mt-0.5">Active in last 5 minutes</div>
+            <div class="text-xl font-black text-emerald-600 mt-1">{{ number_format($stats['play_store'] ?? 0) }}</div>
+            <div class="text-[10px] text-emerald-700 font-semibold truncate mt-0.5">Google Play Store App</div>
         </a>
 
-        {{-- 3. Active Accounts --}}
-        <a href="{{ route('admin.users', ['status' => 'active']) }}"
-           class="bg-white p-5 rounded-2xl border transition shadow-xs {{ request('status') === 'active' ? 'border-blue-500 ring-2 ring-blue-500/10' : 'border-slate-200 hover:border-blue-300' }}">
-            <div class="text-[11px] font-bold text-blue-600 uppercase tracking-wider">Active Accounts</div>
-            <div class="text-2xl font-extrabold text-blue-600 mt-1.5">{{ number_format($stats['active'] ?? 0) }}</div>
-            <div class="text-[11px] text-blue-700 font-semibold mt-0.5">Allowed / Not blocked</div>
+        {{-- 3. App Store (iOS App) --}}
+        <a href="{{ route('admin.users', array_filter(['platform' => 'app_store', 'search' => request('search')])) }}"
+           class="bg-white p-4 rounded-2xl border transition shadow-xs {{ request('platform') === 'app_store' ? 'border-purple-500 ring-2 ring-purple-500/10 bg-purple-50/20' : 'border-slate-200 hover:border-purple-300' }}">
+            <div class="flex items-center justify-between">
+                <div class="text-[10px] font-bold text-purple-700 uppercase tracking-wider flex items-center gap-1">
+                    <span>🍎</span> App Store
+                </div>
+                <span class="text-[9px] px-1.5 py-0.2 rounded-full font-bold bg-purple-100 text-purple-800">iOS</span>
+            </div>
+            <div class="text-xl font-black text-purple-700 mt-1">{{ number_format($stats['app_store'] ?? 0) }}</div>
+            <div class="text-[10px] text-purple-700 font-semibold truncate mt-0.5">Apple iOS App</div>
         </a>
 
-        {{-- 4. Blocked Accounts --}}
-        <a href="{{ route('admin.users', ['status' => 'blocked']) }}"
-           class="bg-white p-5 rounded-2xl border transition shadow-xs {{ request('status') === 'blocked' ? 'border-rose-500 ring-2 ring-rose-500/10' : 'border-slate-200 hover:border-rose-300' }}">
-            <div class="text-[11px] font-bold text-rose-600 uppercase tracking-wider">Blocked Accounts</div>
-            <div class="text-2xl font-extrabold text-rose-600 mt-1.5">{{ number_format($stats['blocked'] ?? 0) }}</div>
-            <div class="text-[11px] text-rose-700 font-semibold mt-0.5">Suspended / Deactivated</div>
+        {{-- 4. Web Only --}}
+        <a href="{{ route('admin.users', array_filter(['platform' => 'web', 'search' => request('search')])) }}"
+           class="bg-white p-4 rounded-2xl border transition shadow-xs {{ request('platform') === 'web' ? 'border-indigo-500 ring-2 ring-indigo-500/10 bg-indigo-50/20' : 'border-slate-200 hover:border-indigo-300' }}">
+            <div class="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">🌐 Web Only</div>
+            <div class="text-xl font-black text-indigo-600 mt-1">{{ number_format($stats['web_only'] ?? 0) }}</div>
+            <div class="text-[10px] text-indigo-700 font-semibold truncate mt-0.5">Website without App</div>
+        </a>
+
+        {{-- 5. Active Accounts --}}
+        <a href="{{ route('admin.users', array_filter(['status' => 'active', 'search' => request('search')])) }}"
+           class="bg-white p-4 rounded-2xl border transition shadow-xs {{ request('status') === 'active' ? 'border-blue-500 ring-2 ring-blue-500/10 bg-blue-50/20' : 'border-slate-200 hover:border-blue-300' }}">
+            <div class="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Active Accounts</div>
+            <div class="text-xl font-black text-blue-700 mt-1">{{ number_format($stats['active'] ?? 0) }}</div>
+            <div class="text-[10px] text-blue-800 font-semibold truncate mt-0.5">Verified active members</div>
+        </a>
+
+        {{-- 6. Online Now --}}
+        <a href="{{ route('admin.users', array_filter(['status' => 'online', 'search' => request('search')])) }}"
+           class="bg-white p-4 rounded-2xl border transition shadow-xs {{ request('status') === 'online' ? 'border-emerald-500 ring-2 ring-emerald-500/10 bg-emerald-50/20' : 'border-slate-200 hover:border-emerald-300' }}">
+            <div class="flex items-center justify-between">
+                <div class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Online
+                </div>
+                <span class="text-[9px] px-1.5 py-0.2 rounded-full font-bold bg-emerald-100 text-emerald-700">Live</span>
+            </div>
+            <div class="text-xl font-black text-emerald-600 mt-1">{{ number_format($stats['online'] ?? 0) }}</div>
+            <div class="text-[10px] text-emerald-700 font-semibold truncate mt-0.5">Last 5 minutes</div>
         </a>
     </div>
 
-    {{-- FILTER TABS & SEARCH BAR --}}
-    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
-        {{-- Status Filter Tabs --}}
-        <div class="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto">
-            <a href="{{ route('admin.users', array_filter(['search' => request('search')])) }}"
-               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap {{ !request('status') ? 'bg-reiac-slate text-white' : 'text-slate-600 hover:bg-slate-100' }}">
-                All ({{ $stats['total'] ?? $users->total() }})
-            </a>
-            <a href="{{ route('admin.users', array_filter(['status' => 'online', 'search' => request('search')])) }}"
-               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap inline-flex items-center gap-1.5 {{ request('status') === 'online' ? 'bg-emerald-600 text-white' : 'text-emerald-700 hover:bg-emerald-50' }}">
-                <span class="w-1.5 h-1.5 rounded-full {{ request('status') === 'online' ? 'bg-white' : 'bg-emerald-500' }}"></span>
-                Online Now ({{ $stats['online'] ?? 0 }})
-            </a>
-            <a href="{{ route('admin.users', array_filter(['status' => 'active', 'search' => request('search')])) }}"
-               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap {{ request('status') === 'active' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100' }}">
-                Active Accounts ({{ $stats['active'] ?? 0 }})
-            </a>
-            <a href="{{ route('admin.users', array_filter(['status' => 'blocked', 'search' => request('search')])) }}"
-               class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap {{ request('status') === 'blocked' ? 'bg-rose-600 text-white' : 'text-slate-600 hover:bg-slate-100' }}">
-                Blocked ({{ $stats['blocked'] ?? 0 }})
-            </a>
-        </div>
-
-        {{-- Search Input Form --}}
-        <form method="GET" action="{{ route('admin.users') }}" class="w-full md:w-80 flex items-center">
-            @if(request('status'))
-                <input type="hidden" name="status" value="{{ request('status') }}">
-            @endif
-            <div class="relative w-full">
-                <input type="text"
-                       name="search"
-                       value="{{ request('search') }}"
-                       placeholder="Search name, email, username..."
-                       class="w-full pl-9 pr-8 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-reiac-gold focus:bg-white transition">
-                <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
-                @if(request('search'))
-                    <a href="{{ route('admin.users', array_filter(['status' => request('status')])) }}"
-                       class="text-slate-400 hover:text-slate-600 absolute right-2.5 top-1.5 text-xs font-bold">✕</a>
+    {{-- FILTER CONTROLS & SEARCH BAR --}}
+    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3.5">
+        {{-- Top Bar: Search Input & Filter Indicator --}}
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-reiac-navy" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                    </svg>
+                    Filter & Search
+                </span>
+                @if(request('platform') || request('status') || request('search'))
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                        Filtered
+                    </span>
+                    <a href="{{ route('admin.users') }}" 
+                       class="text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1 ml-1"
+                       title="Reset all filters">
+                        ✕ Clear All
+                    </a>
                 @endif
             </div>
-        </form>
+
+            {{-- Search Input Form --}}
+            <form method="GET" action="{{ route('admin.users') }}" class="w-full sm:w-80 md:w-96">
+                @if(request('status'))
+                    <input type="hidden" name="status" value="{{ request('status') }}">
+                @endif
+                @if(request('platform'))
+                    <input type="hidden" name="platform" value="{{ request('platform') }}">
+                @endif
+                <div class="relative w-full">
+                    <input type="text"
+                           name="search"
+                           value="{{ request('search') }}"
+                           placeholder="Search name, email, or username..."
+                           class="w-full pl-9 pr-8 py-2 text-xs bg-slate-50 hover:bg-slate-100/70 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-reiac-navy focus:bg-white transition">
+                    <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    @if(request('search'))
+                        <a href="{{ route('admin.users', array_filter(['status' => request('status'), 'platform' => request('platform')])) }}"
+                           class="text-slate-400 hover:text-rose-600 absolute right-3 top-2.5 text-xs font-bold"
+                           title="Clear search">✕</a>
+                    @endif
+                </div>
+            </form>
+        </div>
+
+        {{-- Store / Platform Filter Buttons (All Open, flex-wrap, no scrollbar) --}}
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+            <span class="text-[11px] font-black text-slate-400 uppercase tracking-wider shrink-0 sm:w-28 flex items-center gap-1">
+                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                </svg>
+                Platform:
+            </span>
+            <div class="flex flex-wrap items-center gap-2">
+                <a href="{{ route('admin.users', array_filter(['status' => request('status'), 'search' => request('search')])) }}"
+                   class="px-3 py-1.5 rounded-xl text-xs font-bold transition {{ !request('platform') ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">
+                    All Platforms ({{ number_format($stats['total'] ?? $users->total()) }})
+                </a>
+                <a href="{{ route('admin.users', array_filter(['platform' => 'play_store', 'status' => request('status'), 'search' => request('search')])) }}"
+                   class="px-3 py-1.5 rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5 {{ request('platform') === 'play_store' ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-600/20' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200/60' }}"
+                   title="Users with Android Mobile App installed from Play Store">
+                    <span>🤖</span>
+                    <span>Play Store App</span>
+                    <span class="px-1.5 py-0.2 rounded-md text-[10px] {{ request('platform') === 'play_store' ? 'bg-emerald-700 text-white' : 'bg-emerald-200/80 text-emerald-900 font-black' }}">{{ number_format($stats['play_store'] ?? 0) }}</span>
+                </a>
+                <a href="{{ route('admin.users', array_filter(['platform' => 'app_store', 'status' => request('status'), 'search' => request('search')])) }}"
+                   class="px-3 py-1.5 rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5 {{ request('platform') === 'app_store' ? 'bg-purple-600 text-white shadow-sm ring-2 ring-purple-600/20' : 'bg-purple-50 text-purple-800 hover:bg-purple-100 border border-purple-200/60' }}"
+                   title="Users who logged in via Apple iOS App build">
+                    <span>🍎</span>
+                    <span>iOS App</span>
+                    <span class="px-1.5 py-0.2 rounded-md text-[10px] {{ request('platform') === 'app_store' ? 'bg-purple-700 text-white' : 'bg-purple-200/80 text-purple-900 font-black' }}">{{ number_format($stats['app_store'] ?? 0) }}</span>
+                </a>
+                <a href="{{ route('admin.users', array_filter(['platform' => 'web', 'status' => request('status'), 'search' => request('search')])) }}"
+                   class="px-3 py-1.5 rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5 {{ request('platform') === 'web' ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-600/20' : 'bg-indigo-50 text-indigo-800 hover:bg-indigo-100 border border-indigo-200/60' }}"
+                   title="Website visitors using browser (No Mobile App installed)">
+                    <span>🌐</span>
+                    <span>Website Only (No App)</span>
+                    <span class="px-1.5 py-0.2 rounded-md text-[10px] {{ request('platform') === 'web' ? 'bg-indigo-700 text-white' : 'bg-indigo-200/80 text-indigo-900 font-black' }}">{{ number_format($stats['web_only'] ?? 0) }}</span>
+                </a>
+            </div>
+        </div>
+
+        {{-- Account Status Filter Buttons (All Open, flex-wrap, no scrollbar) --}}
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2 pt-2 border-t border-slate-100">
+            <span class="text-[11px] font-black text-slate-400 uppercase tracking-wider shrink-0 sm:w-28 flex items-center gap-1">
+                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Status:
+            </span>
+            <div class="flex flex-wrap items-center gap-2">
+                <a href="{{ route('admin.users', array_filter(['platform' => request('platform'), 'search' => request('search')])) }}"
+                   class="px-3 py-1.5 rounded-xl text-xs font-bold transition {{ !request('status') ? 'bg-slate-800 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">
+                    All ({{ number_format($stats['total'] ?? $users->total()) }})
+                </a>
+                <a href="{{ route('admin.users', array_filter(['status' => 'online', 'platform' => request('platform'), 'search' => request('search')])) }}"
+                   class="px-3 py-1.5 rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5 {{ request('status') === 'online' ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-600/20' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200/60' }}">
+                    <span class="w-2 h-2 rounded-full {{ request('status') === 'online' ? 'bg-white' : 'bg-emerald-500 animate-pulse' }}"></span>
+                    <span>Online Now ({{ number_format($stats['online'] ?? 0) }})</span>
+                </a>
+                <a href="{{ route('admin.users', array_filter(['status' => 'active', 'platform' => request('platform'), 'search' => request('search')])) }}"
+                   class="px-3 py-1.5 rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5 {{ request('status') === 'active' ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-600/20' : 'bg-blue-50 text-blue-800 hover:bg-blue-100 border border-blue-200/60' }}">
+                    <span>Active Accounts ({{ number_format($stats['active'] ?? 0) }})</span>
+                </a>
+                <a href="{{ route('admin.users', array_filter(['status' => 'blocked', 'platform' => request('platform'), 'search' => request('search')])) }}"
+                   class="px-3 py-1.5 rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5 {{ request('status') === 'blocked' ? 'bg-rose-600 text-white shadow-sm ring-2 ring-rose-600/20' : 'bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200/60' }}">
+                    <span>Blocked ({{ number_format($stats['blocked'] ?? 0) }})</span>
+                </a>
+            </div>
+        </div>
     </div>
 
     {{-- USERS TABLE --}}
     <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs">
-                <thead class="bg-slate-50 border-b border-slate-200 text-slate-400 uppercase font-bold tracking-wider">
+                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-black text-[11px] tracking-wider">
                     <tr>
+                        <th class="py-3.5 px-3 text-center w-14 font-black text-slate-400">#</th>
                         <th class="py-3.5 px-4">User Details</th>
                         <th class="py-3.5 px-4">Role</th>
                         <th class="py-3.5 px-4">Location</th>
-                        <th class="py-3.5 px-4 text-center">Device</th>
+                        <th class="py-3.5 px-4 text-center">Device / Platform</th>
                         <th class="py-3.5 px-4 text-center">Activity</th>
                         <th class="py-3.5 px-4 text-center">Status Toggle</th>
                         <th class="py-3.5 px-4 text-right">Actions</th>
@@ -184,7 +282,14 @@
                             $isOnline = $user->isOnline();
                             $onlineText = $user->onlineStatusText();
                         @endphp
-                        <tr class="hover:bg-slate-50/60 transition">
+                        <tr class="hover:bg-slate-50/70 transition">
+                            {{-- S.No (Descending Order) --}}
+                            <td class="py-3.5 px-3 text-center">
+                                <span class="inline-block px-2 py-0.5 text-center text-slate-500 font-mono text-[11px] font-bold bg-slate-100 rounded-md">
+                                    {{ $users->total() - (($users->currentPage() - 1) * $users->perPage()) - $loop->index }}
+                                </span>
+                            </td>
+
                             {{-- User Info --}}
                             <td class="py-3.5 px-4">
                                 <div class="flex items-center space-x-3">
@@ -239,15 +344,32 @@
                                 </div>
                             </td>
 
-                            {{-- Device --}}
+                            {{-- Device & Platform --}}
                             <td class="py-3.5 px-4 text-center whitespace-nowrap">
-                                @if($user->deviceTypeLabel() !== '—')
-                                    <div class="flex items-center justify-center gap-1">
-                                        <span class="text-sm">{{ $user->deviceIcon() }}</span>
-                                        <span class="text-[10px] font-semibold text-slate-600">{{ $user->deviceTypeLabel() }}</span>
+                                @if($user->hasMobileApp())
+                                    @php
+                                        $tType = strtolower(trim((string)$user->latestDeviceToken?->device_type));
+                                        $isIosApp = ($tType === 'ios');
+                                    @endphp
+                                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-black {{ $isIosApp ? 'bg-purple-50 text-purple-900 border border-purple-200' : 'bg-emerald-50 text-emerald-900 border border-emerald-200' }} shadow-2xs">
+                                        <span class="text-xs">{{ $isIosApp ? '🍎' : '🤖' }}</span>
+                                        <span>{{ $isIosApp ? 'App Store (iOS)' : 'Play Store (Android)' }}</span>
                                     </div>
-                                    <div class="text-[9px] text-slate-400 truncate max-w-[150px] mx-auto mt-0.5" title="{{ $user->deviceInfo() }}">
-                                        {{ $user->deviceInfo() ?: '—' }}
+                                    @if($user->latestDeviceToken?->app_version)
+                                        <div class="text-[9px] {{ $isIosApp ? 'text-purple-700' : 'text-emerald-700' }} font-bold mt-0.5">
+                                            {{ $isIosApp ? 'iOS App' : 'Play Store' }} v{{ $user->latestDeviceToken->app_version }}
+                                        </div>
+                                    @endif
+                                @elseif($user->device_os || $user->device_type)
+                                    @php
+                                        $isIos = in_array($user->device_os, ['iOS', 'OS X']);
+                                    @endphp
+                                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-bold {{ $isIos ? 'bg-amber-50 text-amber-900 border border-amber-200' : 'bg-slate-100 text-slate-700 border border-slate-200' }}">
+                                        <span>{{ $isIos ? '🍏' : $user->deviceIcon() }}</span>
+                                        <span>{{ $user->deviceTypeLabel() }}</span>
+                                    </div>
+                                    <div class="text-[9px] text-slate-400 mt-0.5" title="{{ $user->deviceInfo() }}">
+                                        {{ $user->deviceInfo() ?: 'Web Browser' }}
                                     </div>
                                 @else
                                     <span class="text-slate-300 font-bold text-base" title="No device recorded (Inactive / Never logged in)">—</span>
@@ -376,8 +498,14 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center py-10 text-slate-400 text-sm">
-                                No members found matching the selected criteria.
+                            <td colspan="8" class="text-center py-12 text-slate-400 text-sm">
+                                <div class="flex flex-col items-center justify-center space-y-2">
+                                    <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                    </svg>
+                                    <span class="font-bold text-slate-600">No members found</span>
+                                    <span class="text-xs text-slate-400">Try adjusting your platform, status, or search filters.</span>
+                                </div>
                             </td>
                         </tr>
                     @endforelse

@@ -424,28 +424,35 @@ public function activeGroups(): BelongsToMany
     }
 
     /**
+     * Check if user has an active mobile app registered.
+     */
+    public function hasMobileApp(): bool
+    {
+        $token = $this->relationLoaded('latestDeviceToken') ? $this->latestDeviceToken : $this->latestDeviceToken()->first();
+        return $token && (bool)$token->is_active;
+    }
+
+    /**
      * Get resolved device category: 'Mobile', 'Tablet', 'Desktop', or null.
      */
     public function getResolvedDeviceType(): ?string
     {
+        if ($this->hasMobileApp()) {
+            return 'Mobile App';
+        }
+
         $raw = strtolower(trim((string) $this->device_type));
 
         if (in_array($raw, ['mobile', 'android', 'ios', 'phone'])) {
-            return 'Mobile';
+            return 'Mobile Web';
         }
 
         if (in_array($raw, ['tablet', 'ipad'])) {
-            return 'Tablet';
+            return 'Tablet Web';
         }
 
         if (in_array($raw, ['desktop', 'windows', 'mac', 'linux'])) {
-            return 'Desktop';
-        }
-
-        // Fallback: check device tokens registered via mobile app
-        $token = $this->relationLoaded('latestDeviceToken') ? $this->latestDeviceToken : $this->latestDeviceToken()->first();
-        if ($token) {
-            return 'Mobile';
+            return 'Desktop Web';
         }
 
         return !empty($this->device_type) ? ucfirst($this->device_type) : null;
@@ -456,33 +463,39 @@ public function activeGroups(): BelongsToMany
      */
     public function deviceTypeLabel(): string
     {
-        $raw = strtolower(trim((string) $this->device_type));
+        // 1. Mobile App (Play Store Android / App Store iOS) takes highest priority
+        $token = $this->relationLoaded('latestDeviceToken') ? $this->latestDeviceToken : $this->latestDeviceToken()->first();
+        if ($token && $token->is_active) {
+            $isIos = strtolower(trim((string)$token->device_type)) === 'ios';
+            return $isIos ? 'App Store (iOS)' : 'Play Store (Android)';
+        }
 
-        if ($raw === 'android') {
-            return 'Mobile (Android)';
+        // 2. Web browsing users (distinguish iOS Safari / Android Chrome / Desktop)
+        $os = trim((string) $this->device_os);
+        $type = strtolower(trim((string) $this->device_type));
+
+        if ($os === 'iOS' || $os === 'OS X') {
+            return 'Web (iPhone Safari)';
         }
-        if ($raw === 'ios') {
-            return 'Mobile (iOS)';
+
+        if ($type === 'mobile' || $type === 'android' || $type === 'phone') {
+            return !empty($os) ? "Web ({$os})" : "Web (Mobile)";
         }
-        if ($raw === 'mobile') {
-            return 'Mobile';
+
+        if ($type === 'tablet' || $type === 'ipad') {
+            return !empty($os) ? "Web (Tablet {$os})" : "Web (Tablet)";
         }
-        if ($raw === 'tablet') {
-            return 'Tablet';
+
+        if ($type === 'desktop' || in_array($os, ['Windows', 'Mac', 'Linux'])) {
+            return !empty($os) ? "Web (Desktop {$os})" : "Web (Desktop)";
         }
-        if ($raw === 'desktop') {
-            return 'Desktop';
+
+        if (!empty($os)) {
+            return "Web ({$os})";
         }
 
         if (!empty($this->device_type)) {
-            return ucfirst($this->device_type);
-        }
-
-        // Fallback to latest mobile device token
-        $token = $this->relationLoaded('latestDeviceToken') ? $this->latestDeviceToken : $this->latestDeviceToken()->first();
-        if ($token) {
-            $tType = strtolower(trim((string)$token->device_type));
-            return $tType === 'ios' ? 'Mobile (iOS)' : 'Mobile (Android)';
+            return "Web (" . ucfirst($this->device_type) . ")";
         }
 
         return '—';
@@ -493,14 +506,23 @@ public function activeGroups(): BelongsToMany
      */
     public function deviceIcon(): string
     {
-        $type = $this->getResolvedDeviceType();
+        $token = $this->relationLoaded('latestDeviceToken') ? $this->latestDeviceToken : $this->latestDeviceToken()->first();
+        if ($token && $token->is_active) {
+            return strtolower(trim((string)$token->device_type)) === 'ios' ? '🍎' : '🤖';
+        }
 
-        return match ($type) {
-            'Mobile' => '📱',
-            'Tablet' => '📋',
-            'Desktop' => '💻',
-            default  => !empty($this->device_type) ? '💻' : '—',
-        };
+        $type = strtolower(trim((string) $this->device_type));
+        $os = trim((string) $this->device_os);
+
+        if ($type === 'desktop' || in_array($os, ['Windows', 'Mac', 'Linux'])) {
+            return '💻';
+        }
+
+        if ($type === 'tablet' || $type === 'ipad') {
+            return '📋';
+        }
+
+        return '🌐';
     }
 
     /**
@@ -508,33 +530,33 @@ public function activeGroups(): BelongsToMany
      */
     public function deviceInfo(): string
     {
+        // Mobile App user: show Play Store / App Store with version
+        $token = $this->relationLoaded('latestDeviceToken') ? $this->latestDeviceToken : $this->latestDeviceToken()->first();
+        if ($token && $token->is_active) {
+            $isIos = strtolower((string)$token->device_type) === 'ios';
+            $store = $isIos ? 'App Store (iOS)' : 'Play Store (Android)';
+            $ver = $token->app_version ? 'v' . $token->app_version : 'Active';
+            return "{$store} • App ({$ver})";
+        }
+
+        // Web user: show OS and Browser clearly
         $parts = [];
         if ($this->device_os) {
             $parts[] = $this->device_os;
         }
         if ($this->browser) {
             $b = trim($this->browser);
-            if (str_starts_with($b, '(')) {
+            if (str_starts_with($b, 'App')) {
+                $parts[] = 'Browser';
+            } elseif (str_starts_with($b, '(')) {
                 $parts[] = $b;
-            } elseif (str_starts_with($b, 'App')) {
-                $parts[] = '• ' . $b;
             } else {
-                $parts[] = '(' . $b . ')';
+                $parts[] = '(' . $b . ' Browser)';
             }
         }
 
         if (!empty($parts)) {
-            return implode(' ', $parts);
-        }
-
-        // Fallback to latest device token (e.g. Android app version 1.0.4)
-        $token = $this->relationLoaded('latestDeviceToken') ? $this->latestDeviceToken : $this->latestDeviceToken()->first();
-        if ($token) {
-            $osName = strtolower((string)$token->device_type) === 'ios' ? 'iOS' : 'Android';
-            if ($token->app_version) {
-                return $osName . ' • App (v' . $token->app_version . ')';
-            }
-            return $osName . ' App';
+            return 'Web • ' . implode(' ', $parts);
         }
 
         return '';

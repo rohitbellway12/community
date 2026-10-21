@@ -11,7 +11,13 @@ Artisan::command('inspire', function () {
     $dueNotifications = \App\Models\PushNotification::scheduled()->get();
     foreach ($dueNotifications as $notification) {
         $notification->update(['status' => 'draft']);
-        \App\Jobs\SendAdminPushBroadcastJob::dispatchSync($notification);
+        \App\Jobs\SendAdminPushBroadcastJob::dispatch($notification);
     }
 })->everyMinute()->name('send-scheduled-push-notifications');
+
+\Illuminate\Support\Facades\Schedule::command('queue:work --stop-when-empty --max-time=50')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->name('process-queued-jobs');
+
 
