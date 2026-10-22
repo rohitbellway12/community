@@ -49,7 +49,8 @@ class AuthController extends Controller
             'country_id'    => ['required', 'exists:countries,id'],
             'device_name'   => ['nullable', 'string', 'max:255'],
             'device_id'     => ['nullable', 'string', 'max:255'],
-            'referral_code' => ['nullable', 'string', 'max:15', 'exists:users,referral_code'],
+            'referral_code' => ['nullable', 'string', 'max:50'],
+            'campaign_code' => ['nullable', 'string', 'max:50'],
         ], [
             'email.unique' => 'This email is already registered. Please use a different email or try logging in.',
             'email.required' => 'Email address is required.',
@@ -58,17 +59,46 @@ class AuthController extends Controller
             'password.confirmed' => 'Password confirmation does not match.',
             'country_id.required' => 'Please select your country.',
             'country_id.exists' => 'Selected country is invalid.',
-            'referral_code.exists' => 'The provided referral code is invalid.',
         ]);
+
+        $deviceId = $validated['device_id'] ?? $request->header('X-Device-Id');
+
+        // Check if referral_code or campaign_code points to an influencer campaign
+        $influencerCode = $validated['campaign_code'] ?? $validated['referral_code'] ?? null;
+        $campaignMatch = null;
+        if (!empty($influencerCode)) {
+            $campaignMatch = \App\Models\InfluencerCampaign::where('code', $influencerCode)->first();
+        }
+
+        // Auto-attribute via recent mobile install on this device if code wasn't manually typed
+        if (!$campaignMatch && !empty($deviceId)) {
+            $recentInstall = \App\Models\InfluencerInstall::where('device_id', $deviceId)
+                ->where('is_registered', false)
+                ->latest('id')
+                ->first();
+            if ($recentInstall && $recentInstall->campaign) {
+                $campaignMatch = $recentInstall->campaign;
+            }
+        }
+
+        // Check peer referral
+        $referrer = null;
+        if (!empty($validated['referral_code'])) {
+            $referrer = User::where('referral_code', $validated['referral_code'])->first();
+            if (!$referrer && !$campaignMatch) {
+                throw ValidationException::withMessages([
+                    'referral_code' => ['The provided referral code is invalid.'],
+                ]);
+            }
+        }
 
         // Auto-generate a unique referral code: REIAC + 5 digits
         do {
             $code = 'REIAC' . str_pad(random_int(0, 99999), 5, '0', STR_PAD_LEFT);
         } while (User::where('referral_code', $code)->exists());
 
-        // Process referral fraud check if a code was provided
-        $deviceId = $validated['device_id'] ?? $request->header('X-Device-Id');
-        if (!empty($validated['referral_code']) && !empty($deviceId)) {
+        // Process referral fraud check if a peer referral code was provided
+        if ($referrer && !empty($deviceId)) {
             if (Referral::where('device_id', $deviceId)->exists()) {
                 throw ValidationException::withMessages([
                     'referral_code' => ['This device has already used a referral code. Only one referral per device is allowed.'],
@@ -95,22 +125,40 @@ class AuthController extends Controller
         // Initialize user stats (with referred_count = 0)
         UserStat::create(['user_id' => $user->id]);
 
-        // Process referral if a code was provided
-        if (!empty($validated['referral_code'])) {
-            $referrer = User::where('referral_code', $validated['referral_code'])->first();
-            if ($referrer && $referrer->id !== $user->id) {
-                Referral::create([
-                    'referrer_id' => $referrer->id,
-                    'referred_id' => $user->id,
-                    'device_id'   => $deviceId,
-                ]);
+        // Process Influencer Campaign Attribution
+        if ($campaignMatch) {
+            app(\App\Services\InfluencerTrackingService::class)->attributeRegistration(
+                $user,
+                $campaignMatch,
+                null,
+                $deviceId,
+                $request->ip()
+            );
 
-                // Increment the referrer's referred_count in user_stats
-                UserStat::updateOrCreate(
-                    ['user_id' => $referrer->id],
-                    []
-                )->increment('referred_count');
+            // Mark mobile install record as converted to registration
+            if (!empty($deviceId)) {
+                \App\Models\InfluencerInstall::where('campaign_id', $campaignMatch->id)
+                    ->where('device_id', $deviceId)
+                    ->update([
+                        'is_registered' => true,
+                        'user_id'       => $user->id,
+                    ]);
             }
+        }
+
+        // Process peer referral if a code was provided
+        if ($referrer && $referrer->id !== $user->id) {
+            Referral::create([
+                'referrer_id' => $referrer->id,
+                'referred_id' => $user->id,
+                'device_id'   => $deviceId,
+            ]);
+
+            // Increment the referrer's referred_count in user_stats
+            UserStat::updateOrCreate(
+                ['user_id' => $referrer->id],
+                []
+            )->increment('referred_count');
         }
 
         event(new Registered($user));

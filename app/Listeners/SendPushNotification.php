@@ -58,17 +58,51 @@ class SendPushNotification
      */
     protected function buildPushData(array $notificationData): array
     {
-        $payload = [
-            'notification_type' => $notificationData['type'] ?? 'default',
-        ];
+        $type = $notificationData['type'] ?? 'default';
 
-        foreach (['title', 'message', 'url', 'post_id', 'post_title', 'group_id', 'user_id', 'user_name'] as $key) {
-            if (isset($notificationData[$key])) {
-                $payload[$key] = $notificationData[$key];
-            }
+        // Resolve standard navigation target details matching Flutter app expectations
+        $targetType = 'home';
+        $targetId = '';
+        $actionLink = 'home';
+
+        if (!empty($notificationData['post_id'])) {
+            $targetType = 'post';
+            $targetId = (string) $notificationData['post_id'];
+            $actionLink = 'post:' . $targetId;
+        } elseif (!empty($notificationData['group_id'])) {
+            $targetType = 'group';
+            $targetId = (string) $notificationData['group_id'];
+            $actionLink = 'group:' . $targetId;
+        } elseif (!empty($notificationData['test_id'])) {
+            $targetType = 'test';
+            $targetId = (string) $notificationData['test_id'];
+            $actionLink = 'test:' . $targetId;
+        } elseif (!empty($notificationData['user_id']) && $type === 'user_followed') {
+            $targetType = 'user';
+            $targetId = (string) $notificationData['user_id'];
+            $actionLink = 'user:' . $targetId;
         }
 
-        $payload['click_action'] = $notificationData['url'] ?? 'FLUTTER_NOTIFICATION_CLICK';
+        $payload = [
+            'type'              => (string) $type,
+            'notification_type' => (string) $type,
+            'target_type'       => (string) $targetType,
+            'target_id'         => (string) $targetId,
+            'action_link'       => (string) $actionLink,
+            'click_action'      => 'FLUTTER_NOTIFICATION_CLICK',
+        ];
+
+        $keys = [
+            'title', 'message', 'url', 'post_id', 'post_title',
+            'comment', 'comment_id', 'reply', 'group_id', 'group_name',
+            'group_slug', 'user_id', 'user_name', 'test_id', 'test_title'
+        ];
+
+        foreach ($keys as $key) {
+            if (isset($notificationData[$key]) && $notificationData[$key] !== null) {
+                $payload[$key] = (string) $notificationData[$key];
+            }
+        }
 
         return $payload;
     }

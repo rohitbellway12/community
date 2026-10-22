@@ -55,12 +55,19 @@ class SendAdminPushBroadcastJob implements ShouldQueue
             return;
         }
 
-        // 2. Fetch Active Device Tokens mapped by User
-        $tokensByUser = DeviceToken::query()
+        // 2. Fetch Active Device Tokens mapped by User (Filtered by Target Platform)
+        $targetPlatform = $notification->target_platform ?? 'all';
+        $tokenQuery = DeviceToken::query()
             ->whereIn('user_id', $targetUserIds)
-            ->where('is_active', true)
-            ->get()
-            ->groupBy('user_id');
+            ->where('is_active', true);
+
+        if ($targetPlatform === 'android') {
+            $tokenQuery->where('device_type', 'android');
+        } elseif ($targetPlatform === 'ios') {
+            $tokenQuery->where('device_type', 'ios');
+        }
+
+        $tokensByUser = $tokenQuery->get()->groupBy('user_id');
 
         $successCount = 0;
         $failedCount = 0;
@@ -236,20 +243,29 @@ class SendAdminPushBroadcastJob implements ShouldQueue
     }
 
     /**
-     * Resolve target user IDs based on audience_type
+     * Resolve target user IDs based on audience_type and target_platform
      */
     protected function resolveTargetUserIds(PushNotification $notification): array
     {
         $type = $notification->audience_type;
+        $targetPlatform = $notification->target_platform ?? 'all';
+
+        $applyPlatformFilter = function ($query) use ($targetPlatform) {
+            if ($targetPlatform === 'android') {
+                $query->where('device_tokens.device_type', 'android');
+            } elseif ($targetPlatform === 'ios') {
+                $query->where('device_tokens.device_type', 'ios');
+            }
+        };
 
         if ($type === 'all_students') {
-            // Push notifications are strictly for devices with active tokens (Mobile App).
-            // Filter only users who have registered active device tokens to avoid processing thousands of web-only users.
-            return DB::table('device_tokens')
+            $q = DB::table('device_tokens')
                 ->join('users', 'device_tokens.user_id', '=', 'users.id')
                 ->where('device_tokens.is_active', true)
-                ->where('users.status', 'active')
-                ->pluck('users.id')
+                ->where('users.status', 'active');
+            $applyPlatformFilter($q);
+
+            return $q->pluck('users.id')
                 ->unique()
                 ->values()
                 ->all();
@@ -265,13 +281,15 @@ class SendAdminPushBroadcastJob implements ShouldQueue
                 return [];
             }
 
-            return DB::table('profiles')
+            $q = DB::table('profiles')
                 ->join('users', 'profiles.user_id', '=', 'users.id')
                 ->join('device_tokens', 'device_tokens.user_id', '=', 'users.id')
                 ->whereIn('profiles.country_id', $countryIds)
                 ->where('users.status', 'active')
-                ->where('device_tokens.is_active', true)
-                ->pluck('users.id')
+                ->where('device_tokens.is_active', true);
+            $applyPlatformFilter($q);
+
+            return $q->pluck('users.id')
                 ->unique()
                 ->values()
                 ->all();
@@ -287,14 +305,16 @@ class SendAdminPushBroadcastJob implements ShouldQueue
                 return [];
             }
 
-            return DB::table('group_user')
+            $q = DB::table('group_user')
                 ->join('users', 'group_user.user_id', '=', 'users.id')
                 ->join('device_tokens', 'device_tokens.user_id', '=', 'users.id')
                 ->whereIn('group_user.group_id', $groupIds)
                 ->where('group_user.status', 'active')
                 ->where('users.status', 'active')
-                ->where('device_tokens.is_active', true)
-                ->pluck('users.id')
+                ->where('device_tokens.is_active', true);
+            $applyPlatformFilter($q);
+
+            return $q->pluck('users.id')
                 ->unique()
                 ->values()
                 ->all();
@@ -310,12 +330,14 @@ class SendAdminPushBroadcastJob implements ShouldQueue
                 return [];
             }
 
-            return DB::table('device_tokens')
+            $q = DB::table('device_tokens')
                 ->join('users', 'device_tokens.user_id', '=', 'users.id')
                 ->whereIn('users.id', $userIds)
                 ->where('users.status', 'active')
-                ->where('device_tokens.is_active', true)
-                ->pluck('users.id')
+                ->where('device_tokens.is_active', true);
+            $applyPlatformFilter($q);
+
+            return $q->pluck('users.id')
                 ->unique()
                 ->values()
                 ->all();

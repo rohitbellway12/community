@@ -175,6 +175,25 @@
                     </div>
 
                     <div>
+                        <span class="text-[11px] font-bold text-slate-400 block uppercase">Target Device / Platform</span>
+                        <div class="mt-1">
+                            @if(($pushNotification->target_platform ?? 'all') === 'android')
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 inline-block">
+                                    🤖 Android (Google Play Store) Only
+                                </span>
+                            @elseif(($pushNotification->target_platform ?? 'all') === 'ios')
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-sky-50 text-sky-700 border border-sky-200 inline-block">
+                                    🍎 iOS (Apple App Store) Only
+                                </span>
+                            @else
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 inline-block">
+                                    📱 All Devices (Android & iOS)
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div>
                         <span class="text-[11px] font-bold text-slate-400 block uppercase">Sent Timestamp</span>
                         <p class="text-xs font-bold text-slate-800 mt-1">
                             {{ $pushNotification->sent_at ? $pushNotification->sent_at->format('M d, Y h:i:s A') : ($pushNotification->scheduled_at ? 'Scheduled: ' . $pushNotification->scheduled_at->format('M d, Y h:i A') : 'Draft') }}

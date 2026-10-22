@@ -34,6 +34,7 @@ Route::get('/admin', function () {
 });
 
 Route::get('/events/{slug}', [EventWebController::class, 'show'])->name('events.show');
+Route::get('/c/{code}', [\App\Http\Controllers\InfluencerTrackController::class, 'track'])->name('influencer.track');
 
 
 // Route::prefix('community') removed — XAMPP folder already provides the /community base path
@@ -454,6 +455,11 @@ Route::group([], function () {
             Route::get('/push-notifications/{pushNotification}', [\App\Http\Controllers\Admin\AdminPushNotificationController::class, 'show'])->name('push-notifications.show');
             Route::post('/push-notifications/{pushNotification}/resend', [\App\Http\Controllers\Admin\AdminPushNotificationController::class, 'resend'])->name('push-notifications.resend');
             Route::delete('/push-notifications/{pushNotification}', [\App\Http\Controllers\Admin\AdminPushNotificationController::class, 'destroy'])->name('push-notifications.destroy');
+
+            // Influencer Tracking System
+            Route::resource('influencer-campaigns', \App\Http\Controllers\Admin\AdminInfluencerCampaignController::class)
+                ->parameters(['influencer-campaigns' => 'campaign']);
+            Route::get('/influencer-campaigns/{campaign}/export', [\App\Http\Controllers\Admin\AdminInfluencerCampaignController::class, 'export'])->name('influencer-campaigns.export');
 
             // Notification Templates (combined: push toggles + message editing + Firebase settings)
             Route::get('/notification-templates', [\App\Http\Controllers\Admin\AdminNotificationTemplateController::class, 'index'])->name('notification-templates.index');

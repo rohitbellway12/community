@@ -95,6 +95,16 @@ class AdminPushNotificationController extends Controller
             ->where('is_active', true)
             ->count();
 
+        $androidDevicesCount = DeviceToken::query()
+            ->where('is_active', true)
+            ->where('device_type', 'android')
+            ->count();
+
+        $iosDevicesCount = DeviceToken::query()
+            ->where('is_active', true)
+            ->where('device_type', 'ios')
+            ->count();
+
         $countries = \App\Models\Country::where('status', true)
             ->withCount(['profiles as students_count' => function ($q) {
                 $q->whereHas('user', function ($uq) {
@@ -104,7 +114,16 @@ class AdminPushNotificationController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('admin.push-notifications.create', compact('groups', 'tests', 'events', 'countries', 'totalActiveStudents', 'activeDeviceTokensCount'));
+        return view('admin.push-notifications.create', compact(
+            'groups',
+            'tests',
+            'events',
+            'countries',
+            'totalActiveStudents',
+            'activeDeviceTokensCount',
+            'androidDevicesCount',
+            'iosDevicesCount'
+        ));
     }
 
     /**
@@ -116,6 +135,7 @@ class AdminPushNotificationController extends Controller
             'title'             => ['required', 'string', 'max:65'],
             'description'       => ['required', 'string', 'max:240'],
             'audience_type'     => ['required', 'in:all_students,group,individual,country'],
+            'target_platform'   => ['nullable', 'in:all,android,ios'],
             'groups'            => ['required_if:audience_type,group', 'array'],
             'groups.*'          => ['integer', 'exists:groups,id'],
             'users'             => ['required_if:audience_type,individual', 'array'],
@@ -181,6 +201,7 @@ class AdminPushNotificationController extends Controller
             'banner_url'       => $bannerUrl,
             'action_link'      => $actionLink,
             'audience_type'    => $validated['audience_type'],
+            'target_platform'  => ($validated['audience_type'] === 'all_students') ? ($validated['target_platform'] ?? 'all') : 'all',
             'status'           => $status,
             'scheduled_at'     => $scheduledAt,
             'total_recipients' => 0,
@@ -309,54 +330,59 @@ class AdminPushNotificationController extends Controller
     public function recipientCount(Request $request): JsonResponse
     {
         $audienceType = $request->input('audience_type', 'all_students');
+        $targetPlatform = ($audienceType === 'all_students') ? strtolower(trim($request->input('target_platform', 'all'))) : 'all';
         $userIds = [];
 
+        $applyPlatformFilter = function ($query) use ($targetPlatform) {
+            if ($targetPlatform === 'android') {
+                $query->where('device_tokens.device_type', 'android');
+            } elseif ($targetPlatform === 'ios') {
+                $query->where('device_tokens.device_type', 'ios');
+            }
+        };
+
         if ($audienceType === 'all_students') {
-            $userIds = DB::table('device_tokens')
+            $q = DB::table('device_tokens')
                 ->join('users', 'device_tokens.user_id', '=', 'users.id')
                 ->where('device_tokens.is_active', true)
-                ->where('users.status', 'active')
-                ->pluck('users.id')
-                ->unique()
-                ->all();
+                ->where('users.status', 'active');
+            $applyPlatformFilter($q);
+            $userIds = $q->pluck('users.id')->unique()->all();
         } elseif ($audienceType === 'country') {
             $countryIds = $request->input('countries', []);
             if (!empty($countryIds)) {
-                $userIds = DB::table('profiles')
+                $q = DB::table('profiles')
                     ->join('users', 'profiles.user_id', '=', 'users.id')
                     ->join('device_tokens', 'device_tokens.user_id', '=', 'users.id')
                     ->whereIn('profiles.country_id', $countryIds)
                     ->where('users.status', 'active')
-                    ->where('device_tokens.is_active', true)
-                    ->pluck('users.id')
-                    ->unique()
-                    ->all();
+                    ->where('device_tokens.is_active', true);
+                $applyPlatformFilter($q);
+                $userIds = $q->pluck('users.id')->unique()->all();
             }
         } elseif ($audienceType === 'group') {
             $groupIds = $request->input('groups', []);
             if (!empty($groupIds)) {
-                $userIds = DB::table('group_user')
+                $q = DB::table('group_user')
                     ->join('users', 'group_user.user_id', '=', 'users.id')
                     ->join('device_tokens', 'device_tokens.user_id', '=', 'users.id')
                     ->whereIn('group_user.group_id', $groupIds)
                     ->where('group_user.status', 'active')
                     ->where('users.status', 'active')
-                    ->where('device_tokens.is_active', true)
-                    ->pluck('users.id')
-                    ->unique()
-                    ->all();
+                    ->where('device_tokens.is_active', true);
+                $applyPlatformFilter($q);
+                $userIds = $q->pluck('users.id')->unique()->all();
             }
         } elseif ($audienceType === 'individual') {
             $requestedUsers = $request->input('users', []);
             if (!empty($requestedUsers)) {
-                $userIds = DB::table('device_tokens')
+                $q = DB::table('device_tokens')
                     ->join('users', 'device_tokens.user_id', '=', 'users.id')
                     ->whereIn('users.id', $requestedUsers)
                     ->where('users.status', 'active')
-                    ->where('device_tokens.is_active', true)
-                    ->pluck('users.id')
-                    ->unique()
-                    ->all();
+                    ->where('device_tokens.is_active', true);
+                $applyPlatformFilter($q);
+                $userIds = $q->pluck('users.id')->unique()->all();
             }
         }
 
@@ -364,17 +390,28 @@ class AdminPushNotificationController extends Controller
         $tokenCount = 0;
 
         if ($userCount > 0) {
-            $tokenCount = DeviceToken::query()
+            $tokenQuery = DeviceToken::query()
                 ->whereIn('user_id', $userIds)
-                ->where('is_active', true)
-                ->count();
+                ->where('is_active', true);
+            if ($targetPlatform === 'android') {
+                $tokenQuery->where('device_type', 'android');
+            } elseif ($targetPlatform === 'ios') {
+                $tokenQuery->where('device_type', 'ios');
+            }
+            $tokenCount = $tokenQuery->count();
         }
+
+        $platformLabel = match($targetPlatform) {
+            'android' => 'Android (Play Store)',
+            'ios'     => 'iOS (App Store)',
+            default   => 'Mobile (Android & iOS)',
+        };
 
         return response()->json([
             'success'     => true,
             'user_count'  => $userCount,
             'token_count' => $tokenCount,
-            'message'     => "{$userCount} active students (" . ($tokenCount > 0 ? "{$tokenCount} active devices" : "0 devices registered") . ") will receive this notification.",
+            'message'     => "{$userCount} active students (" . ($tokenCount > 0 ? "{$tokenCount} active {$platformLabel} devices" : "0 devices registered") . ") will receive this notification.",
         ]);
     }
 

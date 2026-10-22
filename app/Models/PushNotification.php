@@ -15,6 +15,7 @@ class PushNotification extends Model
         'banner_url',
         'action_link',
         'audience_type',
+        'target_platform',
         'status',
         'scheduled_at',
         'sent_at',

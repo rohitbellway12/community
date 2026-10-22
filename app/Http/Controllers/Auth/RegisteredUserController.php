@@ -66,10 +66,23 @@ class RegisteredUserController extends Controller
             'referral_code' => [
                 'nullable',
                 'string',
-                'max:15',
-                'exists:users,referral_code'
+                'max:50',
             ],
         ]);
+
+        // Validate referral code if provided (can be a user referral code OR an influencer campaign code)
+        $campaignMatch = null;
+        $referrer = null;
+        if (!empty($validated['referral_code'])) {
+            $referrer = User::where('referral_code', $validated['referral_code'])->first();
+            $campaignMatch = \App\Models\InfluencerCampaign::where('code', $validated['referral_code'])->first();
+
+            if (!$referrer && !$campaignMatch) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'referral_code' => ['The selected referral code is invalid.'],
+                ]);
+            }
+        }
 
         // Auto-generate a unique referral code: REIAC + 5 digits
         do {
@@ -95,21 +108,46 @@ class RegisteredUserController extends Controller
         // Initialize user stats (with referred_count = 0)
         UserStat::firstOrCreate(['user_id' => $user->id]);
 
-        // Process referral if a code was provided
-        if (!empty($validated['referral_code'])) {
-            $referrer = User::where('referral_code', $validated['referral_code'])->first();
-            if ($referrer && $referrer->id !== $user->id) {
-                Referral::create([
-                    'referrer_id' => $referrer->id,
-                    'referred_id' => $user->id,
-                ]);
+        // Process Influencer Campaign Attribution (via session, cookie, or direct code)
+        $influencerCampaignId = session('influencer_campaign_id') ?? request()->cookie('influencer_campaign_id');
+        $influencerClickId = session('influencer_click_id') ?? request()->cookie('influencer_click_id');
+        $attributedCampaign = null;
 
-                // Increment the referrer's referred_count in user_stats
-                UserStat::updateOrCreate(
-                    ['user_id' => $referrer->id],
-                    []
-                )->increment('referred_count');
-            }
+        if ($influencerCampaignId) {
+            $attributedCampaign = \App\Models\InfluencerCampaign::find($influencerCampaignId);
+        }
+        if (!$attributedCampaign && $campaignMatch) {
+            $attributedCampaign = $campaignMatch;
+        }
+
+        if ($attributedCampaign) {
+            app(\App\Services\InfluencerTrackingService::class)->attributeRegistration(
+                $user,
+                $attributedCampaign,
+                $influencerClickId ? (int) $influencerClickId : null,
+                null,
+                $request->ip()
+            );
+
+            // Clear session & forget cookies so future signups on this browser are not mistakenly attributed
+            session()->forget(['influencer_campaign_id', 'influencer_click_id', 'influencer_code']);
+            \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('influencer_campaign_id'));
+            \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('influencer_click_id'));
+            \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget('influencer_code'));
+        }
+
+        // Process peer-to-peer referral if valid user referrer found
+        if ($referrer && $referrer->id !== $user->id) {
+            Referral::create([
+                'referrer_id' => $referrer->id,
+                'referred_id' => $user->id,
+            ]);
+
+            // Increment the referrer's referred_count in user_stats
+            UserStat::updateOrCreate(
+                ['user_id' => $referrer->id],
+                []
+            )->increment('referred_count');
         }
 
         event(new Registered($user));

@@ -89,6 +89,9 @@ Route::prefix('v1')->group(function () {
     Route::post('services/{id_or_slug}/inquiry', [ServiceController::class, 'recordInquiry'])->name('api.v1.services.inquiry');
     Route::get('service-categories', [ServiceController::class, 'categories'])->name('api.v1.service-categories.index');
 
+    // Influencer Campaign Mobile Install Tracking (App First Launch)
+    Route::post('influencer/track-install', [\App\Http\Controllers\Api\V1\InfluencerApiController::class, 'trackInstall'])->name('api.v1.influencer.track-install');
+
     // ============================================================
     // AUTHENTICATION
     // ============================================================

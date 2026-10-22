@@ -825,7 +825,7 @@
                      6. MARKETING & ENGAGEMENT
                 ===================================================== --}}
                 @php
-                    $isMarketingActive = request()->is('*admin/push-notifications*') || request()->is('*admin/events*') || request()->is('*admin/banners*');
+                    $isMarketingActive = request()->is('*admin/push-notifications*') || request()->is('*admin/events*') || request()->is('*admin/banners*') || request()->is('*admin/influencer-campaigns*');
                     $sidebarActiveBanners = \App\Models\Banner::where('status', 'active')->count();
                     $sidebarEventsCount = \App\Models\Event::count();
                 @endphp
@@ -855,6 +855,20 @@
                     </button>
 
                     <div x-show="open" x-collapse class="mt-1.5 space-y-1 ml-4 pl-3.5 border-l-2 border-slate-700/60">
+                        {{-- Influencer Tracking --}}
+                        <a
+                            href="{{ route('admin.influencer-campaigns.index') }}"
+                            class="flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-[13.5px] font-medium transition-colors
+                                   {{ request()->routeIs('admin.influencer-campaigns*')
+                                        ? 'bg-reiac-slate text-reiac-gold font-bold shadow-xs'
+                                        : 'text-slate-300 hover:bg-reiac-slate/60 hover:text-white' }}"
+                        >
+                            <svg class="w-4 h-4 shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            <span>Influencer Tracking</span>
+                        </a>
+
                         {{-- Push Notifications Module --}}
                         <a
                             href="{{ route('admin.push-notifications.index') }}"

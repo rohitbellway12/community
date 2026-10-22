@@ -247,25 +247,37 @@
                                 </div>
                             </td>
 
-                            {{-- Audience --}}
+                            {{-- Audience & Platform --}}
                             <td class="py-3.5 px-4 whitespace-nowrap">
-                                @if($item->audience_type === 'all_students')
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200/70">
-                                        👥 All Students
-                                    </span>
-                                @elseif($item->audience_type === 'country')
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200/70">
-                                        🌍 {{ $item->targets->count() }} Countries
-                                    </span>
-                                @elseif($item->audience_type === 'group')
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200/70">
-                                        🏢 {{ $item->targets->count() }} Groups
-                                    </span>
-                                @else
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/70">
-                                        👤 {{ $item->targets->count() }} Students
-                                    </span>
-                                @endif
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    @if($item->audience_type === 'all_students')
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200/70">
+                                            👥 All Students
+                                        </span>
+                                    @elseif($item->audience_type === 'country')
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200/70">
+                                            🌍 {{ $item->targets->count() }} Countries
+                                        </span>
+                                    @elseif($item->audience_type === 'group')
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200/70">
+                                            🏢 {{ $item->targets->count() }} Groups
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/70">
+                                            👤 {{ $item->targets->count() }} Students
+                                        </span>
+                                    @endif
+
+                                    @if(($item->target_platform ?? 'all') === 'android')
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                            🤖 Android
+                                        </span>
+                                    @elseif(($item->target_platform ?? 'all') === 'ios')
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
+                                            🍎 iOS
+                                        </span>
+                                    @endif
+                                </div>
                                 <div class="text-[10px] text-slate-400 mt-1">
                                     By: {{ $item->creator ? $item->creator->name : 'System' }}
                                 </div>

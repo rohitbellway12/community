@@ -214,10 +214,62 @@
                 <input type="hidden" name="audience_type" :value="audienceType">
             </div>
 
+            {{-- Target Device / Operating System Filter (Visible ONLY for All Students) --}}
+            <div class="pt-1" x-show="audienceType === 'all_students'" x-cloak>
+                <div class="flex items-center justify-between mb-1.5">
+                    <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <span>Target Mobile Device / Platform</span>
+                        <span class="text-[10px] text-amber-700 bg-amber-50 border border-amber-200/60 font-semibold px-2 py-0.5 rounded-full">Device Filter</span>
+                    </label>
+                    <span class="text-[11px] text-slate-400 font-medium">Filter recipients by mobile OS</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/60">
+                    {{-- Option 1: All Devices --}}
+                    <button type="button" @click="setTargetPlatform('all')"
+                            :class="targetPlatform === 'all'
+                                ? 'bg-white text-slate-950 font-extrabold shadow-xs border border-slate-200/80 ring-1 ring-amber-500/40'
+                                : 'text-slate-600 font-bold hover:text-slate-900'"
+                            class="py-2.5 px-3 rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+                        <span>📱</span>
+                        <span>All Devices</span>
+                        <span class="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full">({{ number_format($activeDeviceTokensCount) }})</span>
+                    </button>
+
+                    {{-- Option 2: Android Only --}}
+                    <button type="button" @click="setTargetPlatform('android')"
+                            :class="targetPlatform === 'android'
+                                ? 'bg-white text-emerald-800 font-extrabold shadow-xs border border-emerald-200 ring-1 ring-emerald-500/50'
+                                : 'text-slate-600 font-bold hover:text-slate-900'"
+                            class="py-2.5 px-3 rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+                        <span>🤖</span>
+                        <span>Android (Play Store)</span>
+                        <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full">
+                            {{ number_format($androidDevicesCount) }}
+                        </span>
+                    </button>
+
+                    {{-- Option 3: iOS Only --}}
+                    <button type="button" @click="setTargetPlatform('ios')"
+                            :class="targetPlatform === 'ios'
+                                ? 'bg-white text-sky-800 font-extrabold shadow-xs border border-sky-200 ring-1 ring-sky-500/50'
+                                : 'text-slate-600 font-bold hover:text-slate-900'"
+                            class="py-2.5 px-3 rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+                        <span>🍎</span>
+                        <span>iOS (App Store)</span>
+                        <span class="text-[10px] font-bold text-sky-700 bg-sky-50 border border-sky-100 px-1.5 py-0.5 rounded-full">
+                            {{ number_format($iosDevicesCount) }}
+                        </span>
+                    </button>
+                </div>
+                <input type="hidden" name="target_platform" :value="targetPlatform">
+            </div>
+
             {{-- All Students Notice --}}
             <div x-show="audienceType === 'all_students'" x-cloak class="p-3.5 rounded-xl border border-purple-200/80 bg-purple-50/60 text-xs flex items-center gap-2.5 text-purple-900 font-medium">
                 <span class="text-base">📱</span>
-                <span>Broadcasting to all registered mobile app devices (<strong>{{ number_format($activeDeviceTokensCount) }} active devices</strong>). Web-only users without mobile app are skipped automatically.</span>
+                <span x-show="targetPlatform === 'all'">Broadcasting to all registered mobile app devices (<strong>{{ number_format($activeDeviceTokensCount) }} active devices</strong>). Web-only users without mobile app are skipped automatically.</span>
+                <span x-show="targetPlatform === 'android'">Broadcasting strictly to <strong>Android (Google Play Store)</strong> devices (<strong>{{ number_format($androidDevicesCount) }} active devices</strong>). iOS devices are excluded.</span>
+                <span x-show="targetPlatform === 'ios'">Broadcasting strictly to <strong>iOS (Apple App Store)</strong> devices (<strong>{{ number_format($iosDevicesCount) }} active devices</strong>). Android devices are excluded.</span>
             </div>
 
             {{-- 2. Specific Groups Searchable Multi-Select Dropdown --}}
@@ -511,6 +563,12 @@
                     </span>
                     <span class="font-extrabold text-slate-900 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs" x-text="audienceLabel"></span>
                 </div>
+                <div class="flex items-center justify-between pb-2.5 border-b border-slate-200/60" x-show="audienceType === 'all_students'">
+                    <span class="text-slate-500 font-bold flex items-center gap-1.5">
+                        <span class="text-slate-400">📱</span> Target Device
+                    </span>
+                    <span class="font-extrabold text-slate-900 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs" x-text="platformLabel"></span>
+                </div>
                 <div class="flex items-center justify-between pb-2.5 border-b border-slate-200/60">
                     <span class="text-slate-500 font-bold flex items-center gap-1.5">
                         <span class="text-slate-400">👥</span> Recipients
@@ -564,6 +622,7 @@ function pushNotificationComposer() {
         description: '',
         bannerUrl: null,
         audienceType: 'all_students',
+        targetPlatform: 'all',
         groupDropdownOpen: false,
         groupSearchQuery: '',
         selectedGroups: [],
@@ -588,6 +647,17 @@ function pushNotificationComposer() {
 
         allGroups: @json($groups),
         allCountries: @json($countries),
+
+        setTargetPlatform(platform) {
+            this.targetPlatform = platform;
+            this.refreshRecipientCount();
+        },
+
+        get platformLabel() {
+            if (this.targetPlatform === 'android') return '🤖 Android (Play Store) Only';
+            if (this.targetPlatform === 'ios') return '🍎 iOS (App Store) Only';
+            return '📱 All Devices (Android & iOS)';
+        },
 
         get isAudienceValid() {
             if (this.audienceType === 'all_students') return true;
@@ -634,6 +704,9 @@ function pushNotificationComposer() {
 
         setAudienceType(type) {
             this.audienceType = type;
+            if (type !== 'all_students') {
+                this.targetPlatform = 'all';
+            }
             this.groupDropdownOpen = false;
             this.userDropdownOpen = false;
             this.countryDropdownOpen = false;
@@ -764,6 +837,7 @@ function pushNotificationComposer() {
 
             const params = new URLSearchParams();
             params.append('audience_type', this.audienceType);
+            params.append('target_platform', this.targetPlatform);
 
             if (this.audienceType === 'country') {
                 this.selectedCountries.forEach(id => params.append('countries[]', id));
