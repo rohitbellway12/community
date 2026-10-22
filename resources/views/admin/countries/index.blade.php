@@ -3,7 +3,7 @@
 @section('title', 'Country Management')
 
 @section('content')
-<div class="max-w-7xl mx-auto" x-data="{ openAddModal: false, editModal: false, currentCountry: {} }">
+<div class="p-6 space-y-6 max-w-[1400px] w-full mx-auto" x-data="{ openAddModal: false, editModal: false, currentCountry: {} }">
     
     <!-- Header Section -->
     <div class="flex items-center justify-between mb-6">

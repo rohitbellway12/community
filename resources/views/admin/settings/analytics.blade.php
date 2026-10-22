@@ -3,7 +3,7 @@
 @section('title', 'Website & System Settings')
 
 @section('content')
-<div class="p-6 space-y-6 max-w-7xl mx-auto">
+<div class="p-6 space-y-6 max-w-[1400px] w-full mx-auto">
 
     {{-- FLASH MESSAGES --}}
     @if(isset($errors) && $errors->any())

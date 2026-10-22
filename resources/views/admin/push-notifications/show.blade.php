@@ -3,7 +3,7 @@
 @section('title', 'Notification Details & Delivery Report')
 
 @section('content')
-<div class="p-6 space-y-6 max-w-[1440px] w-full mx-auto" x-data="{ resendConfirm: false }">
+<div class="p-6 space-y-6 max-w-[1400px] w-full mx-auto" x-data="{ resendConfirm: false }">
 
     {{-- ALERT MESSAGES --}}
     @if(session('success'))

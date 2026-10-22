@@ -3,7 +3,7 @@
 @section('title', 'Influencer Tracking')
 
 @section('content')
-<div class="space-y-6 max-w-[1440px] w-full mx-auto" x-data="{ copiedCode: '' }">
+<div class="p-6 space-y-6 max-w-[1400px] w-full mx-auto" x-data="{ copiedCode: '' }">
 
     {{-- ALERT MESSAGES --}}
     @if(session('success'))

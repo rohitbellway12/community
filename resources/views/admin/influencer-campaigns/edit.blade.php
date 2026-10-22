@@ -3,7 +3,7 @@
 @section('title', 'Edit Influencer Campaign')
 
 @section('content')
-<div class="space-y-6 max-w-[920px] w-full mx-auto" x-data="{
+<div class="p-6 space-y-6 max-w-[1400px] w-full mx-auto" x-data="{
     code: '{{ old('code', $campaign->code) }}'
 }">
 

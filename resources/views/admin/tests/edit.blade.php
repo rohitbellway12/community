@@ -20,7 +20,7 @@
     $existingTargetIds = $test->target_user_ids ?? ($test->target_user_id ? [(int) $test->target_user_id] : []);
     $oldTargetUserIds = array_values(array_unique(array_filter(array_map('intval', (array) old('target_user_ids', $existingTargetIds)))));
 @endphp
-<div class="p-6 max-w-[1000px] w-full mx-auto">
+<div class="p-6 space-y-6 max-w-[1400px] w-full mx-auto">
 
     {{-- FLASH MESSAGES --}}
     @if(session('success'))

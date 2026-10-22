@@ -3,7 +3,7 @@
 @section('title', 'Documents & Resources Management')
 
 @section('content')
-<div class="space-y-6">
+<div class="p-6 space-y-6 max-w-[1400px] w-full mx-auto">
 
     {{-- FLASH MESSAGES --}}
     @if(session('success'))

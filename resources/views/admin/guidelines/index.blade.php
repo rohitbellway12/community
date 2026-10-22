@@ -23,7 +23,7 @@
         };
         this.editModalOpen = true;
     }
-}" class="space-y-6">
+}" class="p-6 space-y-6 max-w-[1400px] w-full mx-auto">
 
     {{-- TOP BANNER & STATS --}}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">

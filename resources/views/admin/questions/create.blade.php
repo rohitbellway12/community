@@ -3,7 +3,7 @@
 @section('title', 'Add Question')
 
 @section('content')
-<div class="p-6 max-w-[1000px] w-full mx-auto">
+<div class="p-6 space-y-6 max-w-[1400px] w-full mx-auto">
 
     {{-- FLASH MESSAGES --}}
     @if(session('success'))

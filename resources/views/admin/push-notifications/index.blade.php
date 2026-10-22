@@ -3,7 +3,7 @@
 @section('title', 'Push Notifications Management')
 
 @section('content')
-<div class="p-6 space-y-6 max-w-[1440px] w-full mx-auto">
+<div class="p-6 space-y-6 max-w-[1400px] w-full mx-auto">
 
     {{-- ALERT MESSAGES --}}
     @if(session('success'))
