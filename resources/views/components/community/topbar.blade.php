@@ -366,8 +366,6 @@
                         <span class="absolute left-0 right-0 -bottom-1 h-0.5 bg-amber-400 rounded-full"></span>
                     </a>
 
-
-
                     {{-- Notices --}}
                     <a
                         href="https://www.reiaconsultancy.com/notices"
@@ -398,6 +396,24 @@
             <div class="flex items-center gap-2 sm:gap-3 shrink-0">
 
                 @auth
+
+                    {{-- ADMIN DASHBOARD BUTTON (Visible directly on topbar for Admins) --}}
+                    @if (($authUser?->role instanceof \App\Enums\UserRole && $authUser->role->value === 'admin') || $authUser?->role === 'admin')
+                        <a
+                            href="{{ route('admin.dashboard') }}"
+                            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full
+                                   bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400
+                                   text-[#0b1329] text-xs font-black shadow-xs hover:shadow-md
+                                   transition-all duration-150 shrink-0 group border border-amber-300/60"
+                            title="Go to Admin Dashboard"
+                        >
+                            <svg class="w-3.5 h-3.5 text-[#0b1329] group-hover:scale-105 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 13h8V3H3v10zm10 8h8V11h-8v10zM3 21h8v-6H3v6zm10-18v6h8V3h-8z" />
+                            </svg>
+                            <span class="hidden sm:inline">Admin Dashboard</span>
+                            <span class="sm:hidden">Admin</span>
+                        </a>
+                    @endif
 
                     {{-- DESKTOP NOTIFICATIONS --}}
                     <div
@@ -1170,6 +1186,14 @@
                                 Saved Posts
                             </a>
 
+                            <a
+                                href="{{ route('resume-builder.my-resumes') }}"
+                                class="flex items-center px-4 py-2.5 text-xs font-semibold hover:bg-slate-50 transition text-slate-700"
+                            >
+                                <span class="w-4 h-4 mr-2 text-amber-500 text-sm">📄</span>
+                                My AI Resumes
+                            </a>
+
                             <div class="border-t border-slate-100 my-1"></div>
 
                             <form method="POST" action="{{ route('logout') }}">
@@ -1457,6 +1481,26 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                         </svg>
                         View Profile
+                    </a>
+
+                    {{-- AI Resume Builder --}}
+                    <a
+                        href="{{ route('resume-builder.index') }}"
+                        @click="mobileMenuOpen = false"
+                        class="flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold text-amber-400 hover:bg-white/10 transition"
+                    >
+                        <span class="mr-2.5 text-sm">✨</span>
+                        AI Resume Builder
+                    </a>
+
+                    {{-- My Saved Resumes --}}
+                    <a
+                        href="{{ route('resume-builder.my-resumes') }}"
+                        @click="mobileMenuOpen = false"
+                        class="flex items-center px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-200 hover:bg-white/10 transition"
+                    >
+                        <span class="mr-2.5 text-sm">📄</span>
+                        My Saved Resumes
                     </a>
 
                     {{-- Logout --}}

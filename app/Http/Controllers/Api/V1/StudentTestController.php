@@ -553,19 +553,25 @@ class StudentTestController extends Controller
 
         $attempt->gradeAndComplete($answers, $submissionType, $tabSwitchCount);
 
+        $timeTakenSeconds = ($attempt->started_at && $attempt->submitted_at)
+            ? abs($attempt->started_at->diffInSeconds($attempt->submitted_at))
+            : null;
+
         return $this->successResponse([
-            'attempt_id'       => $attempt->id,
-            'status'           => $attempt->status,
-            'submission_type'  => $submissionType,
-            'total_questions'  => (int) $attempt->total_questions,
-            'answered_count'   => (int) $attempt->answered_count,
-            'correct_count'    => (int) $attempt->correct_count,
-            'incorrect_count'  => (int) $attempt->incorrect_count,
-            'unanswered_count' => (int) $attempt->unanswered_count,
-            'score_obtained'   => (float) $attempt->score_obtained,
-            'percentage'       => (float) $attempt->percentage,
-            'result'           => $attempt->result,
-            'submitted_at'     => $attempt->submitted_at?->toIso8601String(),
+            'attempt_id'         => $attempt->id,
+            'status'             => $attempt->status,
+            'submission_type'    => $submissionType,
+            'total_questions'    => (int) $attempt->total_questions,
+            'answered_count'     => (int) $attempt->answered_count,
+            'correct_count'      => (int) $attempt->correct_count,
+            'incorrect_count'    => (int) $attempt->incorrect_count,
+            'unanswered_count'   => (int) $attempt->unanswered_count,
+            'score_obtained'     => (float) $attempt->score_obtained,
+            'percentage'         => (float) $attempt->percentage,
+            'result'             => $attempt->result,
+            'started_at'         => $attempt->started_at?->toIso8601String(),
+            'submitted_at'       => $attempt->submitted_at?->toIso8601String(),
+            'time_taken_seconds' => $timeTakenSeconds,
         ], 'Examination submitted successfully.');
     }
 
@@ -671,8 +677,11 @@ class StudentTestController extends Controller
                 'result'           => $attempt->result,
                 'grade_slab'       => $matchedSlab ? $matchedSlab->name : null,
                 'submission_type'  => $attempt->submission_type,
-                'started_at'       => $attempt->started_at?->toIso8601String(),
-                'submitted_at'     => $attempt->submitted_at?->toIso8601String(),
+                'started_at'         => $attempt->started_at?->toIso8601String(),
+                'submitted_at'       => $attempt->submitted_at?->toIso8601String(),
+                'time_taken_seconds' => ($attempt->started_at && $attempt->submitted_at)
+                    ? abs($attempt->started_at->diffInSeconds($attempt->submitted_at))
+                    : null,
             ],
             'solutions' => $solutions,
         ];
@@ -711,7 +720,11 @@ class StudentTestController extends Controller
                 'certificate_pdf_url'  => route('tests.student.certificate.download', ['test' => $att->test_id, 'attempt' => $att->id]),
                 'certificate_view_url' => route('tests.student.certificate.download', ['test' => $att->test_id, 'attempt' => $att->id]) . '?inline=1',
                 'pdf_download_url'     => route('tests.student.certificate.download', ['test' => $att->test_id, 'attempt' => $att->id]),
+                'started_at'           => $att->started_at?->toIso8601String(),
                 'submitted_at'         => $att->submitted_at?->toIso8601String(),
+                'time_taken_seconds'   => ($att->started_at && $att->submitted_at)
+                    ? abs($att->started_at->diffInSeconds($att->submitted_at))
+                    : null,
             ];
         });
 

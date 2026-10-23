@@ -85,23 +85,41 @@
 
     {{-- TIME INFO --}}
     <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5">
-        <h3 class="text-sm font-bold text-slate-900 mb-3">Time Details</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+        <h3 class="text-sm font-bold text-slate-900 mb-3">Time & Session Details</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 text-xs">
             <div>
-                <span class="text-slate-400 font-semibold">Started:</span>
-                <span class="font-bold text-slate-800">{{ $attempt->started_at?->format('M d, Y H:i:s') ?? 'N/A' }}</span>
+                <span class="text-slate-400 font-semibold block uppercase tracking-wider text-[10px]">Start Time</span>
+                <span class="font-bold text-slate-800 text-xs mt-1 block">{{ $attempt->started_at?->format('M d, Y H:i:s') ?? 'N/A' }}</span>
             </div>
             <div>
-                <span class="text-slate-400 font-semibold">Submitted:</span>
-                <span class="font-bold text-slate-800">{{ $attempt->submitted_at?->format('M d, Y H:i:s') ?? 'N/A' }}</span>
+                <span class="text-slate-400 font-semibold block uppercase tracking-wider text-[10px]">Submit Time</span>
+                <span class="font-bold text-slate-800 text-xs mt-1 block">{{ $attempt->submitted_at?->format('M d, Y H:i:s') ?? 'N/A' }}</span>
             </div>
             <div>
-                <span class="text-slate-400 font-semibold">Allowed Until:</span>
-                <span class="font-bold text-slate-800">{{ $attempt->allowed_until?->format('M d, Y H:i:s') ?? 'N/A' }}</span>
+                <span class="text-slate-400 font-semibold block uppercase tracking-wider text-[10px]">Time Taken</span>
+                <div class="mt-1">
+                    @if($attempt->started_at && $attempt->submitted_at)
+                        @php
+                            $totalSecs = abs($attempt->started_at->diffInSeconds($attempt->submitted_at));
+                            $hrs = floor($totalSecs / 3600);
+                            $mins = floor(($totalSecs % 3600) / 60);
+                            $secs = $totalSecs % 60;
+                        @endphp
+                        <span class="font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full inline-block text-xs">
+                            {{ $hrs > 0 ? "{$hrs}h " : '' }}{{ $mins }}m {{ $secs }}s
+                        </span>
+                    @else
+                        <span class="text-slate-400 italic">In Progress</span>
+                    @endif
+                </div>
             </div>
             <div>
-                <span class="text-slate-400 font-semibold">Duration:</span>
-                <span class="font-bold text-slate-800">{{ $attempt->test?->duration_minutes }} min</span>
+                <span class="text-slate-400 font-semibold block uppercase tracking-wider text-[10px]">Test Duration</span>
+                <span class="font-bold text-slate-800 text-xs mt-1 block">{{ $attempt->test?->duration_minutes ?? 0 }} min</span>
+            </div>
+            <div>
+                <span class="text-slate-400 font-semibold block uppercase tracking-wider text-[10px]">Submission Deadline</span>
+                <span class="font-bold text-slate-800 text-xs mt-1 block">{{ $attempt->allowed_until?->format('M d, Y H:i:s') ?? 'N/A' }}</span>
             </div>
         </div>
     </div>

@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('test_id')->constrained()->cascadeOnDelete();
             $table->integer('attempt_number')->default(1);
-            $table->timestamp('started_at');
+            $table->timestamp('started_at')->nullable();
             $table->timestamp('allowed_until')->nullable();
             $table->timestamp('submitted_at')->nullable();
             $table->integer('total_questions');

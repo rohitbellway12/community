@@ -514,6 +514,14 @@ Route::group([], function () {
             // Service Categories
             Route::resource('service-categories', \App\Http\Controllers\Admin\AdminServiceCategoryController::class)->except(['create', 'show', 'edit']);
 
+            // AI Resume Builder & Watermark Moderation
+            Route::get('/resumes', [\App\Http\Controllers\Admin\AdminResumeController::class, 'index'])->name('resumes.index');
+            Route::get('/resumes/verifications', [\App\Http\Controllers\Admin\AdminResumeController::class, 'verifications'])->name('resumes.verifications');
+            Route::post('/resumes/verifications/{verification}/approve', [\App\Http\Controllers\Admin\AdminResumeController::class, 'approveVerification'])->name('resumes.verifications.approve');
+            Route::post('/resumes/verifications/{verification}/reject', [\App\Http\Controllers\Admin\AdminResumeController::class, 'rejectVerification'])->name('resumes.verifications.reject');
+            Route::get('/resumes/settings', [\App\Http\Controllers\Admin\AdminResumeController::class, 'settings'])->name('resumes.settings');
+            Route::post('/resumes/settings', [\App\Http\Controllers\Admin\AdminResumeController::class, 'updateSettings'])->name('resumes.settings.update');
+
             // Website & System Settings
             Route::get('/website-settings', [\App\Http\Controllers\Admin\AdminAnalyticsSettingController::class, 'edit'])->name('website-settings.index');
             Route::put('/website-settings', [\App\Http\Controllers\Admin\AdminAnalyticsSettingController::class, 'update'])->name('website-settings.update');
@@ -522,6 +530,24 @@ Route::group([], function () {
             Route::get('/analytics-settings', fn () => redirect()->route('admin.website-settings.index'))->name('analytics-settings.edit');
             Route::put('/analytics-settings', fn () => redirect()->route('admin.website-settings.index'))->name('analytics-settings.update');
         });
+
+    // AI Resume Builder (Student Routes)
+    Route::get('/resume-builder', [\App\Http\Controllers\ResumeBuilderController::class, 'index'])->name('resume-builder.index');
+    Route::get('/resume-builder/sample/{template?}', [\App\Http\Controllers\ResumeBuilderController::class, 'samplePreview'])->name('resume-builder.sample');
+    Route::middleware('auth')->group(function () {
+        Route::get('/resume-builder/create', [\App\Http\Controllers\ResumeBuilderController::class, 'create'])->name('resume-builder.create');
+        Route::get('/resume-builder/my-resumes', [\App\Http\Controllers\ResumeBuilderController::class, 'myResumes'])->name('resume-builder.my-resumes');
+        Route::get('/resume-builder/{resume}/edit', [\App\Http\Controllers\ResumeBuilderController::class, 'edit'])->name('resume-builder.edit');
+        Route::post('/resume-builder/save', [\App\Http\Controllers\ResumeBuilderController::class, 'save'])->name('resume-builder.save');
+        Route::post('/resume-builder/upload-photo', [\App\Http\Controllers\ResumeBuilderController::class, 'uploadPhoto'])->name('resume-builder.upload-photo');
+        Route::post('/resume-builder/ai/polish-summary', [\App\Http\Controllers\ResumeBuilderController::class, 'aiPolishSummary'])->name('resume-builder.ai.summary');
+        Route::post('/resume-builder/ai/polish-experience', [\App\Http\Controllers\ResumeBuilderController::class, 'aiPolishExperience'])->name('resume-builder.ai.experience');
+        Route::post('/resume-builder/ai/suggest-skills', [\App\Http\Controllers\ResumeBuilderController::class, 'aiSuggestSkills'])->name('resume-builder.ai.skills');
+        Route::get('/resume-builder/{resume}/preview', [\App\Http\Controllers\ResumeBuilderController::class, 'preview'])->name('resume-builder.preview');
+        Route::get('/resume-builder/{resume}/download', [\App\Http\Controllers\ResumeBuilderController::class, 'downloadPdf'])->name('resume-builder.download');
+        Route::post('/resume-builder/{resume}/share', [\App\Http\Controllers\ResumeBuilderController::class, 'submitShare'])->name('resume-builder.share');
+        Route::delete('/resume-builder/{resume}', [\App\Http\Controllers\ResumeBuilderController::class, 'destroy'])->name('resume-builder.destroy');
+    });
 
     Route::middleware('auth')->group(function () {
         Route::post('/users/{user}/follow', ['App\\Http\\Controllers\\Community\\FollowController', 'store'])

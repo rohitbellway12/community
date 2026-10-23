@@ -54,6 +54,10 @@
                     </svg>
                     <span>All Tests</span>
                 </a>
+                <a href="{{ route('resume-builder.index') }}" class="text-slate-300 hover:text-white transition flex items-center gap-1.5">
+                    <span class="text-base">✨</span>
+                    <span>AI Resume Builder</span>
+                </a>
                 <a href="{{ route('community.index') }}" class="text-slate-400 hover:text-slate-200 transition">
                     ← Back to Community
                 </a>
