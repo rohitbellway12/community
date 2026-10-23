@@ -1,9 +1,28 @@
-@extends('layouts.student')
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="bg-[#070D1E]" x-data="{ mobileMenuOpen: false }">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>AI Resume Builder & Career Suite | REIAC Community</title>
 
-@section('title', 'AI Resume Builder - REIAC Community')
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-@section('content')
-<div x-data="{
+    <style>
+        [x-cloak] { display: none !important; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+</head>
+<body class="min-h-screen bg-[#070D1E] text-slate-100 antialiased selection:bg-amber-500 selection:text-slate-950 flex flex-col">
+
+    {{-- OFFICIAL REIAC COMMUNITY TOPBAR --}}
+    <x-community.topbar :notifications-count="auth()->check() ? auth()->user()->unreadNotifications()->count() : 0" />
+
+<div class="flex-1" x-data="{
         heroTab: 'modern',
         activeFilter: 'all',
         previewModalOpen: false,
@@ -203,7 +222,7 @@
                                     <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 text-[8px] font-bold">AWS ECS</span>
                                     <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 text-[8px] font-bold">Vue.js</span>
                                 </div>
-                                <button type="button" @click="openSampleModal('modern', 'Modern Professional', 'en')"
+                                <button type="button" @click.stop="openSampleModal('modern', 'Modern Professional', 'en')"
                                         class="text-[8.5px] font-bold text-amber-700 hover:text-amber-800 hover:underline">
                                     View Full Sample →
                                 </button>
@@ -248,7 +267,7 @@
                                 <span class="text-[8px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
                                     Official Format
                                 </span>
-                                <button type="button" @click="openSampleModal('korean_standard', 'Korean Standard (이력서)', 'ko')"
+                                <button type="button" @click.stop="openSampleModal('korean_standard', 'Korean Standard (이력서)', 'ko')"
                                         class="text-[8.5px] font-bold text-emerald-700 hover:text-emerald-800 hover:underline">
                                     View Full Sample →
                                 </button>
@@ -377,7 +396,7 @@
                         {{-- Hover Quick-View Overlay --}}
                         <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
                             <button type="button"
-                                    @click="openSampleModal('korean_standard', 'Korean Standard (한국어)', 'ko')"
+                                    @click.stop="openSampleModal('korean_standard', 'Korean Standard (한국어)', 'ko')"
                                     class="px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-black text-xs shadow-md transform scale-95 group-hover:scale-100 transition">
                                 👁️ Preview Live A4
                             </button>
@@ -404,12 +423,12 @@
                     <div class="space-y-1.5 pt-2 border-t border-slate-100">
                         <div class="grid grid-cols-2 gap-1.5">
                             <button type="button"
-                                    @click="openSampleModal('korean_standard', 'Korean Standard (한국어)', 'ko')"
+                                    @click.stop="openSampleModal('korean_standard', 'Korean Standard (한국어)', 'ko')"
                                     class="py-1.5 px-2 rounded-lg border border-emerald-400 bg-emerald-50/70 hover:bg-emerald-100 text-emerald-950 font-bold text-[10.5px] text-center transition cursor-pointer">
                                 🇰🇷 샘플 (KR)
                             </button>
                             <button type="button"
-                                    @click="openSampleModal('korean_standard', 'Korean Standard (English Form)', 'en')"
+                                    @click.stop="openSampleModal('korean_standard', 'Korean Standard (English Form)', 'en')"
                                     class="py-1.5 px-2 rounded-lg border border-slate-300 hover:border-slate-400 bg-slate-50 text-slate-700 font-bold text-[10.5px] text-center transition cursor-pointer">
                                 🌐 Sample (EN)
                             </button>
@@ -470,7 +489,7 @@
                         {{-- Hover Quick-View Overlay --}}
                         <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
                             <button type="button"
-                                    @click="openSampleModal('modern', 'Modern Professional', 'en')"
+                                    @click.stop="openSampleModal('modern', 'Modern Professional', 'en')"
                                     class="px-3 py-1.5 rounded-lg bg-amber-400 text-slate-950 font-black text-xs shadow-md transform scale-95 group-hover:scale-100 transition">
                                 👁️ Preview Live A4
                             </button>
@@ -496,7 +515,7 @@
 
                     <div class="space-y-1.5 pt-2 border-t border-slate-100">
                         <button type="button"
-                                @click="openSampleModal('modern', 'Modern Professional', 'en')"
+                                @click.stop="openSampleModal('modern', 'Modern Professional', 'en')"
                                 class="w-full py-1.5 px-3 rounded-lg border border-slate-300 hover:border-amber-500 hover:bg-amber-50/70 text-slate-800 font-bold text-[10.5px] uppercase tracking-wider text-center transition cursor-pointer">
                             👁️ View Live Sample
                         </button>
@@ -555,7 +574,7 @@
                         {{-- Hover Quick-View Overlay --}}
                         <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
                             <button type="button"
-                                    @click="openSampleModal('classic', 'Executive Classic ATS', 'en')"
+                                    @click.stop="openSampleModal('classic', 'Executive Classic ATS', 'en')"
                                     class="px-3 py-1.5 rounded-lg bg-amber-400 text-slate-950 font-black text-xs shadow-md transform scale-95 group-hover:scale-100 transition">
                                 👁️ Preview Live A4
                             </button>
@@ -581,7 +600,7 @@
 
                     <div class="space-y-1.5 pt-2 border-t border-slate-100">
                         <button type="button"
-                                @click="openSampleModal('classic', 'Executive Classic ATS', 'en')"
+                                @click.stop="openSampleModal('classic', 'Executive Classic ATS', 'en')"
                                 class="w-full py-1.5 px-3 rounded-lg border border-slate-300 hover:border-amber-500 hover:bg-amber-50/70 text-slate-800 font-bold text-[10.5px] uppercase tracking-wider text-center transition cursor-pointer">
                             👁️ View Live Sample
                         </button>
@@ -634,7 +653,7 @@
                         {{-- Hover Quick-View Overlay --}}
                         <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
                             <button type="button"
-                                    @click="openSampleModal('creative', 'Creative & Impact', 'en')"
+                                    @click.stop="openSampleModal('creative', 'Creative & Impact', 'en')"
                                     class="px-3 py-1.5 rounded-lg bg-amber-400 text-slate-950 font-black text-xs shadow-md transform scale-95 group-hover:scale-100 transition">
                                 👁️ Preview Live A4
                             </button>
@@ -660,7 +679,7 @@
 
                     <div class="space-y-1.5 pt-2 border-t border-slate-100">
                         <button type="button"
-                                @click="openSampleModal('creative', 'Creative & Impact', 'en')"
+                                @click.stop="openSampleModal('creative', 'Creative & Impact', 'en')"
                                 class="w-full py-1.5 px-3 rounded-lg border border-slate-300 hover:border-amber-500 hover:bg-amber-50/70 text-slate-800 font-bold text-[10.5px] uppercase tracking-wider text-center transition cursor-pointer">
                             👁️ View Live Sample
                         </button>
@@ -814,17 +833,17 @@
     <div x-show="previewModalOpen"
          x-cloak
          @keydown.escape.window="previewModalOpen = false"
-         class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-2 sm:p-4 lg:p-6 backdrop-blur-md">
+         @click.self="previewModalOpen = false"
+         class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 p-2 sm:p-4 lg:p-6 backdrop-blur-md">
         
-        <div class="bg-[#0F172A] rounded-2xl max-w-7xl w-full h-[94vh] shadow-2xl border border-slate-700/80 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
-             @click.away="previewModalOpen = false">
+        <div class="bg-[#0B1222] rounded-2xl max-w-7xl w-full h-[94vh] shadow-2xl border border-slate-700/80 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             
             {{-- Studio Navigation Toolbar --}}
-            <div class="px-4 sm:px-6 py-3 bg-[#0B1222] text-white flex items-center justify-between gap-3 shrink-0 border-b border-slate-800">
+            <div class="px-4 sm:px-6 py-3 bg-[#070D1E] text-white flex items-center justify-between gap-3 shrink-0 border-b border-slate-800">
                 
                 {{-- Left: Identity & Language Toggle --}}
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-amber-400 text-slate-950 flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 flex items-center justify-center font-bold text-sm shadow-md shrink-0">
                         📄
                     </div>
                     <div>
@@ -947,14 +966,14 @@
             </div>
 
             {{-- Studio Document Canvas --}}
-            <div class="flex-1 bg-[#0F172A] bg-[radial-gradient(#1E293B_1px,transparent_1px)] [background-size:20px_20px] overflow-auto relative flex flex-col items-center justify-start p-0">
+            <div class="flex-1 bg-[#070D1E] bg-[radial-gradient(#1E293B_1px,transparent_1px)] [background-size:20px_20px] overflow-auto relative flex flex-col items-center justify-start p-0">
                 
                 {{-- Smooth Loading Spinner Overlay --}}
                 <div x-show="iframeLoading"
                      x-transition:leave="transition ease-in duration-200"
                      x-transition:leave-start="opacity-100"
                      x-transition:leave-end="opacity-0"
-                     class="absolute inset-0 flex flex-col items-center justify-center bg-[#0F172A]/90 z-20 backdrop-blur-xs">
+                     class="absolute inset-0 flex flex-col items-center justify-center bg-[#070D1E]/90 z-20 backdrop-blur-xs">
                     <div class="flex items-center gap-3 px-5 py-3 rounded-2xl bg-slate-900 border border-slate-700 text-amber-300 text-xs font-bold shadow-2xl">
                         <svg class="animate-spin w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -978,4 +997,5 @@
     </div>
 
 </div>
-@endsection
+</body>
+</html>

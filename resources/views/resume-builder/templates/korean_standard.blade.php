@@ -204,8 +204,10 @@
                 padding: 12px 20px;
                 border-radius: 12px;
                 display: flex;
+                flex-wrap: wrap;
                 align-items: center;
                 justify-content: space-between;
+                gap: 10px;
                 font-size: 13px;
                 box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
             }

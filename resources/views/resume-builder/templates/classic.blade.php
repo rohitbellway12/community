@@ -144,8 +144,10 @@
                 padding: 12px 20px;
                 border-radius: 12px;
                 display: flex;
+                flex-wrap: wrap;
                 align-items: center;
                 justify-content: space-between;
+                gap: 10px;
                 font-size: 13px;
                 font-family: Arial, sans-serif;
                 box-shadow: 0 4px 12px rgba(17, 24, 39, 0.15);

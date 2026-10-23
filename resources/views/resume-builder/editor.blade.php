@@ -1,53 +1,77 @@
-@extends('layouts.student')
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full bg-slate-900">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{{ $resume ? $resume->title : 'New Resume' }} • REIAC Resume Studio</title>
 
-@section('title', 'Resume Builder - ' . ($resume ? $resume->title : 'New CV'))
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-@section('content')
-<div class="min-h-[calc(100vh-4rem)] bg-slate-100/70 text-slate-800 flex flex-col" x-data="resumeEditorApp(@js($initialData))">
+    <style>
+        [x-cloak] { display: none !important; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
 
-    {{-- TOP STUDIO NAVIGATION BAR (LIGHT THEME) --}}
-    <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 px-3 sm:px-6 py-2.5 shadow-xs">
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+</head>
+<body class="h-full bg-slate-100 text-slate-800 antialiased selection:bg-amber-500 selection:text-slate-950 overflow-hidden">
+
+<div class="h-screen bg-slate-100/70 text-slate-800 flex flex-col overflow-hidden" x-data="resumeEditorApp(@js($initialData))">
+
+    {{-- TOP STUDIO NAVIGATION BAR (EXECUTIVE REIAC THEME) --}}
+    <header class="sticky top-0 z-40 bg-[#0b1329] border-b border-slate-800 px-3 sm:px-6 py-2.5 shadow-md shrink-0">
         <div class="max-w-[1780px] mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-3">
 
             {{-- Left: Back & Title --}}
             <div class="flex items-center gap-3">
                 <a href="{{ route('resume-builder.my-resumes') }}"
-                   class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition flex items-center justify-center shrink-0 border border-slate-200"
-                   title="Back to Saved Resumes">
+                   class="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center justify-center shrink-0 border border-slate-700/80"
+                   title="Back to My Resumes">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
                 </a>
+
+                <div class="hidden sm:flex items-center gap-2 pr-3 border-r border-slate-800">
+                    <a href="{{ route('community.index') }}" class="flex items-center gap-1.5" title="Community Home">
+                        <span class="text-sm font-black tracking-wider text-amber-400">REIAC</span>
+                        <span class="text-[9px] font-extrabold uppercase tracking-widest text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">STUDIO</span>
+                    </a>
+                </div>
 
                 <div>
                     <div class="flex items-center gap-2">
                         <input type="text" x-model="resume.title" placeholder="Resume Title (e.g. Full Stack Developer CV)"
-                               class="text-sm sm:text-base font-black text-slate-900 border-b border-transparent hover:border-slate-300 focus:border-amber-500 bg-transparent focus:ring-0 p-0 w-52 sm:w-80 truncate transition">
+                               class="text-sm sm:text-base font-black text-white border-b border-transparent hover:border-slate-600 focus:border-amber-400 bg-transparent focus:ring-0 p-0 w-44 sm:w-72 truncate transition">
                         <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full"
-                              :class="isSaving ? 'bg-amber-100 text-amber-800 animate-pulse' : (hasUnsavedChanges ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-800')"
+                              :class="isSaving ? 'bg-amber-400/20 text-amber-300 animate-pulse border border-amber-400/30' : (hasUnsavedChanges ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30')"
                               x-text="isSaving ? 'Saving...' : (hasUnsavedChanges ? 'Unsaved' : 'Saved')">
                         </span>
                     </div>
-                    <span class="text-[11px] text-slate-400 block font-medium">REIAC Resume Builder • Real-time Live Document Engine</span>
+                    <span class="text-[10px] text-slate-400 block font-medium">Real-time Live A4 Document Engine</span>
                 </div>
             </div>
 
             {{-- Center: View Mode & Template & Language Controls --}}
             <div class="flex flex-wrap items-center gap-2">
                 {{-- View Mode Switcher (Split / Form / Preview) --}}
-                <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+                <div class="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs font-bold">
                     <button type="button" @click="viewMode = 'split'"
-                            :class="viewMode === 'split' ? 'bg-white text-slate-950 font-black shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+                            :class="viewMode === 'split' ? 'bg-amber-400 text-slate-950 font-black shadow-xs' : 'text-slate-400 hover:text-white'"
                             class="px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer">
                         <span>🌗</span>
-                        <span class="hidden sm:inline">Split View (Both)</span>
+                        <span class="hidden sm:inline">Split View</span>
                     </button>
                     <button type="button" @click="viewMode = 'form'"
-                            :class="viewMode === 'form' ? 'bg-white text-slate-950 font-black shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+                            :class="viewMode === 'form' ? 'bg-amber-400 text-slate-950 font-black shadow-xs' : 'text-slate-400 hover:text-white'"
                             class="px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer">
                         <span>📝</span>
                         <span class="hidden sm:inline">Form Only</span>
                     </button>
                     <button type="button" @click="viewMode = 'preview'"
-                            :class="viewMode === 'preview' ? 'bg-white text-slate-950 font-black shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+                            :class="viewMode === 'preview' ? 'bg-amber-400 text-slate-950 font-black shadow-xs' : 'text-slate-400 hover:text-white'"
                             class="px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer">
                         <span>👁️</span>
                         <span class="hidden sm:inline">Preview Only</span>
@@ -57,7 +81,7 @@
                 {{-- Template Dropdown --}}
                 <div class="relative">
                     <select x-model="resume.template"
-                            class="text-xs font-bold bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer shadow-xs">
+                            class="text-xs font-bold bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer shadow-xs">
                         <option value="korean_standard">🇰🇷 Korean Standard (이력서/자기소개서)</option>
                         <option value="modern">Modern Professional ATS</option>
                         <option value="classic">Executive Classic ATS</option>
@@ -66,15 +90,15 @@
                 </div>
 
                 {{-- Language Selector --}}
-                <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+                <div class="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs font-bold">
                     <button type="button" @click="resume.language = 'en'"
-                            :class="resume.language === 'en' ? 'bg-white text-slate-950 font-black shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+                            :class="resume.language === 'en' ? 'bg-amber-400 text-slate-950 font-black shadow-xs' : 'text-slate-400 hover:text-white'"
                             class="px-2 py-1 rounded-lg transition cursor-pointer flex items-center gap-1">
                         <span>🌐</span>
                         <span>English</span>
                     </button>
                     <button type="button" @click="resume.language = 'ko'"
-                            :class="resume.language === 'ko' ? 'bg-emerald-600 text-white font-black shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+                            :class="resume.language === 'ko' ? 'bg-emerald-500 text-slate-950 font-black shadow-xs' : 'text-slate-400 hover:text-white'"
                             class="px-2 py-1 rounded-lg transition cursor-pointer flex items-center gap-1">
                         <span>🇰🇷</span>
                         <span>한국어</span>
@@ -86,14 +110,14 @@
             <div class="flex items-center gap-2 shrink-0">
                 {{-- Quick Save --}}
                 <button type="button" @click="saveResume(false)" :disabled="isSaving"
-                        class="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
+                        class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
                     <span x-show="!isSaving">💾 Save</span>
                     <span x-show="isSaving">Saving...</span>
                 </button>
 
                 {{-- Pop-out Tab Preview --}}
                 <button type="button" @click="openPreview()"
-                        class="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs border border-slate-300 shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                        class="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-bold text-xs border border-slate-700 shadow-xs transition flex items-center gap-1.5 cursor-pointer"
                         title="Open standalone preview in new browser tab">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                     <span class="hidden xl:inline">New Tab</span>
@@ -1040,8 +1064,8 @@
             {{-- RIGHT PANE: LIVE REAL-TIME STICKY A4 PAPER PREVIEW (CLEAN DESK LIGHT THEME) --}}
             {{-- ========================================================================= --}}
             <div x-show="viewMode === 'split' || viewMode === 'preview'"
-                 :class="viewMode === 'split' ? 'lg:col-span-6 xl:col-span-6 sticky top-16' : 'w-full'"
-                 class="h-[calc(100vh-5.5rem)] flex flex-col rounded-3xl bg-slate-200/70 border border-slate-300/80 shadow-inner overflow-hidden">
+                 :class="viewMode === 'split' ? 'lg:col-span-6 xl:col-span-6 sticky top-3' : 'w-full'"
+                 class="h-[calc(100vh-4.5rem)] flex flex-col rounded-3xl bg-slate-200/70 border border-slate-300/80 shadow-inner overflow-hidden">
 
                 {{-- Live Studio Toolbar --}}
                 <div class="bg-white px-4 py-2.5 border-b border-slate-200 flex items-center justify-between gap-3 shrink-0 shadow-2xs">
@@ -1914,4 +1938,6 @@ function resumeEditorApp(initial) {
     }
 }
 </script>
-@endsection
+</div>
+</body>
+</html>

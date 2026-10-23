@@ -257,7 +257,7 @@ class ResumeBuilderController extends Controller
         return view("resume-builder.templates.{$sampleResume->template}", [
             'resume' => $sampleResume,
             'setting' => ResumeSetting::config(),
-            'isClean' => false,
+            'isClean' => true,
             'forPdf' => false,
             'isSample' => true,
             'isEmbed' => $request->boolean('embed'),
