@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PostController;
 use App\Http\Controllers\Api\V1\ReferralController;
 use App\Http\Controllers\Api\V1\ReportController;
+use App\Http\Controllers\Api\V1\ResumeApiController;
 use App\Http\Controllers\Api\V1\ServiceController;
 use App\Http\Controllers\Api\V1\StudentTestController;
 use App\Http\Controllers\Api\V1\TagController;
@@ -91,6 +92,11 @@ Route::prefix('v1')->group(function () {
 
     // Influencer Campaign Mobile Install Tracking (App First Launch)
     Route::post('influencer/track-install', [\App\Http\Controllers\Api\V1\InfluencerApiController::class, 'trackInstall'])->name('api.v1.influencer.track-install');
+
+    // Resume Builder (Public Templates & Samples)
+    Route::get('resume/templates', [ResumeApiController::class, 'templates'])->name('api.v1.resume.templates');
+    Route::get('resume/templates/{template}/sample', [ResumeApiController::class, 'templateSample'])->name('api.v1.resume.sample');
+    Route::get('resume/config', [ResumeApiController::class, 'config'])->name('api.v1.resume.config');
 
     // ============================================================
     // AUTHENTICATION
@@ -266,6 +272,27 @@ Route::prefix('v1')->group(function () {
         Route::post('tests/{test}/attempts/{attempt}/mark-review', [StudentTestController::class, 'toggleMarkReview'])->name('api.v1.tests.mark-review');
         Route::post('tests/{test}/attempts/{attempt}/submit', [StudentTestController::class, 'submit'])->name('api.v1.tests.submit');
         Route::get('tests/{test}/attempts/{attempt}/result', [StudentTestController::class, 'result'])->name('api.v1.tests.result');
+
+    // ============================================================
+    // RESUME BUILDER (Auth Required)
+    // ============================================================
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('resumes', [ResumeApiController::class, 'index'])->name('api.v1.resumes.index');
+        Route::get('resumes/initial-data', [ResumeApiController::class, 'initialData'])->name('api.v1.resumes.initial-data');
+        Route::post('resumes', [ResumeApiController::class, 'save'])->name('api.v1.resumes.save');
+        Route::get('resumes/{id}', [ResumeApiController::class, 'show'])->whereNumber('id')->name('api.v1.resumes.show');
+        Route::delete('resumes/{id}', [ResumeApiController::class, 'destroy'])->whereNumber('id')->name('api.v1.resumes.destroy');
+        Route::post('resumes/{id}/submit-share', [ResumeApiController::class, 'submitShare'])->whereNumber('id')->name('api.v1.resumes.submit-share');
+
+        // Resume Photo Upload
+        Route::post('resume/upload-photo', [ResumeApiController::class, 'uploadPhoto'])->name('api.v1.resume.upload-photo');
+
+        // Resume AI Operations
+        Route::post('resume/ai/polish-summary', [ResumeApiController::class, 'aiPolishSummary'])->name('api.v1.resume.ai.summary');
+        Route::post('resume/ai/enhance-bullets', [ResumeApiController::class, 'aiPolishExperience'])->name('api.v1.resume.ai.experience');
+        Route::post('resume/ai/suggest-skills', [ResumeApiController::class, 'aiSuggestSkills'])->name('api.v1.resume.ai.skills');
+    });
     });
 
 });

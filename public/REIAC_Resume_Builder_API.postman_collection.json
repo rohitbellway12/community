@@ -1,0 +1,925 @@
+{
+    "info": {
+        "name": "REIAC Resume Builder API Suite",
+        "description": "Complete REST API collection for REIAC AI Resume Builder & Career Suite. Used by Flutter Mobile App & Web Frontend to manage all 7-step resume creation, AI bullet enhancements, template switching, photo uploads, and community watermark unlocking.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "_postman_id": "reiac-resume-builder-v1-api"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost/community/api/v1",
+            "type": "string",
+            "description": "Base API endpoint URL"
+        },
+        {
+            "key": "token",
+            "value": "",
+            "type": "string",
+            "description": "Sanctum Bearer Token from /auth/login"
+        },
+        {
+            "key": "resume_id",
+            "value": "1",
+            "type": "string",
+            "description": "Current working Resume ID"
+        }
+    ],
+    "item": [
+        {
+            "name": "0. Authentication (Token Setup)",
+            "description": "Login endpoint to receive Bearer token. Running this automatically populates the {{token}} variable.",
+            "item": [
+                {
+                    "name": "0.1 Login (Auto-saves {{token}})",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "login"
+                            ],
+                            "query": []
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"admin@gmail.com\",\n    \"password\": \"password\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.success && jsonData.data && jsonData.data.token) {",
+                                    "    pm.collectionVariables.set(\"token\", jsonData.data.token);",
+                                    "    console.log(\"Bearer token automatically saved to collection variable!\");",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "0.2 Get Current User (Me)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "me"
+                            ],
+                            "query": []
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "1. Public Templates & Samples",
+            "description": "Fetch available templates, dummy preview data, and watermark settings without requiring auth.",
+            "item": [
+                {
+                    "name": "1.1 Get All Available Templates",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/resume/templates",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "resume",
+                                "templates"
+                            ],
+                            "query": []
+                        }
+                    }
+                },
+                {
+                    "name": "1.2 Get Korean Standard Sample Data (KR)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/resume/templates/korean_standard/sample?lang=ko",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "resume",
+                                "templates",
+                                "korean_standard",
+                                "sample"
+                            ],
+                            "query": [
+                                {
+                                    "key": "lang",
+                                    "value": "ko"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "1.3 Get Modern Professional ATS Sample Data (EN)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/resume/templates/modern/sample?lang=en",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "resume",
+                                "templates",
+                                "modern",
+                                "sample"
+                            ],
+                            "query": [
+                                {
+                                    "key": "lang",
+                                    "value": "en"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "1.4 Get Executive Classic ATS Sample Data",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/resume/templates/classic/sample?lang=en",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "resume",
+                                "templates",
+                                "classic",
+                                "sample"
+                            ],
+                            "query": [
+                                {
+                                    "key": "lang",
+                                    "value": "en"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "1.5 Get Creative & Impact Sample Data",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/resume/templates/creative/sample?lang=en",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "resume",
+                                "templates",
+                                "creative",
+                                "sample"
+                            ],
+                            "query": [
+                                {
+                                    "key": "lang",
+                                    "value": "en"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "1.6 Get Resume Global Config & Watermark Rules",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/resume/config",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "resume",
+                                "config"
+                            ],
+                            "query": []
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "2. Resume 7-Step CRUD (Authenticated)",
+            "description": "Create, save step-by-step, update, retrieve, and delete candidate resumes.",
+            "item": [
+                {
+                    "name": "2.1 Get Prefilled Initial Data (For New Resume)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/resumes/initial-data?template=korean_standard&language=ko",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "resumes",
+                                "initial-data"
+                            ],
+                            "query": [
+                                {
+                                    "key": "template",
+                                    "value": "korean_standard"
+                                },
+                                {
+                                    "key": "language",
+                                    "value": "ko"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "2.2 List My Resumes (Paginated)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/resumes?page=1&per_page=15",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "resumes"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "per_page",
+                                    "value": "15"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "2.3 Create/Save Full Resume - Korean Standard (Auto-sets {{resume_id}})",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/resumes",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "resumes"
+                            ],
+                            "query": []
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"id\": null,\n    \"title\": \"My Korean Standard Resume\",\n    \"template\": \"korean_standard\",\n    \"language\": \"ko\",\n    \"personal_info\": {\n        \"full_name\": \"김민수 (MIN SOO KIM)\",\n        \"english_name\": \"MIN SOO KIM\",\n        \"date_of_birth\": \"1996.08.20\",\n        \"gender\": \"남 (Male)\",\n        \"job_title\": \"백엔드 소프트웨어 엔지니어\",\n        \"total_experience\": \"3년 6개월\",\n        \"email\": \"minsoo.kim@example.kr\",\n        \"phone\": \"010-9876-5432\",\n        \"emergency_phone\": \"010-1234-5678\",\n        \"location\": \"서울특별시 강남구 테헤란로 123\",\n        \"linkedin\": \"https://linkedin.com/in/minsoo-kim\",\n        \"github\": \"https://github.com/minsoo-kim\",\n        \"portfolio\": \"https://minsoo.dev\",\n        \"photo_url\": \"\",\n        \"declaration_date\": \"2026년 10월 27일\",\n        \"signature_name\": \"김민수\"\n    },\n    \"education\": [\n        {\n            \"institution\": \"서울대학교\",\n            \"field\": \"컴퓨터공학부\",\n            \"degree\": \"학사\",\n            \"grade\": \"3.9 / 4.5\",\n            \"start_date\": \"2016.03\",\n            \"end_date\": \"2021.02\",\n            \"is_current\": false\n        }\n    ],\n    \"experience\": [\n        {\n            \"title\": \"주임 연구원 (Senior Backend Engineer)\",\n            \"company\": \"네이버 (Naver Corp)\",\n            \"location\": \"플랫폼 개발실 (Seoul, Korea)\",\n            \"start_date\": \"2022.03\",\n            \"end_date\": \"2024.01\",\n            \"is_current\": false,\n            \"rawNotes\": \"대규모 분산 트래픽을 처리하는 이벤트 기반 마이크로서비스 설계 및 구축\",\n            \"points\": [\n                \"Architected event-driven microservices processing 2.5M daily transactions on AWS ECS.\",\n                \"Coordinated cross-functional API standardization reducing response latency by 35%.\"\n            ]\n        }\n    ],\n    \"language_tests\": [\n        {\n            \"test_name\": \"TOEIC\",\n            \"score\": \"940\",\n            \"acquisition_date\": \"2023.09.15\",\n            \"organization\": \"ETS\"\n        },\n        {\n            \"test_name\": \"TOPIK\",\n            \"score\": \"Level 6 (최고등급)\",\n            \"acquisition_date\": \"2023.04.10\",\n            \"organization\": \"국립국제교육원\"\n        }\n    ],\n    \"certifications\": [\n        {\n            \"name\": \"정보처리기사 (Engineer Information Processing)\",\n            \"issuer\": \"한국산업인력공단\",\n            \"year\": \"2022.06\"\n        },\n        {\n            \"name\": \"AWS Certified Solutions Architect – Associate\",\n            \"issuer\": \"Amazon Web Services\",\n            \"year\": \"2023.05\"\n        }\n    ],\n    \"military_service\": {\n        \"status\": \"군필 (Completed)\",\n        \"branch\": \"육군 (ROK Army)\",\n        \"rank\": \"병장 (Sergeant)\",\n        \"period\": \"2018.06 ~ 2020.02\",\n        \"discharge_reason\": \"만기전역\"\n    },\n    \"computer_skills\": [\n        {\n            \"category\": \"프로그래밍\",\n            \"tool_name\": \"Python / Java / PHP\",\n            \"proficiency\": \"상 (Advanced)\",\n            \"description\": \"대규모 분산 데이터 처리 및 RESTful API 아키텍처 구현\"\n        },\n        {\n            \"category\": \"데이터베이스\",\n            \"tool_name\": \"MySQL / Redis / MongoDB\",\n            \"proficiency\": \"중상 (Upper-Intermediate)\",\n            \"description\": \"쿼리 최적화 및 캐싱 전략 수립\"\n        }\n    ],\n    \"skills\": [\n        \"PHP/Laravel\",\n        \"Python\",\n        \"AWS ECS\",\n        \"Docker\",\n        \"MySQL\",\n        \"Redis\",\n        \"RESTful API\",\n        \"Git\"\n    ],\n    \"self_introduction\": {\n        \"growth\": \"어릴 적부터 문제를 논리적으로 분석하고 시스템화하는 과정에 큰 흥미를 느꼈습니다. 대학에서 컴퓨터공학을 전공하며 기초 CS 지식을 탄탄히 다졌고, 작은 약속이라도 반드시 지키는 성실함을 제1의 가치관으로 삼고 있습니다.\",\n        \"personality\": \"저의 가장 큰 장점은 위기 상황에서도 흔들리지 않는 침착함과 팀원들과의 열린 소통입니다. 실수를 두려워하지 않고 빠른 회고와 수정을 통해 더 나은 솔루션을 도출해내는 유연성을 지니고 있습니다.\",\n        \"strengths\": \"네이버 플랫폼 개발실에서 2년간 실무를 수행하며 하루 250만 건 이상의 트래픽을 감당하는 고가용성 백엔드 서비스를 성공적으로 운영했습니다. 지속적인 리팩토링과 성능 최적화로 응답 시간을 35% 단축한 경험이 있습니다.\",\n        \"motivation_and_aspirations\": \"귀사가 추구하는 혁신적인 글로벌 비전에 깊이 공감하여 지원하게 되었습니다. 입사 후에는 축적된 백엔드 아키텍처 역량을 발휘하여 안정적인 대규모 인프라 확장에 기여하는 핵심 개발자로 성장하겠습니다.\"\n    },\n    \"projects\": [\n        {\n            \"title\": \"글로벌 전자상거래 실시간 결제 플랫폼\",\n            \"tech\": \"Laravel, Vue.js, Redis, Docker\",\n            \"description\": \"실시간 주문 및 결제 트랜잭션을 무중단 처리하는 분산 결제 게이트웨이 구축\",\n            \"url\": \"https://github.com/minsoo-kim/payment-gateway\"\n        }\n    ]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.success && jsonData.data && jsonData.data.resume_id) {",
+                                    "    pm.collectionVariables.set(\"resume_id\", jsonData.data.resume_id.toString());",
+                                    "    console.log(\"Resume ID set to: \" + jsonData.data.resume_id);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "2.4 Create/Save Full Resume - Modern ATS",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/resumes",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "resumes"
+                            ],
+                            "query": []
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"id\": null,\n    \"title\": \"Alex Johnson - ATS Modern Resume\",\n    \"template\": \"modern\",\n    \"language\": \"en\",\n    \"personal_info\": {\n        \"full_name\": \"Alex Johnson\",\n        \"english_name\": \"Alex Johnson\",\n        \"date_of_birth\": \"1994-05-12\",\n        \"gender\": \"Male\",\n        \"job_title\": \"Senior Full-Stack Software Engineer\",\n        \"total_experience\": \"5+ Years\",\n        \"email\": \"alex.johnson@example.com\",\n        \"phone\": \"+82 10-5555-1234\",\n        \"emergency_phone\": \"+82 10-9999-0000\",\n        \"location\": \"Seoul, South Korea\",\n        \"linkedin\": \"https://linkedin.com/in/alex-johnson\",\n        \"github\": \"https://github.com/alexjohnson\",\n        \"portfolio\": \"https://alexjohnson.dev\",\n        \"photo_url\": \"\",\n        \"declaration_date\": \"October 27, 2026\",\n        \"signature_name\": \"Alex Johnson\"\n    },\n    \"summary\": \"Performance-driven Senior Full-Stack Engineer with 5+ years of experience engineering high-scale distributed systems, enterprise SaaS platforms, and resilient API microservices. Expert in PHP/Laravel, Vue.js, Docker, and AWS cloud architectures.\",\n    \"education\": [\n        {\n            \"institution\": \"University of California, Berkeley\",\n            \"field\": \"Computer Science\",\n            \"degree\": \"B.S.\",\n            \"grade\": \"3.85 / 4.0\",\n            \"start_date\": \"2014.09\",\n            \"end_date\": \"2018.05\",\n            \"is_current\": false\n        }\n    ],\n    \"experience\": [\n        {\n            \"title\": \"Senior Software Engineer\",\n            \"company\": \"NexGen Enterprise Solutions\",\n            \"location\": \"Seoul, Korea\",\n            \"start_date\": \"2022.06\",\n            \"end_date\": \"Present\",\n            \"is_current\": true,\n            \"rawNotes\": \"Built core payments and microservices infrastructure on AWS\",\n            \"points\": [\n                \"Spearheaded distributed microservice architecture handling 4M+ daily API requests with 99.99% uptime.\",\n                \"Implemented Redis caching layer reducing database roundtrips by 65% and cutting server costs.\",\n                \"Mentored a team of 6 engineers on clean architecture, automated testing, and CI/CD pipelines.\"\n            ]\n        }\n    ],\n    \"skills\": [\n        \"PHP / Laravel\",\n        \"Vue.js\",\n        \"TypeScript\",\n        \"Node.js\",\n        \"Docker\",\n        \"AWS ECS\",\n        \"MySQL\",\n        \"Redis\",\n        \"CI/CD\"\n    ],\n    \"projects\": [\n        {\n            \"title\": \"CloudFlow - Real-Time Workflow Orchestrator\",\n            \"tech\": \"Laravel, WebSockets, Redis, Vue 3\",\n            \"description\": \"Event-driven asynchronous job execution pipeline deployed across containerized clusters.\",\n            \"url\": \"https://github.com/alexjohnson/cloudflow\"\n        }\n    ],\n    \"certifications\": [\n        {\n            \"name\": \"AWS Certified Solutions Architect – Professional\",\n            \"issuer\": \"Amazon Web Services\",\n            \"year\": \"2023\"\n        }\n    ]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "if (jsonData.success && jsonData.data && jsonData.data.resume_id) {",
+                                    "    pm.collectionVariables.set(\"resume_id\", jsonData.data.resume_id.toString());",
+                                    "    console.log(\"Resume ID set to: \" + jsonData.data.resume_id);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "2.5 Get Single Resume by ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/resumes/{{resume_id}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "resumes",
+                                "{{resume_id}}"
+                            ],
+                            "query": []
+                        }
+                    }
+                },
+                {
+                    "name": "2.6 Delete Resume by ID",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/resumes/{{resume_id}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "resumes",
+                                "{{resume_id}}"
+                            ],
+                            "query": []
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3. Photo Upload",
+            "description": "Upload candidate passport/ID 3x4 photos for resume header.",
+            "item": [
+                {
+                    "name": "3.1 Upload Candidate Photo (3x4)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/resume/upload-photo",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "resume",
+                                "upload-photo"
+                            ],
+                            "query": []
+                        },
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "photo",
+                                    "type": "file",
+                                    "src": ""
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "4. AI Operations",
+            "description": "AI writing assistance for polishing summaries, self-intro essays, experience bullet points, and skills recommendations.",
+            "item": [
+                {
+                    "name": "4.1 AI: Polish Professional Summary",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/resume/ai/polish-summary",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "resume",
+                                "ai",
+                                "polish-summary"
+                            ],
+                            "query": []
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"summary\": \"I am an experienced developer with 4 years building web apps in PHP and Vue. I solve tough database problems.\",\n    \"target_role\": \"Senior Backend Engineer\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "4.2 AI: Polish Korean Self-Intro Statement",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/resume/ai/polish-summary",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "resume",
+                                "ai",
+                                "polish-summary"
+                            ],
+                            "query": []
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"summary\": \"저는 새로운 기술을 배우는 것을 좋아하고 팀원들과 소통을 중요하게 생각합니다.\",\n    \"target_role\": \"소프트웨어 엔지니어\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "4.3 AI: Enhance Rough Experience Notes into Bullets",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/resume/ai/enhance-bullets",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "resume",
+                                "ai",
+                                "enhance-bullets"
+                            ],
+                            "query": []
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"notes\": \"built authentication system, migrated database to postgres, cut query times by half, handled 500k active users\",\n    \"role\": \"Full Stack Developer\",\n    \"company\": \"Kakao Corp\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "4.4 AI: Suggest Relevant Skills by Target Role",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/resume/ai/suggest-skills",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "resume",
+                                "ai",
+                                "suggest-skills"
+                            ],
+                            "query": []
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"target_role\": \"Senior DevOps & Cloud Engineer\",\n    \"existing_skills\": [\n        \"Docker\",\n        \"Linux\"\n    ]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "5. Watermark Removal & Community Sharing",
+            "description": "Unlock watermark-free A4 PDF downloads by sharing to social media or copy link.",
+            "item": [
+                {
+                    "name": "5.1 Submit Community Share Proof (Instant Unlock)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/resumes/{{resume_id}}/submit-share",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "resumes",
+                                "{{resume_id}}",
+                                "submit-share"
+                            ],
+                            "query": []
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"channel\": \"link_copy\",\n    \"share_link\": \"https://reiac.org/community/resume-builder\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "5.2 Submit Kakao/WhatsApp Share",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json",
+                                "type": "text"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/resumes/{{resume_id}}/submit-share",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "resumes",
+                                "{{resume_id}}",
+                                "submit-share"
+                            ],
+                            "query": []
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"channel\": \"kakao\",\n    \"share_link\": \"https://reiac.org/community/resume-builder\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}
