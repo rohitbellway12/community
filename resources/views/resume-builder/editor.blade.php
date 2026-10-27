@@ -289,18 +289,7 @@
                 </div>
 
 
-                <div x-show="resume.template === 'classic'" class="p-4 sm:p-5 rounded-2xl bg-slate-50/80 border border-slate-200 flex items-center gap-3.5 text-xs text-slate-700">
-                    <div class="w-12 h-12 rounded-xl bg-slate-200/80 flex items-center justify-center text-2xl shrink-0">
-                        🏛️
-                    </div>
-                    <div class="space-y-0.5">
-                        <h4 class="font-black text-slate-900 text-xs sm:text-sm"
-                            x-text="resume.language === 'ko' ? 'Executive Classic ATS 서식 (사진 미사용)' : 'Executive Classic ATS Standard (No Photo)'"></h4>
-                        <p class="text-[11.5px] text-slate-600 leading-relaxed"
-                           x-text="resume.language === 'ko' ? '하버드/와튼스쿨 글로벌 ATS 표준에 따라 자동 서류 전형 시스템(ATS)과의 100% 호환성을 위해 사진을 삽입하지 않습니다. 단일 열 텍스트 기반으로 평가관과 스캐너에 최적화됩니다.' : 'To ensure 100% compliance with automated Applicant Tracking Systems (ATS), candidate photos are omitted from the Executive Classic template (Harvard & Wharton ATS standard).'">
-                        </p>
-                    </div>
-                </div>
+
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 text-xs">
                     <div>
