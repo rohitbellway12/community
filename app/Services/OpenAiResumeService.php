@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ResumeSetting;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -18,39 +19,42 @@ class OpenAiResumeService
             return '';
         }
 
-        $apiKey = $this->getApiKey();
-        if ($apiKey) {
-            try {
-                $roleContext = $targetRole ? "Targeting the role: {$targetRole}." : "";
-                $systemPrompt = "You are a professional executive resume writer. Polish and elevate the candidate's summary/objective. Make it concise, professional, grammatically flawless, and impactful. STRICT RULE: Rely ONLY on the facts provided; NEVER invent qualifications, experience, degrees, or achievements. Return ONLY the polished paragraph.";
+        $cacheKey = 'ai_sum_' . md5($rawSummary . '|' . ($targetRole ?? ''));
+        return Cache::remember($cacheKey, now()->addDays(7), function () use ($rawSummary, $targetRole) {
+            $apiKey = $this->getApiKey();
+            if ($apiKey) {
+                try {
+                    $roleContext = $targetRole ? "Targeting the role: {$targetRole}." : "";
+                    $systemPrompt = "You are a professional executive resume writer. Polish and elevate the candidate's summary/objective. Make it concise, professional, grammatically flawless, and impactful. STRICT RULE: Rely ONLY on the facts provided; NEVER invent qualifications, experience, degrees, or achievements. Return ONLY the polished paragraph.";
 
-                $response = Http::withToken($apiKey)
-                    ->timeout(15)
-                    ->post('https://api.openai.com/v1/chat/completions', [
-                        'model' => $this->getModel(),
-                        'messages' => [
-                            ['role' => 'system', 'content' => $systemPrompt],
-                            ['role' => 'user', 'content' => "{$roleContext}\n\nCandidate's draft:\n{$rawSummary}"],
-                        ],
-                        'temperature' => 0.5,
-                        'max_tokens' => 250,
-                    ]);
+                    $response = Http::withToken($apiKey)
+                        ->timeout(15)
+                        ->post('https://api.openai.com/v1/chat/completions', [
+                            'model' => $this->getModel(),
+                            'messages' => [
+                                ['role' => 'system', 'content' => $systemPrompt],
+                                ['role' => 'user', 'content' => "{$roleContext}\n\nCandidate's draft:\n{$rawSummary}"],
+                            ],
+                            'temperature' => 0.5,
+                            'max_tokens' => 250,
+                        ]);
 
-                if ($response->successful()) {
-                    $content = $response->json('choices.0.message.content');
-                    if (!empty($content)) {
-                        return trim($content);
+                    if ($response->successful()) {
+                        $content = $response->json('choices.0.message.content');
+                        if (!empty($content)) {
+                            return trim($content);
+                        }
+                    } else {
+                        Log::warning('OpenAI Resume Summary Polish API Error: ' . $response->body());
                     }
-                } else {
-                    Log::warning('OpenAI Resume Summary Polish API Error: ' . $response->body());
+                } catch (\Throwable $e) {
+                    Log::warning('OpenAI Resume Summary Polish Exception: ' . $e->getMessage());
                 }
-            } catch (\Throwable $e) {
-                Log::warning('OpenAI Resume Summary Polish Exception: ' . $e->getMessage());
             }
-        }
 
-        // High quality deterministic fallback
-        return $this->smartFallbackSummary($rawSummary, $targetRole);
+            // High quality deterministic fallback
+            return $this->smartFallbackSummary($rawSummary, $targetRole);
+        });
     }
 
     /**
@@ -63,49 +67,52 @@ class OpenAiResumeService
             return [];
         }
 
-        $apiKey = $this->getApiKey();
-        if ($apiKey) {
-            try {
-                $context = trim(($jobTitle ? "Role: {$jobTitle}. " : "") . ($company ? "Company: {$company}." : ""));
-                $systemPrompt = "You are an expert corporate resume writer. Convert the provided notes into 3 to 4 impactful, professional resume bullet points. Begin each bullet point with a powerful past-tense action verb (e.g. Developed, Orchestrated, Optimized, Designed, Spearheaded). STRICT RULE: Do NOT invent fake metrics, projects, or accomplishments. Return each bullet point on a separate line without numbers or prefixes.";
+        $cacheKey = 'ai_exp_' . md5($rawNotes . '|' . ($jobTitle ?? '') . '|' . ($company ?? ''));
+        return Cache::remember($cacheKey, now()->addDays(7), function () use ($rawNotes, $jobTitle, $company) {
+            $apiKey = $this->getApiKey();
+            if ($apiKey) {
+                try {
+                    $context = trim(($jobTitle ? "Role: {$jobTitle}. " : "") . ($company ? "Company: {$company}." : ""));
+                    $systemPrompt = "You are an expert corporate resume writer. Convert the provided notes into 3 to 4 impactful, professional resume bullet points. Begin each bullet point with a powerful past-tense action verb (e.g. Developed, Orchestrated, Optimized, Designed, Spearheaded). STRICT RULE: Do NOT invent fake metrics, projects, or accomplishments. Return each bullet point on a separate line without numbers or prefixes.";
 
-                $response = Http::withToken($apiKey)
-                    ->timeout(15)
-                    ->post('https://api.openai.com/v1/chat/completions', [
-                        'model' => $this->getModel(),
-                        'messages' => [
-                            ['role' => 'system', 'content' => $systemPrompt],
-                            ['role' => 'user', 'content' => "{$context}\n\nCandidate's notes:\n{$rawNotes}"],
-                        ],
-                        'temperature' => 0.5,
-                        'max_tokens' => 300,
-                    ]);
+                    $response = Http::withToken($apiKey)
+                        ->timeout(15)
+                        ->post('https://api.openai.com/v1/chat/completions', [
+                            'model' => $this->getModel(),
+                            'messages' => [
+                                ['role' => 'system', 'content' => $systemPrompt],
+                                ['role' => 'user', 'content' => "{$context}\n\nCandidate's notes:\n{$rawNotes}"],
+                            ],
+                            'temperature' => 0.5,
+                            'max_tokens' => 300,
+                        ]);
 
-                if ($response->successful()) {
-                    $content = $response->json('choices.0.message.content');
-                    if (!empty($content)) {
-                        $lines = array_filter(array_map('trim', explode("\n", $content)));
-                        $cleaned = [];
-                        foreach ($lines as $line) {
-                            $clean = ltrim($line, "-*•0123456789. \t");
-                            if (!empty($clean)) {
-                                $cleaned[] = $clean;
+                    if ($response->successful()) {
+                        $content = $response->json('choices.0.message.content');
+                        if (!empty($content)) {
+                            $lines = array_filter(array_map('trim', explode("\n", $content)));
+                            $cleaned = [];
+                            foreach ($lines as $line) {
+                                $clean = ltrim($line, "-*•0123456789. \t");
+                                if (!empty($clean)) {
+                                    $cleaned[] = $clean;
+                                }
+                            }
+                            if (!empty($cleaned)) {
+                                return array_values($cleaned);
                             }
                         }
-                        if (!empty($cleaned)) {
-                            return array_values($cleaned);
-                        }
+                    } else {
+                        Log::warning('OpenAI Resume Experience Polish API Error: ' . $response->body());
                     }
-                } else {
-                    Log::warning('OpenAI Resume Experience Polish API Error: ' . $response->body());
+                } catch (\Throwable $e) {
+                    Log::warning('OpenAI Resume Experience Polish Exception: ' . $e->getMessage());
                 }
-            } catch (\Throwable $e) {
-                Log::warning('OpenAI Resume Experience Polish Exception: ' . $e->getMessage());
             }
-        }
 
-        // High quality deterministic fallback
-        return $this->smartFallbackExperience($rawNotes, $jobTitle);
+            // High quality deterministic fallback
+            return $this->smartFallbackExperience($rawNotes, $jobTitle);
+        });
     }
 
     /**
@@ -118,36 +125,39 @@ class OpenAiResumeService
             return [];
         }
 
-        $apiKey = $this->getApiKey();
-        if ($apiKey) {
-            try {
-                $response = Http::withToken($apiKey)
-                    ->timeout(12)
-                    ->post('https://api.openai.com/v1/chat/completions', [
-                        'model' => $this->getModel(),
-                        'messages' => [
-                            ['role' => 'system', 'content' => 'Provide a JSON list of 8 to 12 top industry skills (both hard & soft) relevant for the specified job title. Return ONLY valid JSON array of strings.'],
-                            ['role' => 'user', 'content' => "Job Title: {$jobTitle}"],
-                        ],
-                        'temperature' => 0.4,
-                        'max_tokens' => 200,
-                    ]);
+        $cacheKey = 'ai_skills_' . md5(strtolower($jobTitle));
+        return Cache::remember($cacheKey, now()->addDays(30), function () use ($jobTitle) {
+            $apiKey = $this->getApiKey();
+            if ($apiKey) {
+                try {
+                    $response = Http::withToken($apiKey)
+                        ->timeout(12)
+                        ->post('https://api.openai.com/v1/chat/completions', [
+                            'model' => $this->getModel(),
+                            'messages' => [
+                                ['role' => 'system', 'content' => 'Provide a JSON list of 8 to 12 top industry skills (both hard & soft) relevant for the specified job title. Return ONLY valid JSON array of strings.'],
+                                ['role' => 'user', 'content' => "Job Title: {$jobTitle}"],
+                            ],
+                            'temperature' => 0.4,
+                            'max_tokens' => 200,
+                        ]);
 
-                if ($response->successful()) {
-                    $content = trim($response->json('choices.0.message.content'));
-                    $content = preg_replace('/^```(?:json)?\s*/i', '', $content);
-                    $content = preg_replace('/\s*```$/i', '', $content);
-                    $decoded = json_decode($content, true);
-                    if (is_array($decoded)) {
-                        return array_slice($decoded, 0, 12);
+                    if ($response->successful()) {
+                        $content = trim($response->json('choices.0.message.content'));
+                        $content = preg_replace('/^```(?:json)?\s*/i', '', $content);
+                        $content = preg_replace('/\s*```$/i', '', $content);
+                        $decoded = json_decode($content, true);
+                        if (is_array($decoded)) {
+                            return array_slice($decoded, 0, 12);
+                        }
                     }
+                } catch (\Throwable $e) {
+                    Log::warning('OpenAI Suggest Skills Exception: ' . $e->getMessage());
                 }
-            } catch (\Throwable $e) {
-                Log::warning('OpenAI Suggest Skills Exception: ' . $e->getMessage());
             }
-        }
 
-        return $this->smartFallbackSkills($jobTitle);
+            return $this->smartFallbackSkills($jobTitle);
+        });
     }
 
     /**

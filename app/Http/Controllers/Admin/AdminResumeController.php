@@ -117,8 +117,9 @@ class AdminResumeController extends Controller
     public function settings()
     {
         $setting = ResumeSetting::config();
+        $pendingCount = ResumeShareVerification::where('status', 'pending')->count();
 
-        return view('admin.resumes.settings', compact('setting'));
+        return view('admin.resumes.settings', compact('setting', 'pendingCount'));
     }
 
     /**

@@ -5,15 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $resume->title }} - {{ $resume->personal_info['full_name'] ?? 'Candidate' }}</title>
 
+    @if(empty($forPdf))
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    @endif
 
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
         body {
-            font-family: 'Plus Jakarta Sans', 'Noto Sans KR', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Plus Jakarta Sans', 'Noto Sans KR', 'DejaVu Sans', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Segoe UI', Arial, sans-serif;
             color: #1e293b;
             background: #ffffff;
             font-size: 10pt;
@@ -121,17 +123,21 @@
             table-layout: fixed;
         }
         .col-sidebar {
-            width: 33%;
+            width: 35%;
             vertical-align: top;
             background: #F8FAFC;
             border-right: 1.5px solid #E2E8F0;
-            padding: 22px 18px;
+            padding: 20px 14px;
+            box-sizing: border-box;
+            word-break: break-word;
+            overflow-wrap: anywhere;
         }
         .col-main {
-            width: 67%;
+            width: 65%;
             vertical-align: top;
             background: #FFFFFF;
-            padding: 22px 26px;
+            padding: 20px 22px;
+            box-sizing: border-box;
         }
 
         /* Section Headings */
@@ -181,17 +187,30 @@
         .side-block {
             margin-bottom: 18px;
         }
+        .skills-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            align-items: flex-start;
+            width: 100%;
+            box-sizing: border-box;
+        }
         .skill-pill {
             display: inline-block;
             background: #0F172A;
             color: #F8FAFC;
             border: 1px solid #1E293B;
-            padding: 3px 8px;
-            border-radius: 6px;
-            font-size: 8pt;
+            padding: 2.5px 7px;
+            border-radius: 4px;
+            font-size: 7.5pt;
             font-weight: 700;
-            margin-right: 4px;
-            margin-bottom: 5px;
+            line-height: 1.35;
+            max-width: 100%;
+            white-space: normal;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            box-sizing: border-box;
+            vertical-align: middle;
         }
         .side-item {
             margin-bottom: 10px;
@@ -201,11 +220,14 @@
             font-weight: 700;
             color: #0F172A;
             line-height: 1.25;
+            word-break: break-word;
         }
         .side-item-sub {
             font-size: 8pt;
             color: #475569;
             margin-top: 1px;
+            word-break: break-all;
+            overflow-wrap: anywhere;
         }
         .side-item-date {
             font-size: 7.5pt;
@@ -334,15 +356,15 @@
             line-height: 1.4;
         }
 
-        /* Screen Styling & Standalone Header */
         @media screen {
             body {
-                background: {{ !empty($isEmbed) ? '#0B1222' : '#070D1E' }};
+                background: #f1f5f9;
                 padding: {{ !empty($isEmbed) ? '20px 10px' : '24px 16px 40px 16px' }};
             }
             .page {
-                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
-                border-radius: 10px;
+                box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
                 overflow: hidden;
                 background: #ffffff;
             }
@@ -425,11 +447,180 @@
             }
         }
 
+        @page {
+            size: A4 portrait;
+            margin: 0;
+        }
+
         @media print {
             .web-preview-bar { display: none !important; }
-            body { background: #ffffff !important; padding: 0 !important; }
-            .page { box-shadow: none !important; border-radius: 0 !important; }
+            html, body {
+                background: #ffffff !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .page {
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                border: none !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                width: 100% !important;
+            }
+            .top-banner {
+                padding: 26px 32px 22px 32px !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                background: linear-gradient(135deg, #091124 0%, #0F1C3F 65%, #182C5E 100%) !important;
+                background-color: #0F1C3F !important;
+            }
+            .layout-table {
+                width: 100% !important;
+            }
+            .col-sidebar {
+                width: 35% !important;
+                background: #F8FAFC !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                padding: 20px 14px !important;
+                word-break: break-word !important;
+                overflow-wrap: anywhere !important;
+                box-sizing: border-box !important;
+            }
+            .col-main {
+                width: 65% !important;
+                background: #FFFFFF !important;
+                padding: 20px 22px !important;
+                box-sizing: border-box !important;
+            }
+            .skills-container {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 4px !important;
+                width: 100% !important;
+            }
+            .side-item-sub {
+                word-break: break-all !important;
+                overflow-wrap: anywhere !important;
+            }
+            .summary-box, .project-card, .skill-pill, .role-badge, .side-badge, .date-pill, .watermark {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
         }
+
+        @if(!empty($forPdf))
+        html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+        }
+        .page {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+            border-radius: 0 !important;
+        }
+        .top-banner {
+            background-color: #0F1C3F !important;
+            background: #0F1C3F !important;
+            color: #ffffff !important;
+            padding: 18px 24px 14px 24px !important;
+            border-bottom: 3.5px solid #F59E0B !important;
+        }
+        .col-sidebar {
+            width: 35% !important;
+            padding: 16px 12px !important;
+        }
+        .col-main {
+            width: 65% !important;
+            padding: 16px 18px !important;
+        }
+        .skills-container {
+            display: block !important;
+        }
+        .name {
+            color: #FFFFFF !important;
+        }
+        .role-badge {
+            background: #182C5E !important;
+            color: #FBBF24 !important;
+            border: 1px solid #F59E0B !important;
+        }
+        .contact-strip {
+            color: #E2E8F0 !important;
+        }
+        .contact-icon {
+            color: #F59E0B !important;
+        }
+        .photo-frame {
+            box-shadow: none !important;
+            border: 2px solid #F59E0B !important;
+            border-radius: 6px !important;
+        }
+        .sidebar-title {
+            display: block !important;
+            border-bottom: 2px solid #0F172A !important;
+        }
+        .sidebar-title .accent-dot {
+            display: inline-block !important;
+            vertical-align: middle !important;
+            margin-right: 6px !important;
+        }
+        .main-title {
+            border-bottom: 2px solid #F59E0B !important;
+        }
+        .main-title::after {
+            display: none !important;
+        }
+        .experience-item {
+            border-left: none !important;
+            padding-left: 0 !important;
+            margin-bottom: 12px !important;
+        }
+        .experience-item::before {
+            display: none !important;
+        }
+        .points-list {
+            list-style-type: disc !important;
+            padding-left: 18px !important;
+        }
+        .points-list li {
+            padding-left: 0 !important;
+        }
+        .points-list li::before {
+            display: none !important;
+        }
+        .skill-pill {
+            display: inline-block !important;
+            background: #0F172A !important;
+            color: #F8FAFC !important;
+            border: 1px solid #1E293B !important;
+            padding: 2px 6px !important;
+            font-size: 7.5pt !important;
+            margin-right: 3px !important;
+            margin-bottom: 4px !important;
+            max-width: 100% !important;
+            white-space: normal !important;
+            word-break: break-word !important;
+        }
+        .side-item-sub {
+            word-break: break-all !important;
+        }
+        .watermark {
+            display: none !important;
+        }
+        @endif
     </style>
 </head>
 <body>
@@ -469,7 +660,10 @@
                     </a>
                 @else
                     <a href="{{ route('resume-builder.edit', $resume->id) }}" class="btn-back">✏️ Edit CV</a>
-                    <a href="{{ route('resume-builder.download', $resume->id) }}" class="btn-use-tpl">📥 Download PDF</a>
+                    <button type="button" onclick="window.print()" class="btn-use-tpl" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                        <span>📥</span>
+                        <span>Download / Save PDF</span>
+                    </button>
                 @endif
             </div>
         </div>
@@ -551,7 +745,7 @@
                     @if(!empty($resume->skills) && count($resume->skills) > 0)
                         <div class="side-block">
                             <div class="sidebar-title"><span class="accent-dot"></span> {{ $isKo ? '보유 기술 역량' : 'Skills & Stack' }}</div>
-                            <div>
+                            <div class="skills-container">
                                 @foreach($resume->skills as $skill)
                                     @if(!empty(trim($skill)))
                                         <span class="skill-pill">{{ trim($skill) }}</span>
@@ -683,10 +877,39 @@
                         </div>
                     @endif
 
+                    {{-- FORMAL DECLARATION, DATE & SIGNATURE BLOCK --}}
+                    <div class="declaration-block" style="margin-top: 18px; padding-top: 10px; border-top: 1px solid #cbd5e1; font-size: 8pt; color: #475569; page-break-inside: avoid;">
+                        <div style="font-style: italic; margin-bottom: 6px; color: #64748b;">
+                            {{ $isKo ? '위 기재사항은 사실과 틀림없음을 확인합니다.' : 'I hereby declare that all the information furnished above is true and complete to the best of my knowledge.' }}
+                        </div>
+                        <table style="width: 100%; border-collapse: collapse; margin-top: 4px;">
+                            <tr>
+                                <td style="text-align: left; vertical-align: bottom; font-size: 8pt; color: #64748b;">
+                                    <strong>{{ $isKo ? '작성일자 :' : 'Date :' }}</strong>
+                                    <span style="margin-left: 4px;">{{ $resume->personal_info['declaration_date'] ?? date($isKo ? 'Y년 m월 d일' : 'F d, Y') }}</span>
+                                </td>
+                                <td style="text-align: right; vertical-align: bottom; font-size: 8pt;">
+                                    <strong>{{ $isKo ? '지원자(작성자) :' : 'Applicant Signature :' }}</strong>
+                                    <span style="display: inline-block; border-bottom: 1px solid #334155; min-width: 110px; text-align: center; font-weight: 700; color: #0f172a; padding: 0 6px; margin: 0 4px;">
+                                        {{ $resume->personal_info['signature_name'] ?? ($resume->personal_info['full_name'] ?? ($isKo ? '성명' : 'Candidate Name')) }}
+                                    </span>
+                                    <span style="font-size: 7pt; color: #64748b;">{{ $isKo ? '(인 / 서명)' : '(Signed)' }}</span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
                 </td>
             </tr>
         </table>
     </div>
 
+    @if(request()->boolean('print'))
+        <script>
+            window.addEventListener('DOMContentLoaded', () => {
+                setTimeout(() => { window.print(); }, 400);
+            });
+        </script>
+    @endif
 </body>
 </html>

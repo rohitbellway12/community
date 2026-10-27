@@ -46,6 +46,8 @@ class ResumeSampleService
             'location' => $isKo ? '서울특별시 서초구 강남대로 102' : '102 Gangnam-daero, Seocho-gu, Seoul, Korea',
             'emergency_phone' => '010-9281-3310 (부)',
             'photo_url' => 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+            'declaration_date' => $isKo ? date('Y년 m월 d일') : date('F d, Y'),
+            'signature_name' => $isKo ? '김민수' : 'Kim Min-soo',
         ];
         $sample->summary = $isKo 
             ? '안정적이고 확장 가능한 백엔드 시스템 구축에 열정을 가진 개발자입니다. 대용량 트래픽 처리와 클라우드 아키텍처에 강점을 지니고 있습니다.'
@@ -205,6 +207,8 @@ class ResumeSampleService
             ? '샘플 ' . ucfirst($template) . ' 이력서'
             : 'Sample ' . ucfirst($template) . ' CV';
 
+        $hasPhoto = in_array($template, ['modern', 'creative']);
+
         if ($isKo) {
             $sample->personal_info = [
                 'full_name' => '김민수',
@@ -216,6 +220,9 @@ class ResumeSampleService
                 'linkedin' => 'linkedin.com/in/minsoo-kim-dev',
                 'github' => 'github.com/minsookim',
                 'portfolio' => 'minsookim.dev',
+                'photo_url' => $hasPhoto ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80' : '',
+                'declaration_date' => date('Y년 m월 d일'),
+                'signature_name' => '김민수',
             ];
             $sample->summary = '대규모 웹 애플리케이션 및 마이크로서비스 아키텍처 설계와 운영에 4년 이상의 전문 경험을 갖춘 시니어 풀스택 엔지니어입니다. 일일 수백만 건의 트랜잭션을 안정적으로 처리하고 시스템 처리량을 42% 개선한 실적을 보유하고 있습니다. 클린 코드, 확장성 높은 클라우드 인프라(AWS/Docker), 그리고 현대적인 AI 기술 연동에 깊은 열정을 쏟고 있습니다.';
             $sample->education = [
@@ -314,6 +321,9 @@ class ResumeSampleService
                 'linkedin' => 'linkedin.com/in/alex-johnson-dev',
                 'github' => 'github.com/alexjohnson',
                 'portfolio' => 'alexjohnson.dev',
+                'photo_url' => $hasPhoto ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80' : '',
+                'declaration_date' => date('F d, Y'),
+                'signature_name' => 'Alex Johnson',
             ];
             $sample->summary = 'Innovative and results-driven Senior Full Stack Software Engineer with 4+ years of expertise in architecting high-traffic web applications, microservices, and reactive user interfaces. Proven track record of boosting system throughput by 42% and mentoring high-performing engineering teams. Passionate about clean architecture, scalable cloud infrastructure, and modern AI integration.';
             $sample->education = [

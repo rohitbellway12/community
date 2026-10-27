@@ -579,12 +579,7 @@ class StudentTestController extends Controller
 
     protected function handleCandidatePhoto(Request $request): ?string
     {
-        if ($request->hasFile('candidate_photo') && $request->file('candidate_photo')->isValid()) {
-            $path = $request->file('candidate_photo')->store('test-attempts/photos', 'public');
-            $this->autoCorrectOrientation(storage_path('app/public/' . $path));
-            return $path;
-        }
-
+        // 1. Check canvas base64 first (includes student's manual rotations from frontend)
         $base64 = $request->input('candidate_photo_base64') ?? $request->input('candidate_photo');
         if ($base64 && is_string($base64) && str_starts_with($base64, 'data:image/')) {
             $parts = explode(',', $base64);
@@ -593,10 +588,30 @@ class StudentTestController extends Controller
                 if ($data !== false) {
                     $filename = 'test-attempts/photos/' . uniqid('photo_') . '_' . time() . '.jpg';
                     Storage::disk('public')->put($filename, $data);
-                    $this->autoCorrectOrientation(storage_path('app/public/' . $filename));
+                    $fullPath = storage_path('app/public/' . $filename);
+                    $this->autoCorrectOrientation($fullPath);
+
+                    // Ensure copy in public/storage if not a symlink
+                    $publicDir = public_path('storage/test-attempts/photos');
+                    if (is_dir($publicDir) && !is_link(public_path('storage'))) {
+                        @file_put_contents($publicDir . '/' . basename($filename), $data);
+                    }
                     return $filename;
                 }
             }
+        }
+
+        // 2. Fallback to direct multipart file upload
+        if ($request->hasFile('candidate_photo') && $request->file('candidate_photo')->isValid()) {
+            $path = $request->file('candidate_photo')->store('test-attempts/photos', 'public');
+            $fullPath = storage_path('app/public/' . $path);
+            $this->autoCorrectOrientation($fullPath);
+
+            $publicDir = public_path('storage/test-attempts/photos');
+            if (is_dir($publicDir) && !is_link(public_path('storage')) && file_exists($fullPath)) {
+                @copy($fullPath, $publicDir . '/' . basename($path));
+            }
+            return $path;
         }
 
         return null;
@@ -657,5 +672,57 @@ class StudentTestController extends Controller
                 abort(403, 'This test has expired.');
             }
         }
+    }
+
+    public function rotatePhoto(Request $request, Test $test, TestAttempt $attempt): RedirectResponse
+    {
+        $user = auth()->user();
+        if ($attempt->user_id !== $user->id && !($user->is_admin ?? false)) {
+            abort(403);
+        }
+
+        if (!$attempt->candidate_photo) {
+            return back()->with('error', 'No candidate photo found to rotate.');
+        }
+
+        $fullPath = storage_path('app/public/' . $attempt->candidate_photo);
+        $publicPath = public_path('storage/' . $attempt->candidate_photo);
+
+        $targetFile = file_exists($fullPath) ? $fullPath : (file_exists($publicPath) ? $publicPath : null);
+
+        if ($targetFile && function_exists('imagerotate')) {
+            $data = @file_get_contents($targetFile);
+            $img = $data ? @imagecreatefromstring($data) : null;
+            if ($img) {
+                // In GD, -90 rotates 90 degrees clockwise
+                $rotated = imagerotate($img, -90, 0);
+                imagejpeg($rotated, $targetFile, 92);
+                imagedestroy($img);
+                imagedestroy($rotated);
+
+                // Sync both storage locations so both have the newly rotated photo
+                if ($targetFile === $fullPath) {
+                    $dir = dirname($publicPath);
+                    if (!is_dir($dir)) { @mkdir($dir, 0777, true); }
+                    @copy($fullPath, $publicPath);
+                } elseif ($targetFile === $publicPath) {
+                    $dir = dirname($fullPath);
+                    if (!is_dir($dir)) { @mkdir($dir, 0777, true); }
+                    @copy($publicPath, $fullPath);
+                }
+                @touch($targetFile);
+                if (file_exists($publicPath)) { @touch($publicPath); }
+                if (file_exists($fullPath)) { @touch($fullPath); }
+            }
+        }
+
+        // Always purge cached certificate PDF so new downloads use the rotated image
+        try {
+            app(\App\Services\CertificatePdfService::class)->clearCache($test, $attempt);
+        } catch (\Throwable $e) {
+            // Ignore
+        }
+
+        return back()->with('success', 'Candidate photo rotated 90° clockwise! Certificate PDF updated.');
     }
 }

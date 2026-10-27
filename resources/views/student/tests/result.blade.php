@@ -5,12 +5,7 @@
 @section('content')
 <style>
     .cert-render-host {
-        position: fixed;
-        left: -99999px;
-        top: 0;
-        width: 820px;
-        z-index: -9999;
-        pointer-events: none;
+        display: none;
     }
     @media print {
         @page {
@@ -72,29 +67,50 @@
 {{-- =========================================================================
      2. ON-SCREEN RESULT & QUESTION ANALYSIS VIEW (HIDDEN ON PRINT)
      ========================================================================= --}}
-<div class="print:hidden p-3 sm:p-6 lg:p-8 max-w-[1020px] w-full mx-auto" x-data="{ filter: 'all' }">
+<div class="print:hidden px-3 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-[1020px] w-full mx-auto box-border" x-data="{ filter: 'all' }">
 
     {{-- TOP CONTROLS & FLASH MESSAGES --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <a href="{{ route('tests.student.index') }}"
-           class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 transition">
+           class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 transition self-start sm:self-auto">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
             <span>Back to Test Portal</span>
         </a>
 
-        <div class="flex items-center gap-2.5">
+        <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-start sm:justify-end">
+            @if(!empty($attempt->candidate_photo) && auth()->check() && (auth()->id() === $attempt->user_id || (auth()->user()->is_admin ?? false)))
+                <form method="POST" action="{{ route('tests.student.certificate.rotate-photo', ['test' => $test->id, 'attempt' => $attempt->id]) }}" class="inline">
+                    @csrf
+                    <button type="submit"
+                            title="Rotate candidate photo 90 degrees clockwise if it is sideways"
+                            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition shadow-2xs cursor-pointer">
+                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span>Rotate Photo ↻</span>
+                    </button>
+                </form>
+            @endif
+
             <a href="{{ route('community.index') }}"
-               class="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition shadow-2xs">
+               class="px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition shadow-2xs">
                 Community Home
+            </a>
+
+            <a href="{{ route('tests.student.certificate', ['test' => $test->id, 'attempt' => $attempt->id]) }}"
+               target="_blank"
+               class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition shadow-2xs">
+                <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                <span>View Certificate</span>
             </a>
 
             <a href="{{ route('tests.student.certificate.download', ['test' => $test->id, 'attempt' => $attempt->id]) }}"
                id="btn-download-pdf"
-               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-[#0b1329] font-black text-xs transition shadow-md hover:shadow-lg">
-                <svg class="w-4 h-4 text-[#0b1329]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-[#0b1329] font-black text-xs transition shadow-md hover:shadow-lg">
+                <svg class="w-3.5 h-3.5 text-[#0b1329]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                 </svg>
-                <span>Download Certificate</span>
+                <span>Download PDF</span>
             </a>
         </div>
     </div>
@@ -113,10 +129,10 @@
     <div class="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm overflow-hidden mb-6">
 
         {{-- HEADER BANNER & RESULT BADGE --}}
-        <div class="bg-[#0b1329] text-white p-5 sm:p-8 relative overflow-hidden">
+        <div class="bg-[#0b1329] text-white p-4 sm:p-7 md:p-8 relative overflow-hidden">
             <div class="absolute -right-10 -top-10 w-48 h-48 bg-amber-400/10 rounded-full blur-3xl pointer-events-none"></div>
 
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6 relative z-10">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 mb-2 flex-wrap">
                         <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400 text-[#0b1329]">
@@ -130,7 +146,7 @@
                         </span>
                     </div>
 
-                    <h1 class="text-xl sm:text-2xl md:text-3xl font-black tracking-tight text-white leading-snug break-words">{{ $test->title }}</h1>
+                    <h1 class="text-lg sm:text-2xl md:text-3xl font-black tracking-tight text-white leading-snug break-words">{{ $test->title }}</h1>
                     <p class="text-xs text-slate-300 mt-2 flex items-center gap-x-3 gap-y-1 flex-wrap">
                         <span>Submitted At: <strong class="text-white">{{ $attempt->submitted_at?->format('M d, Y · h:i A') ?? 'N/A' }}</strong></span>
                         <span class="text-slate-500 hidden sm:inline">|</span>
@@ -138,39 +154,77 @@
                     </p>
                 </div>
 
-                {{-- RESULT SEAL / SLAB --}}
-                <div class="w-full md:w-auto shrink-0 flex items-center justify-start md:justify-end">
+                {{-- CANDIDATE VERIFIED PHOTO + RESULT SEAL / SLAB --}}
+                @php
+                    $candidatePhotoSrc = null;
+                    if (!empty($attempt->candidate_photo)) {
+                        $candidatePhotoSrc = asset('storage/' . $attempt->candidate_photo) . '?v=' . (@filemtime(public_path('storage/' . $attempt->candidate_photo)) ?: time());
+                    } elseif (!empty($attempt->user->avatar)) {
+                        $candidatePhotoSrc = str_starts_with($attempt->user->avatar, 'http') ? $attempt->user->avatar : (asset('storage/' . $attempt->user->avatar) . '?v=' . (@filemtime(public_path('storage/' . $attempt->user->avatar)) ?: time()));
+                    }
+                @endphp
+
+                <div class="w-full lg:w-auto shrink-0 flex items-center justify-start lg:justify-end gap-3 sm:gap-3.5 flex-nowrap">
+                    {{-- PHOTO ON LEFT SIDE OF SLAB CARD --}}
+                    @if($candidatePhotoSrc)
+                        <div class="flex items-center gap-2 sm:gap-2.5 bg-slate-900/90 border-2 border-amber-400/60 p-1.5 sm:p-2 rounded-2xl shrink-0 shadow-xl shadow-black/40">
+                            <div class="relative group">
+                                <img src="{{ $candidatePhotoSrc }}"
+                                     alt="{{ $attempt->user->name ?? 'Candidate Photo' }}"
+                                     class="w-14 h-16 sm:w-16 sm:h-20 rounded-xl object-cover border border-amber-300 shadow-md bg-slate-950"
+                                     style="image-orientation: from-image;">
+                                <span class="absolute -bottom-1 -right-1 px-1 py-0.2 rounded-full bg-emerald-500 text-white font-black text-[8px] sm:text-[9px] shadow-xs">✓</span>
+                            </div>
+                            <div class="hidden sm:block text-left pr-1.5">
+                                <div class="text-[9px] font-extrabold uppercase tracking-wider text-amber-400">Candidate Photo</div>
+                                <div class="text-[11px] font-bold text-white max-w-[85px] truncate">{{ $attempt->user->name ?? 'Candidate' }}</div>
+                                <div class="text-[9px] text-slate-400 leading-tight">On Certificate</div>
+                                @if(!empty($attempt->candidate_photo) && auth()->check() && (auth()->id() === $attempt->user_id || (auth()->user()->is_admin ?? false)))
+                                    <form method="POST" action="{{ route('tests.student.certificate.rotate-photo', ['test' => $test->id, 'attempt' => $attempt->id]) }}" class="inline">
+                                        @csrf
+                                        <button type="submit"
+                                                title="Rotate photo 90° clockwise if sideways"
+                                                class="text-[9px] text-amber-400 hover:text-amber-300 font-bold underline flex items-center gap-0.5 mt-0.5 cursor-pointer">
+                                            <span>↻ Rotate</span>
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
+
+                    {{-- RESULT SEAL / SLAB CARD --}}
                     @if($matchedSlab)
-                        <div class="w-full md:w-auto inline-flex items-center gap-3 sm:gap-3.5 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl bg-amber-400/20 border-2 border-amber-400 text-amber-300 shadow-xl shadow-amber-950/50">
-                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-400 text-[#0b1329] flex items-center justify-center font-black text-xl sm:text-2xl shrink-0 shadow-md">
+                        <div class="flex-1 lg:flex-initial inline-flex items-center gap-2.5 sm:gap-3.5 px-3 sm:px-5 py-2.5 sm:py-3 rounded-2xl bg-amber-400/20 border-2 border-amber-400 text-amber-300 shadow-xl shadow-amber-950/50 min-w-0">
+                            <div class="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-amber-400 text-[#0b1329] flex items-center justify-center font-black text-lg sm:text-2xl shrink-0 shadow-md">
                                 ★
                             </div>
                             <div class="min-w-0 flex-1">
-                                <div class="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest text-amber-300">RESULT GRADE / SLAB</div>
-                                <div class="text-lg sm:text-2xl font-black tracking-wider text-white truncate">{{ $matchedSlab->name }}</div>
-                                <div class="text-[10px] text-amber-200/90 font-medium truncate">Range: {{ (float)$matchedSlab->min_marks }} - {{ (float)$matchedSlab->max_marks }} marks</div>
+                                <div class="text-[8px] sm:text-[10px] font-extrabold uppercase tracking-widest text-amber-300">RESULT GRADE / SLAB</div>
+                                <div class="text-base sm:text-xl font-black tracking-wider text-white truncate">{{ $matchedSlab->name }}</div>
+                                <div class="text-[9px] sm:text-[10px] text-amber-200/90 font-medium truncate">Range: {{ (float)$matchedSlab->min_marks }} - {{ (float)$matchedSlab->max_marks }} marks</div>
                             </div>
                         </div>
                     @elseif($isPass)
-                        <div class="w-full md:w-auto inline-flex items-center gap-3 sm:gap-3.5 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 shadow-xl shadow-emerald-950/50">
-                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-black text-xl sm:text-2xl shrink-0 shadow-md">
+                        <div class="flex-1 lg:flex-initial inline-flex items-center gap-2.5 sm:gap-3.5 px-3 sm:px-5 py-2.5 sm:py-3 rounded-2xl bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 shadow-xl shadow-emerald-950/50 min-w-0">
+                            <div class="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-black text-lg sm:text-2xl shrink-0 shadow-md">
                                 ✓
                             </div>
                             <div class="min-w-0 flex-1">
-                                <div class="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest text-emerald-400">FINAL RESULT</div>
-                                <div class="text-lg sm:text-2xl font-black tracking-wider text-white truncate">QUALIFIED (PASS)</div>
-                                <div class="text-[10px] text-emerald-300/90 font-medium truncate">Passed Qualifying Cutoff</div>
+                                <div class="text-[8px] sm:text-[10px] font-extrabold uppercase tracking-widest text-emerald-400">FINAL RESULT</div>
+                                <div class="text-base sm:text-xl font-black tracking-wider text-white truncate">QUALIFIED (PASS)</div>
+                                <div class="text-[9px] sm:text-[10px] text-emerald-300/90 font-medium truncate">Passed Qualifying Cutoff</div>
                             </div>
                         </div>
                     @else
-                        <div class="w-full md:w-auto inline-flex items-center gap-3 sm:gap-3.5 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl bg-rose-500/20 border-2 border-rose-400 text-rose-300 shadow-xl shadow-rose-950/50">
-                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-rose-500 text-white flex items-center justify-center font-black text-xl sm:text-2xl shrink-0 shadow-md">
+                        <div class="flex-1 lg:flex-initial inline-flex items-center gap-2.5 sm:gap-3.5 px-3 sm:px-5 py-2.5 sm:py-3 rounded-2xl bg-rose-500/20 border-2 border-rose-400 text-rose-300 shadow-xl shadow-rose-950/50 min-w-0">
+                            <div class="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-rose-500 text-white flex items-center justify-center font-black text-lg sm:text-2xl shrink-0 shadow-md">
                                 ✕
                             </div>
                             <div class="min-w-0 flex-1">
-                                <div class="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest text-rose-400">FINAL RESULT</div>
-                                <div class="text-lg sm:text-2xl font-black tracking-wider text-white truncate">NOT QUALIFIED (FAIL)</div>
-                                <div class="text-[10px] text-rose-300/90 font-medium truncate">Below Cutoff (Re-attempt Required)</div>
+                                <div class="text-[8px] sm:text-[10px] font-extrabold uppercase tracking-widest text-rose-400">FINAL RESULT</div>
+                                <div class="text-base sm:text-xl font-black tracking-wider text-white truncate">NOT QUALIFIED (FAIL)</div>
+                                <div class="text-[9px] sm:text-[10px] text-rose-300/90 font-medium truncate">Below Cutoff (Re-attempt Required)</div>
                             </div>
                         </div>
                     @endif
@@ -179,41 +233,48 @@
         </div>
 
         {{-- CANDIDATE & EXAMINATION METADATA BAR --}}
-        <div class="bg-slate-50 border-b border-slate-200/80 px-4 sm:px-8 py-3.5 sm:py-4">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-xs">
-                <div class="flex items-center gap-2.5 min-w-0">
-                    <div class="w-8 h-8 rounded-full bg-amber-400 text-[#0b1329] font-black flex items-center justify-center text-xs shrink-0 shadow-2xs">
-                        {{ strtoupper(substr($attempt->user->name ?? 'C', 0, 1)) }}
-                    </div>
-                    <div class="min-w-0">
-                        <div class="text-[10px] font-bold uppercase text-slate-400">Candidate Name</div>
+        <div class="bg-slate-50 border-b border-slate-200/80 p-3 sm:p-5 md:px-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 text-xs">
+                <div class="flex items-center gap-2.5 min-w-0 bg-white p-2.5 sm:p-3 rounded-xl border border-slate-200/80 shadow-2xs">
+                    @if($candidatePhotoSrc)
+                        <img src="{{ $candidatePhotoSrc }}"
+                             alt="{{ $attempt->user->name ?? 'Candidate' }}"
+                             class="w-8 h-8 rounded-lg object-cover border border-amber-400 shrink-0 shadow-2xs bg-slate-100"
+                             style="image-orientation: from-image;">
+                    @else
+                        <div class="w-8 h-8 rounded-full bg-amber-400 text-[#0b1329] font-black flex items-center justify-center text-xs shrink-0 shadow-2xs">
+                            {{ strtoupper(substr($attempt->user->name ?? 'C', 0, 1)) }}
+                        </div>
+                    @endif
+                    <div class="min-w-0 flex-1">
+                        <div class="text-[9px] sm:text-[10px] font-bold uppercase text-slate-400">Candidate Name</div>
                         <div class="font-extrabold text-slate-900 truncate mt-0.5">{{ $attempt->user->name ?? auth()->user()->name }}</div>
                     </div>
                 </div>
 
-                <div class="min-w-0">
-                    <div class="text-[10px] font-bold uppercase text-slate-400">Candidate ID / Username</div>
+                <div class="min-w-0 bg-white p-2.5 sm:p-3 rounded-xl border border-slate-200/80 shadow-2xs">
+                    <div class="text-[9px] sm:text-[10px] font-bold uppercase text-slate-400">Candidate ID / Username</div>
                     <div class="font-bold text-slate-800 truncate mt-0.5">{{ $attempt->user->username ?? ('ID-' . $attempt->user_id) }}</div>
                 </div>
 
-                <div class="min-w-0">
-                    <div class="text-[10px] font-bold uppercase text-slate-400">Submission Mode</div>
-                    <div class="font-bold mt-0.5 truncate">
+                <div class="min-w-0 bg-white p-2.5 sm:p-3 rounded-xl border border-slate-200/80 shadow-2xs">
+                    <div class="text-[9px] sm:text-[10px] font-bold uppercase text-slate-400">Submission Mode</div>
+                    <div class="font-bold mt-0.5 truncate text-[11px] sm:text-xs">
                         @if($attempt->submission_type === 'timeout')
-                            <span class="text-amber-700 font-extrabold">⏱ Auto-submitted upon timeout</span>
+                            <span class="text-amber-700 font-extrabold">⏱ Auto-submitted (timeout)</span>
                         @elseif($attempt->submission_type === 'tab_switch_violation')
-                            <span class="text-rose-700 font-extrabold">⚠ Auto-submitted due to tab switch</span>
+                            <span class="text-rose-700 font-extrabold">⚠ Auto-submitted (tab switch)</span>
                         @else
-                            <span class="text-emerald-700 font-extrabold">✓ Submitted manually by candidate</span>
+                            <span class="text-emerald-700 font-extrabold">✓ Submitted manually</span>
                         @endif
                     </div>
                 </div>
 
-                <div class="min-w-0">
-                    <div class="text-[10px] font-bold uppercase text-slate-400">Tab Switches Detected</div>
-                    <div class="font-bold text-slate-800 mt-0.5">
+                <div class="min-w-0 bg-white p-2.5 sm:p-3 rounded-xl border border-slate-200/80 shadow-2xs">
+                    <div class="text-[9px] sm:text-[10px] font-bold uppercase text-slate-400">Tab Switches Recorded</div>
+                    <div class="font-bold text-slate-800 mt-0.5 text-[11px] sm:text-xs truncate">
                         @if(($attempt->tab_switch_count ?? 0) > 0)
-                            <span class="text-rose-600 font-bold">{{ $attempt->tab_switch_count }} violation(s) recorded</span>
+                            <span class="text-rose-600 font-bold">{{ $attempt->tab_switch_count }} violation(s)</span>
                         @else
                             <span class="text-emerald-600 font-bold">0 (Compliant)</span>
                         @endif
@@ -223,7 +284,7 @@
         </div>
 
         {{-- VISUAL PASSING CUTOFF PROGRESS METER --}}
-        <div class="px-4 sm:px-8 py-4 sm:py-5 border-b border-slate-200/80 bg-gradient-to-r from-slate-50/50 via-white to-slate-50/50">
+        <div class="px-4 sm:px-6 md:px-8 py-4 sm:py-5 border-b border-slate-200/80 bg-gradient-to-r from-slate-50/50 via-white to-slate-50/50">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-4 mb-2 text-xs">
                 <div>
                     <span class="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Cutoff Achievement Gauge</span>
@@ -235,112 +296,112 @@
                 </div>
             </div>
 
-            <div class="relative w-full h-3.5 sm:h-4 bg-slate-200 rounded-full overflow-hidden shadow-inner">
+            <div class="relative w-full h-3 sm:h-4 bg-slate-200 rounded-full overflow-hidden shadow-inner">
                 <div class="absolute top-0 bottom-0 z-20 w-0.5 bg-slate-700 pointer-events-none" style="left: {{ $passingPercentage }}%;"></div>
                 <div class="h-full rounded-full transition-all duration-700 {{ $isPass ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-rose-500 to-rose-600' }}"
                      style="width: {{ $scoreProgress }}%;"></div>
             </div>
 
-            <div class="flex items-center justify-between text-[9px] sm:text-[10px] text-slate-500 mt-1.5 font-semibold">
-                <span>0 marks (Min)</span>
-                <span class="text-slate-700 font-bold flex items-center gap-1">
+            <div class="flex items-center justify-between text-[9px] sm:text-[10px] text-slate-500 mt-1.5 font-semibold gap-1">
+                <span class="shrink-0">0 (Min)</span>
+                <span class="text-slate-700 font-bold flex items-center gap-1 text-center shrink min-w-0 truncate">
                     <span>▲</span> Cutoff: {{ $test->passing_marks }} marks ({{ $passingPercentage }}%)
                 </span>
-                <span>{{ $test->total_marks }} marks (Max)</span>
+                <span class="shrink-0 text-right">{{ $test->total_marks }} (Max)</span>
             </div>
         </div>
 
         {{-- KEY PERFORMANCE METRICS GRID --}}
-        <div class="p-4 sm:p-8 border-b border-slate-200/80">
+        <div class="p-4 sm:p-6 md:p-8 border-b border-slate-200/80">
             <h3 class="text-xs font-black uppercase tracking-wider text-slate-400 mb-3 sm:mb-4">Performance Breakdown</h3>
 
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
-                <div class="bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-200/80 p-3 sm:p-4 text-center">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+                <div class="bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-200/80 p-2.5 sm:p-4 text-center">
                     <div class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400">Score Obtained</div>
-                    <div class="text-xl sm:text-3xl font-black text-[#0b1329] mt-0.5 sm:mt-1">{{ $attempt->score_obtained }}</div>
+                    <div class="text-lg sm:text-2xl md:text-3xl font-black text-[#0b1329] mt-0.5 sm:mt-1">{{ $attempt->score_obtained }}</div>
                     <div class="text-[10px] sm:text-[11px] text-slate-500 font-semibold mt-0.5">Out of {{ $test->total_marks }} marks</div>
                 </div>
 
-                <div class="bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-200/80 p-3 sm:p-4 text-center">
+                <div class="bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-200/80 p-2.5 sm:p-4 text-center">
                     <div class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400">Percentage</div>
-                    <div class="text-xl sm:text-3xl font-black {{ $isPass ? 'text-emerald-600' : 'text-rose-600' }} mt-0.5 sm:mt-1">
+                    <div class="text-lg sm:text-2xl md:text-3xl font-black {{ $isPass ? 'text-emerald-600' : 'text-rose-600' }} mt-0.5 sm:mt-1">
                         {{ $attempt->percentage }}%
                     </div>
                     <div class="text-[10px] sm:text-[11px] text-slate-500 font-semibold mt-0.5">Cutoff: {{ $passingPercentage }}%+</div>
                 </div>
 
-                <div class="bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-200/80 p-3 sm:p-4 text-center">
+                <div class="bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-200/80 p-2.5 sm:p-4 text-center">
                     <div class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400">Accuracy Rate</div>
-                    <div class="text-xl sm:text-3xl font-black text-amber-500 mt-0.5 sm:mt-1">{{ $accuracy }}%</div>
+                    <div class="text-lg sm:text-2xl md:text-3xl font-black text-amber-500 mt-0.5 sm:mt-1">{{ $accuracy }}%</div>
                     <div class="text-[10px] sm:text-[11px] text-slate-500 font-semibold mt-0.5">Correct vs attempted</div>
                 </div>
 
-                <div class="bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-200/80 p-3 sm:p-4 text-center">
+                <div class="bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-200/80 p-2.5 sm:p-4 text-center">
                     <div class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400">Questions Answered</div>
-                    <div class="text-xl sm:text-3xl font-black text-slate-800 mt-0.5 sm:mt-1">{{ $attempt->answered_count }}</div>
+                    <div class="text-lg sm:text-2xl md:text-3xl font-black text-slate-800 mt-0.5 sm:mt-1">{{ $attempt->answered_count }}</div>
                     <div class="text-[10px] sm:text-[11px] text-slate-500 font-semibold mt-0.5">Out of {{ $attempt->total_questions }} Qs</div>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 mt-3">
-                <div class="bg-emerald-50/70 border border-emerald-200/80 rounded-xl sm:rounded-2xl p-3 sm:p-3.5 flex items-center gap-3">
+                <div class="bg-emerald-50/70 border border-emerald-200/80 rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 flex items-center gap-3">
                     <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-600 text-white font-black flex items-center justify-center text-sm sm:text-base shrink-0 shadow-2xs">✓</div>
                     <div class="min-w-0 flex-1">
                         <div class="text-[9px] sm:text-[10px] font-bold uppercase text-emerald-800 tracking-wider">Correct Answers</div>
-                        <div class="text-base sm:text-lg font-extrabold text-emerald-950 mt-0.5">{{ $attempt->correct_count }} <span class="text-xs font-semibold text-emerald-700">Questions</span></div>
+                        <div class="text-sm sm:text-lg font-extrabold text-emerald-950 mt-0.5">{{ $attempt->correct_count }} <span class="text-xs font-semibold text-emerald-700">Questions</span></div>
                     </div>
                 </div>
 
-                <div class="bg-rose-50/70 border border-rose-200/80 rounded-xl sm:rounded-2xl p-3 sm:p-3.5 flex items-center gap-3">
+                <div class="bg-rose-50/70 border border-rose-200/80 rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 flex items-center gap-3">
                     <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-rose-600 text-white font-black flex items-center justify-center text-sm sm:text-base shrink-0 shadow-2xs">✕</div>
                     <div class="min-w-0 flex-1">
                         <div class="text-[9px] sm:text-[10px] font-bold uppercase text-rose-800 tracking-wider">Incorrect Answers</div>
-                        <div class="text-base sm:text-lg font-extrabold text-rose-950 mt-0.5">{{ $attempt->incorrect_count }} <span class="text-xs font-semibold text-rose-700">Questions</span></div>
+                        <div class="text-sm sm:text-lg font-extrabold text-rose-950 mt-0.5">{{ $attempt->incorrect_count }} <span class="text-xs font-semibold text-rose-700">Questions</span></div>
                     </div>
                 </div>
 
-                <div class="bg-slate-100 border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-3.5 flex items-center gap-3">
+                <div class="bg-slate-100 border border-slate-200 rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 flex items-center gap-3">
                     <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-300 text-slate-700 font-black flex items-center justify-center text-sm sm:text-base shrink-0 shadow-2xs">○</div>
                     <div class="min-w-0 flex-1">
                         <div class="text-[9px] sm:text-[10px] font-bold uppercase text-slate-600 tracking-wider">Skipped / Unanswered</div>
-                        <div class="text-base sm:text-lg font-extrabold text-slate-800 mt-0.5">{{ $attempt->unanswered_count }} <span class="text-xs font-semibold text-slate-600">Questions</span></div>
+                        <div class="text-sm sm:text-lg font-extrabold text-slate-800 mt-0.5">{{ $attempt->unanswered_count }} <span class="text-xs font-semibold text-slate-600">Questions</span></div>
                     </div>
                 </div>
             </div>
         </div>
 
         {{-- DETAILED QUESTION-BY-QUESTION REVIEW SECTION (ON-SCREEN ONLY) --}}
-        <div class="p-4 sm:p-8">
+        <div class="p-3.5 sm:p-6 md:p-8">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-slate-100">
-                <div>
+                <div class="min-w-0">
                     <h3 class="text-sm font-black uppercase tracking-wider text-slate-900">Detailed Question Analysis & Solutions</h3>
                     <p class="text-xs text-slate-500 mt-0.5">Review your chosen answers compared against standard correct keys and explanations.</p>
                 </div>
 
                 {{-- FILTER TABS --}}
-                <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl sm:rounded-2xl text-xs font-bold overflow-x-auto w-full sm:w-auto scrollbar-none">
+                <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold overflow-x-auto w-full sm:w-auto max-w-full flex-nowrap shrink-0">
                     <button type="button"
                             @click="filter = 'all'"
                             :class="filter === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'"
-                            class="px-2.5 sm:px-3 py-1.5 rounded-lg sm:rounded-xl transition cursor-pointer whitespace-nowrap text-[11px] sm:text-xs">
+                            class="px-2.5 sm:px-3 py-1.5 rounded-lg transition cursor-pointer whitespace-nowrap text-[11px] sm:text-xs shrink-0">
                         All ({{ $attempt->answers->count() }})
                     </button>
                     <button type="button"
                             @click="filter = 'correct'"
                             :class="filter === 'correct' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'"
-                            class="px-2.5 sm:px-3 py-1.5 rounded-lg sm:rounded-xl transition cursor-pointer whitespace-nowrap text-[11px] sm:text-xs">
+                            class="px-2.5 sm:px-3 py-1.5 rounded-lg transition cursor-pointer whitespace-nowrap text-[11px] sm:text-xs shrink-0">
                         Correct ({{ $attempt->correct_count }})
                     </button>
                     <button type="button"
                             @click="filter = 'incorrect'"
                             :class="filter === 'incorrect' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'"
-                            class="px-2.5 sm:px-3 py-1.5 rounded-lg sm:rounded-xl transition cursor-pointer whitespace-nowrap text-[11px] sm:text-xs">
+                            class="px-2.5 sm:px-3 py-1.5 rounded-lg transition cursor-pointer whitespace-nowrap text-[11px] sm:text-xs shrink-0">
                         Incorrect ({{ $attempt->incorrect_count }})
                     </button>
                     <button type="button"
                             @click="filter = 'unanswered'"
                             :class="filter === 'unanswered' ? 'bg-slate-700 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'"
-                            class="px-2.5 sm:px-3 py-1.5 rounded-lg sm:rounded-xl transition cursor-pointer whitespace-nowrap text-[11px] sm:text-xs">
+                            class="px-2.5 sm:px-3 py-1.5 rounded-lg transition cursor-pointer whitespace-nowrap text-[11px] sm:text-xs shrink-0">
                         Unanswered ({{ $attempt->unanswered_count }})
                     </button>
                 </div>
@@ -362,7 +423,7 @@
                     @endphp
 
                     <div x-show="filter === 'all' || filter === '{{ $statusClass }}'"
-                         class="p-4 sm:p-5 rounded-2xl border transition
+                         class="p-3.5 sm:p-5 rounded-2xl border transition
                             @if($answer->is_correct)
                                 bg-emerald-50/30 border-emerald-200/80
                             @elseif($answer->selected_option_id)
@@ -373,18 +434,18 @@
                          ">
 
                         {{-- QUESTION HEADER --}}
-                        <div class="flex items-start justify-between gap-3 mb-2.5">
-                            <div class="flex items-center gap-2">
+                        <div class="flex items-start justify-between gap-2 sm:gap-3 mb-2.5 flex-wrap sm:flex-nowrap">
+                            <div class="flex items-start sm:items-center gap-2 min-w-0">
                                 <span class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center font-black text-xs text-slate-800 shrink-0 shadow-2xs">
                                     Q{{ $idx + 1 }}
                                 </span>
-                                <div>
+                                <div class="min-w-0">
                                     <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">{{ $question->subject ?? 'Section' }}</span>
                                     <span class="text-[11px] text-slate-400 ml-1">· Marks: {{ $question->marks ?? 1 }} (Awarded: <strong>{{ $answer->marks_obtained }}</strong>)</span>
                                 </div>
                             </div>
 
-                            <div class="self-start sm:self-auto">
+                            <div class="shrink-0 self-start sm:self-auto">
                                 @if($answer->is_correct)
                                     <span class="inline-flex items-center gap-1 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-[11px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-2xs">
                                         ✓ Correct (+{{ $answer->marks_obtained }})
@@ -402,19 +463,19 @@
                         </div>
 
                         {{-- QUESTION TEXT --}}
-                        <div class="text-xs sm:text-sm font-black text-slate-900 mb-3 sm:mb-4 pl-0 sm:pl-10 leading-relaxed">
+                        <div class="text-xs sm:text-sm font-black text-slate-900 mb-3 sm:mb-4 pl-0 sm:pl-9 leading-relaxed break-words">
                             {{ $question->question_text ?? 'Question text not available.' }}
                         </div>
 
                         {{-- OPTIONS COMPARISON --}}
-                        <div class="pl-0 sm:pl-10 space-y-2 sm:space-y-2.5 max-w-3xl mb-3">
+                        <div class="pl-0 sm:pl-9 space-y-2 sm:space-y-2.5 max-w-3xl mb-3">
                             @foreach(($question->options ?? []) as $option)
                                 @php
                                     $isThisCorrect = $option->is_correct;
                                     $isThisUserChoice = $answer->selected_option_id == $option->id;
                                 @endphp
 
-                                <div class="p-3 sm:p-3.5 rounded-xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 transition
+                                <div class="p-2.5 sm:p-3.5 rounded-xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 transition
                                     @if($isThisCorrect && $isThisUserChoice)
                                         bg-emerald-100/80 border-emerald-400 text-emerald-950 font-bold shadow-2xs
                                     @elseif($isThisCorrect)
@@ -434,10 +495,10 @@
                                         ">
                                             {{ $option->option_label }}
                                         </span>
-                                        <span class="text-xs leading-snug break-words">{{ $option->option_text }}</span>
+                                        <span class="text-xs leading-snug break-words flex-1 min-w-0">{{ $option->option_text }}</span>
                                     </div>
 
-                                    <div class="shrink-0 self-end sm:self-auto">
+                                    <div class="shrink-0 self-start sm:self-center">
                                         @if($isThisCorrect && $isThisUserChoice)
                                             <span class="text-[9px] sm:text-[10px] font-black uppercase px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md bg-emerald-600 text-white shadow-2xs flex items-center gap-1">
                                                 <span>✓</span> Your Choice (Correct)
@@ -458,12 +519,12 @@
 
                         {{-- EXPLANATION BOX (IF AVAILABLE) --}}
                         @if($question && $question->explanation)
-                            <div class="ml-0 sm:ml-10 mt-2.5 sm:mt-3 p-3 sm:p-4 bg-amber-50/70 border border-amber-200/80 rounded-xl sm:rounded-2xl text-xs">
+                            <div class="ml-0 sm:ml-9 mt-2.5 sm:mt-3 p-3 sm:p-4 bg-amber-50/70 border border-amber-200/80 rounded-xl sm:rounded-2xl text-xs">
                                 <div class="flex items-center gap-1.5 text-amber-900 font-extrabold uppercase text-[10px] sm:text-[11px] tracking-wider mb-1">
                                     <span>💡</span>
                                     <span>Explanation & Solution:</span>
                                 </div>
-                                <p class="text-slate-800 leading-relaxed font-medium text-xs">{{ $question->explanation }}</p>
+                                <p class="text-slate-800 leading-relaxed font-medium text-xs break-words">{{ $question->explanation }}</p>
                             </div>
                         @endif
 

@@ -188,12 +188,13 @@
         /* Web print preview bar */
         @media screen {
             body {
-                background: {{ !empty($isEmbed) ? '#0F172A' : '#f1f5f9' }};
-                padding: {{ !empty($isEmbed) ? '28px 16px' : '24px 12px' }};
+                background: #f1f5f9;
+                padding: 24px 12px;
             }
             .page {
-                box-shadow: {{ !empty($isEmbed) ? '0 25px 50px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.08)' : '0 10px 30px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0,0,0,0.06)' }};
-                border-radius: 8px;
+                box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+                border: 1px solid #e2e8f0;
+                border-radius: 6px;
                 background: #ffffff;
             }
             .web-preview-bar {
@@ -221,19 +222,56 @@
                 margin-left: 8px;
             }
         }
+        @page {
+            size: A4 portrait;
+            margin: 0;
+        }
+
         @media print {
             .web-preview-bar {
                 display: none !important;
             }
-            body {
+            html, body {
                 background: #ffffff !important;
                 padding: 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             .page {
                 box-shadow: none !important;
-                padding: 20px 24px !important;
+                padding: 16px 24px !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                border: none !important;
+                margin: 0 !important;
             }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
+
+        @if(!empty($forPdf))
+        @page {
+            size: A4 portrait;
+            margin: 8mm 10mm 8mm 10mm;
+        }
+        html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+        }
+        .page {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+        .watermark {
+            display: none !important;
+        }
+        @endif
     </style>
 </head>
 <body>
@@ -275,7 +313,7 @@
                     <a href="{{ route('resume-builder.index') }}" style="background: #334155; color: #fff;">← Back</a>
                 @else
                     <a href="{{ route('resume-builder.edit', $resume->id) }}" style="background: #334155; color: #fff;">✏️ Edit CV</a>
-                    <a href="{{ route('resume-builder.download', $resume->id) }}">📥 Download PDF</a>
+                    <button type="button" onclick="window.print()" style="background: #f59e0b; color: #0f172a; padding: 7px 16px; border-radius: 8px; font-weight: 800; border: none; cursor: pointer; margin-left: 8px;">📥 Download / Save PDF</button>
                 @endif
             </div>
         </div>
@@ -575,6 +613,33 @@
             </div>
         </div>
 
+        {{-- KEY PROJECTS (IF AVAILABLE) --}}
+        @if(!empty($resume->projects) && count($resume->projects) > 0)
+            <div style="margin-top: 10px;">
+                <div class="section-header">
+                    <div><span class="sec-num">★</span> {{ $isKo ? '주요 프로젝트 (Key Projects)' : 'Key Projects' }}</div>
+                </div>
+                <table class="kr-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 30%;">{{ $isKo ? '프로젝트명' : 'Project Title' }}</th>
+                            <th style="width: 25%;">{{ $isKo ? '사용 기술' : 'Tech Stack' }}</th>
+                            <th>{{ $isKo ? '프로젝트 내용 및 역할' : 'Description / Role' }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($resume->projects as $proj)
+                            <tr>
+                                <td><strong>{{ $proj['title'] ?? '' }}</strong></td>
+                                <td class="center" style="color: #047857; font-weight: bold;">{{ $proj['tech'] ?? '-' }}</td>
+                                <td style="font-size: 8pt; line-height: 1.35;">{{ $proj['description'] ?? '-' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+
         {{-- 7. KOREAN SELF-INTRODUCTION / COVER LETTER (자기소개서) --}}
         <div style="page-break-before: always; margin-top: 20px;"></div>
 
@@ -621,18 +686,25 @@
                 {{ $isKo ? '위의 모든 기재사항은 사실과 다름없음을 확인합니다.' : 'I hereby certify that all information stated above is true and correct.' }}
             </div>
             <div class="pledge-date">
-                {{ date('Y년 m월 d일') }}
+                {{ $personal['declaration_date'] ?? date($isKo ? 'Y년 m월 d일' : 'F d, Y') }}
             </div>
             <div class="pledge-signature">
                 {{ $isKo ? '지원자(작성자) :' : 'Applicant Signature :' }}
-                <span style="border-bottom: 1px solid #000; padding: 0 25px; margin-left: 6px;">
-                    {{ $personal['full_name'] ?? 'Candidate Name' }}
+                <span style="border-bottom: 1px solid #000; padding: 0 25px; margin-left: 6px; font-weight: 700;">
+                    {{ $personal['signature_name'] ?? ($personal['full_name'] ?? ($isKo ? '성명' : 'Candidate Name')) }}
                 </span>
-                <span style="font-size: 8pt; color: #64748b; margin-left: 6px;">(인 / 서명)</span>
+                <span style="font-size: 8pt; color: #64748b; margin-left: 6px;">{{ $isKo ? '(인 / 서명)' : '(Signed)' }}</span>
             </div>
         </div>
 
     </div>
 
+    @if(request()->boolean('print'))
+        <script>
+            window.addEventListener('DOMContentLoaded', () => {
+                setTimeout(() => { window.print(); }, 400);
+            });
+        </script>
+    @endif
 </body>
 </html>

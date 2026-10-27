@@ -49,6 +49,27 @@
         this.stopCamera();
     },
 
+    rotatePhoto(degrees = 90) {
+        if (!this.photoData) return;
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            if (degrees === 90 || degrees === -90 || degrees === 270) {
+                canvas.width = img.height;
+                canvas.height = img.width;
+            } else {
+                canvas.width = img.width;
+                canvas.height = img.height;
+            }
+            const ctx = canvas.getContext('2d');
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate((degrees * Math.PI) / 180);
+            ctx.drawImage(img, -img.width / 2, -img.height / 2);
+            this.photoData = canvas.toDataURL('image/jpeg', 0.92);
+        };
+        img.src = this.photoData;
+    },
+
     retakePhoto() {
         this.photoData = '';
         this.startCamera();
@@ -443,9 +464,9 @@
                         {{-- CAMERA & PREVIEW DISPLAY --}}
                         <div class="flex flex-col md:flex-row items-center gap-5">
                             {{-- Live Video Stream / Preview Box --}}
-                            <div class="relative w-full max-w-[280px] aspect-4/3 bg-slate-900 rounded-xl overflow-hidden shadow-inner flex items-center justify-center border border-slate-700">
+                            <div class="relative w-full max-w-[280px] aspect-4/3 bg-slate-950 rounded-xl overflow-hidden shadow-inner flex items-center justify-center border border-slate-700">
                                 <video x-ref="video" autoplay playsinline muted class="w-full h-full object-cover" x-show="cameraActive && !photoData"></video>
-                                <img :src="photoData" alt="Captured Candidate Photo" class="w-full h-full object-cover" x-show="photoData">
+                                <img :src="photoData" alt="Captured Candidate Photo" class="w-full h-full object-contain bg-slate-950" x-show="photoData">
 
                                 <template x-if="!cameraActive && !photoData">
                                     <div class="text-center p-4">
@@ -462,7 +483,7 @@
                             <div class="flex-1 w-full flex flex-col justify-center gap-2.5">
                                 <template x-if="cameraActive && !photoData">
                                     <div>
-                                        <button type="button" @click="capturePhoto()" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-amber-400 hover:bg-amber-500 text-[#0b1329] font-black text-xs uppercase tracking-wider rounded-xl shadow-xs transition">
+                                        <button type="button" @click="capturePhoto()" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-amber-400 hover:bg-amber-500 text-[#0b1329] font-black text-xs uppercase tracking-wider rounded-xl shadow-xs transition cursor-pointer">
                                             <span>📸 Capture Face Snapshot</span>
                                         </button>
                                         <p class="text-[11px] text-slate-500 mt-1.5">Look directly at the webcam and ensure your face is clearly visible.</p>
@@ -470,14 +491,31 @@
                                 </template>
 
                                 <template x-if="photoData">
-                                    <div>
+                                    <div class="space-y-3">
                                         <div class="flex items-center gap-2 flex-wrap">
-                                            <button type="button" @click="retakePhoto()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs rounded-xl transition">
-                                                <span>🔄 Retake Snapshot</span>
+                                            {{-- ROTATE 90 DEGREES BUTTON --}}
+                                            <button type="button" @click="rotatePhoto(90)"
+                                                    class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-400 hover:bg-amber-500 text-[#0b1329] font-black text-xs rounded-xl shadow-xs transition cursor-pointer active:scale-95"
+                                                    title="Rotate photo 90 degrees clockwise">
+                                                <svg class="w-4 h-4 text-[#0b1329]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                </svg>
+                                                <span>↻ Rotate 90°</span>
                                             </button>
-                                            <span class="text-xs font-semibold text-emerald-700">Photo successfully verified & attached!</span>
+
+                                            <button type="button" @click="retakePhoto()"
+                                                    class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs rounded-xl transition cursor-pointer">
+                                                <span>🔄 Retake</span>
+                                            </button>
+
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                                ✓ Ready for Certificate
+                                            </span>
                                         </div>
-                                        <p class="text-[11px] text-slate-500 mt-1">This photo will appear on your examination record and final Certificate of Achievement.</p>
+
+                                        <div class="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200 text-[11px] text-amber-900 leading-relaxed">
+                                            <strong>Photo Alignment:</strong> If your photo appears sideways or tilted, click <strong>"↻ Rotate 90°"</strong> to make it upright for your certificate.
+                                        </div>
                                     </div>
                                 </template>
 

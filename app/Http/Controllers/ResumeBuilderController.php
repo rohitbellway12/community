@@ -85,6 +85,8 @@ class ResumeBuilderController extends Controller
                 'photo_url' => '',
                 'total_experience' => '',
                 'emergency_phone' => '',
+                'declaration_date' => date('F d, Y'),
+                'signature_name' => $user->name ?? '',
             ],
             'summary' => $user->profile->bio ?? '',
             'education' => [],
@@ -297,6 +299,23 @@ class ResumeBuilderController extends Controller
 
         $resume->increment('download_count');
 
+        // Resolve candidate photo to base64 so DomPDF renders it instantly without HTTP calls
+        $personal = $resume->personal_info ?? [];
+        if (!empty($personal['photo_url'])) {
+            $photo = $personal['photo_url'];
+            if (!str_starts_with($photo, 'data:image')) {
+                $path = parse_url($photo, PHP_URL_PATH);
+                $cleanPath = preg_replace('#^/?(community/)?(public/)?#', '', $path);
+                $abs = public_path($cleanPath);
+                if (file_exists($abs)) {
+                    $type = pathinfo($abs, PATHINFO_EXTENSION);
+                    $data = file_get_contents($abs);
+                    $personal['photo_url'] = 'data:image/' . $type . ';base64,' . base64_encode($data);
+                    $resume->personal_info = $personal;
+                }
+            }
+        }
+
         $pdf = Pdf::loadView("resume-builder.templates.{$resume->template}", [
             'resume' => $resume,
             'setting' => $setting,
@@ -307,7 +326,7 @@ class ResumeBuilderController extends Controller
               'isHtml5ParserEnabled' => true,
               'isRemoteEnabled' => true,
               'dpi' => 150,
-              'defaultFont' => 'sans-serif',
+              'defaultFont' => 'DejaVu Sans',
           ]);
 
         $fileName = \Illuminate\Support\Str::slug($resume->personal_info['full_name'] ?? 'Resume') . '-CV.pdf';

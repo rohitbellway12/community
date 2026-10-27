@@ -34,7 +34,7 @@ class CertificatePdfService
         return $this->generateDomPdfBinary($test, $attempt);
     }
 
-    public function isPdfCacheValid(?string $pdfPath): bool
+    public function isPdfCacheValid(?string $pdfPath, ?TestAttempt $attempt = null): bool
     {
         if (!$pdfPath || !file_exists($pdfPath) || filesize($pdfPath) < 1000) {
             return false;
@@ -49,6 +49,23 @@ class CertificatePdfService
         if (file_exists($template) && filemtime($pdfPath) < filemtime($template)) {
             @unlink($pdfPath);
             return false;
+        }
+
+        // Invalidate if candidate photo or avatar was updated/rotated after this PDF was generated
+        if ($attempt) {
+            $photoFiles = array_filter([
+                !empty($attempt->candidate_photo) ? public_path('storage/' . $attempt->candidate_photo) : null,
+                !empty($attempt->candidate_photo) ? storage_path('app/public/' . $attempt->candidate_photo) : null,
+                (!empty($attempt->user) && !empty($attempt->user->avatar)) ? public_path('storage/' . $attempt->user->avatar) : null,
+                (!empty($attempt->user) && !empty($attempt->user->avatar)) ? storage_path('app/public/' . $attempt->user->avatar) : null,
+            ]);
+
+            foreach ($photoFiles as $photoFile) {
+                if (file_exists($photoFile) && filemtime($photoFile) > filemtime($pdfPath)) {
+                    @unlink($pdfPath);
+                    return false;
+                }
+            }
         }
 
         return true;
@@ -73,7 +90,7 @@ class CertificatePdfService
     {
         $dir = storage_path('app/certificates');
         $pdfPath = $dir . "/certificate_{$test->id}_{$attempt->id}.pdf";
-        return $this->isPdfCacheValid($pdfPath) ? $pdfPath : null;
+        return $this->isPdfCacheValid($pdfPath, $attempt) ? $pdfPath : null;
     }
 
     public function getOrGeneratePdf(Test $test, TestAttempt $attempt): ?string
@@ -89,7 +106,7 @@ class CertificatePdfService
 
         $pdfPath = $dir . "/certificate_{$test->id}_{$attempt->id}.pdf";
 
-        if ($this->isPdfCacheValid($pdfPath)) {
+        if ($this->isPdfCacheValid($pdfPath, $attempt)) {
             return $pdfPath;
         }
 

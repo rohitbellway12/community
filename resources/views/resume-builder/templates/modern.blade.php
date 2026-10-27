@@ -168,12 +168,13 @@
         /* Web print preview bar */
         @media screen {
             body {
-                background: {{ !empty($isEmbed) ? '#0F172A' : '#f1f5f9' }};
-                padding: {{ !empty($isEmbed) ? '28px 16px' : '24px 12px' }};
+                background: #f1f5f9;
+                padding: 24px 12px;
             }
             .page {
-                box-shadow: {{ !empty($isEmbed) ? '0 25px 50px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.08)' : '0 10px 30px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0,0,0,0.06)' }};
-                border-radius: 8px;
+                box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+                border: 1px solid #e2e8f0;
+                border-radius: 6px;
                 background: #ffffff;
             }
             .web-preview-bar {
@@ -201,19 +202,56 @@
                 margin-left: 8px;
             }
         }
+        @page {
+            size: A4 portrait;
+            margin: 0;
+        }
+
         @media print {
             .web-preview-bar {
                 display: none !important;
             }
-            body {
+            html, body {
                 background: #ffffff !important;
                 padding: 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             .page {
                 box-shadow: none !important;
                 padding: 24px 30px !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                border: none !important;
+                margin: 0 !important;
             }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
+
+        @if(!empty($forPdf))
+        @page {
+            size: A4 portrait;
+            margin: 8mm 10mm 8mm 10mm;
+        }
+        html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+        }
+        .page {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+        .watermark {
+            display: none !important;
+        }
+        @endif
     </style>
 </head>
 <body>
@@ -239,7 +277,7 @@
                     <a href="{{ route('resume-builder.index') }}" style="background: #334155; color: #fff;">← Back to Templates</a>
                 @else
                     <a href="{{ route('resume-builder.edit', $resume->id) }}" style="background: #334155; color: #fff;">✏️ Edit CV</a>
-                    <a href="{{ route('resume-builder.download', $resume->id) }}">📥 Download PDF</a>
+                    <button type="button" onclick="window.print()" style="background: #f59e0b; color: #0f172a; padding: 7px 16px; border-radius: 8px; font-weight: 800; border: none; cursor: pointer; margin-left: 8px;">📥 Download / Save PDF</button>
                 @endif
             </div>
         </div>
@@ -415,7 +453,36 @@
             </div>
         @endif
 
+        {{-- FORMAL DECLARATION, DATE & SIGNATURE BLOCK --}}
+        <div class="declaration-block" style="margin-top: 18px; padding-top: 10px; border-top: 1px solid #cbd5e1; font-size: 8.5pt; color: #334155; page-break-inside: avoid;">
+            <div style="font-style: italic; margin-bottom: 8px; color: #475569;">
+                {{ $isKo ? '위 기재사항은 사실과 틀림없음을 확인합니다.' : 'I hereby declare that all the information furnished above is true and complete to the best of my knowledge.' }}
+            </div>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 4px;">
+                <tr>
+                    <td style="text-align: left; vertical-align: bottom; font-size: 8.5pt; color: #475569;">
+                        <strong>{{ $isKo ? '작성일자 :' : 'Date :' }}</strong>
+                        <span style="margin-left: 4px;">{{ $resume->personal_info['declaration_date'] ?? date($isKo ? 'Y년 m월 d일' : 'F d, Y') }}</span>
+                    </td>
+                    <td style="text-align: right; vertical-align: bottom; font-size: 8.5pt;">
+                        <strong>{{ $isKo ? '지원자(작성자) :' : 'Applicant Signature :' }}</strong>
+                        <span style="display: inline-block; border-bottom: 1px solid #334155; min-width: 120px; text-align: center; font-weight: 700; color: #0f172a; padding: 0 8px; margin: 0 4px;">
+                            {{ $resume->personal_info['signature_name'] ?? ($resume->personal_info['full_name'] ?? ($isKo ? '성명' : 'Candidate Name')) }}
+                        </span>
+                        <span style="font-size: 7.5pt; color: #64748b;">{{ $isKo ? '(인 / 서명)' : '(Signed)' }}</span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
     </div>
 
+    @if(request()->boolean('print'))
+        <script>
+            window.addEventListener('DOMContentLoaded', () => {
+                setTimeout(() => { window.print(); }, 400);
+            });
+        </script>
+    @endif
 </body>
 </html>

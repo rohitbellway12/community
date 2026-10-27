@@ -33,11 +33,35 @@
     $hasLogo = file_exists(public_path('storage/logo.png'));
     $logoPath = $hasLogo ? str_replace('\\', '/', public_path('storage/logo.png')) : null;
 
-    $hasCandidatePhoto = $attempt->candidate_photo && file_exists(public_path('storage/' . $attempt->candidate_photo));
-    $candidatePhotoPath = $hasCandidatePhoto ? str_replace('\\', '/', public_path('storage/' . $attempt->candidate_photo)) : null;
-    if (!$candidatePhotoPath && $attempt->user && $attempt->user->avatar && file_exists(public_path('storage/' . $attempt->user->avatar))) {
-        $candidatePhotoPath = str_replace('\\', '/', public_path('storage/' . $attempt->user->avatar));
-        $hasCandidatePhoto = true;
+    $hasCandidatePhoto = false;
+    $candidatePhotoPath = null;
+    $candidatePhotoDataUri = null;
+
+    if (!empty($attempt->candidate_photo)) {
+        if (file_exists(public_path('storage/' . $attempt->candidate_photo))) {
+            $candidatePhotoPath = public_path('storage/' . $attempt->candidate_photo);
+            $hasCandidatePhoto = true;
+        } elseif (file_exists(storage_path('app/public/' . $attempt->candidate_photo))) {
+            $candidatePhotoPath = storage_path('app/public/' . $attempt->candidate_photo);
+            $hasCandidatePhoto = true;
+        }
+    }
+    if (!$hasCandidatePhoto && $attempt->user && $attempt->user->avatar) {
+        if (file_exists(public_path('storage/' . $attempt->user->avatar))) {
+            $candidatePhotoPath = public_path('storage/' . $attempt->user->avatar);
+            $hasCandidatePhoto = true;
+        } elseif (file_exists(storage_path('app/public/' . $attempt->user->avatar))) {
+            $candidatePhotoPath = storage_path('app/public/' . $attempt->user->avatar);
+            $hasCandidatePhoto = true;
+        }
+    }
+
+    if ($hasCandidatePhoto && $candidatePhotoPath && file_exists($candidatePhotoPath)) {
+        $raw = @file_get_contents($candidatePhotoPath);
+        if ($raw) {
+            $mime = str_ends_with(strtolower($candidatePhotoPath), '.png') ? 'image/png' : 'image/jpeg';
+            $candidatePhotoDataUri = 'data:' . $mime . ';base64,' . base64_encode($raw);
+        }
     }
     $showPhoto = !empty($test->require_camera_photo) || !empty($attempt->candidate_photo);
 
@@ -313,7 +337,7 @@
                                 <tr>
                                     <td style="vertical-align:middle; padding-right: 14px;">
                                         @if($hasCandidatePhoto)
-                                            <img src="{{ $candidatePhotoPath }}" style="width:68px;height:84px;border-radius:6px;border:2px solid #cbd5e1;">
+                                            <img src="{{ $candidatePhotoDataUri ?: str_replace('\\', '/', $candidatePhotoPath) }}" style="width:68px;height:84px;border-radius:6px;border:2px solid #cbd5e1;">
                                         @else
                                             <div style="width:68px;height:84px;border-radius:6px;background:#f8fafc;border:2px dashed #cbd5e1;text-align:center;padding-top:30px;color:#94a3b8;font-size:8px;" class="med">PHOTO</div>
                                         @endif

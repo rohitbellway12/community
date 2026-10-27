@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="bg-[#070D1E]" x-data="{ mobileMenuOpen: false }">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="bg-slate-50" x-data="{ mobileMenuOpen: false }">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -17,7 +17,7 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-[#070D1E] text-slate-100 antialiased selection:bg-amber-500 selection:text-slate-950 flex flex-col">
+<body class="min-h-screen bg-slate-50 text-slate-900 antialiased selection:bg-amber-500 selection:text-slate-950 flex flex-col" style="background-color: #f8fafc;">
 
     {{-- OFFICIAL REIAC COMMUNITY TOPBAR --}}
     <x-community.topbar :notifications-count="auth()->check() ? auth()->user()->unreadNotifications()->count() : 0" />
@@ -69,67 +69,70 @@
     }">
 
     {{-- =========================================================================
-         1. COMPACT, BALANCED & HIGH-END HERO SECTION
+         1. COMPACT, BALANCED & HIGH-END HERO SECTION (EXECUTIVE DARK NAVY)
          ========================================================================= --}}
-    <section class="relative bg-gradient-to-b from-[#070D1E] via-[#0B142B] to-[#0F1B38] text-white overflow-hidden border-b border-slate-800/80">
-        {{-- Subtle luminous background glows --}}
-        <div class="absolute -top-16 -left-16 w-96 h-96 bg-amber-500/10 rounded-full blur-[90px] pointer-events-none"></div>
-        <div class="absolute top-1/4 -right-16 w-96 h-96 bg-teal-500/10 rounded-full blur-[90px] pointer-events-none"></div>
+    <section class="relative text-white overflow-hidden border-b border-slate-800"
+             style="background: linear-gradient(180deg, #0B132B 0%, #0d1a3a 50%, #10214a 100%); color: #ffffff;">
 
         {{-- Subtle architectural grid overlay --}}
-        <div class="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:24px_24px] opacity-15 pointer-events-none"></div>
+        <div class="absolute inset-0 pointer-events-none opacity-20"
+             style="background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px); background-size: 24px 24px;"></div>
 
-        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12 lg:py-14">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
 
                 {{-- LEFT COLUMN: HERO HEADLINE & CTAS (7 Cols) --}}
-                <div class="lg:col-span-7 space-y-4 text-center lg:text-left">
+                <div class="lg:col-span-7 space-y-5 text-center lg:text-left">
                     
                     {{-- Eyebrow Live Badge --}}
-                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/90 border border-slate-700/80 text-amber-300 text-xs font-bold tracking-wide shadow-sm backdrop-blur-md">
+                    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm"
+                         style="background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(71, 85, 105, 0.7); color: #fef08a;">
                         <span class="relative flex h-2 w-2">
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
                         </span>
                         <span class="text-slate-200">AI-Powered Career Suite</span>
                         <span class="text-slate-500">•</span>
-                        <span class="text-amber-400 font-semibold">Bilingual KR &amp; EN</span>
+                        <span style="color: #fbbf24;" class="font-semibold">Bilingual KR &amp; EN</span>
                     </div>
 
                     {{-- Main Headline --}}
-                    <h1 class="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-[1.15] text-white">
-                        Build an <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-200">ATS-Approved Resume</span> That Lands Real Interviews
+                    <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-[1.18] text-white">
+                        Build an <span style="color: #fbbf24;">ATS-Approved Resume</span> That Lands Real Interviews
                     </h1>
 
                     {{-- Description --}}
-                    <p class="text-xs sm:text-sm lg:text-base text-slate-300 font-normal leading-relaxed max-w-xl mx-auto lg:mx-0">
-                        Scientifically budgeted for 1-page A4 perfection. Switch effortlessly between corporate English ATS and official Korean <strong>입사지원서 &amp; 자기소개서</strong> with 1-click watermark-free PDF export.
+                    <p class="text-sm sm:text-base text-slate-300 font-normal leading-relaxed max-w-xl mx-auto lg:mx-0">
+                        Scientifically budgeted for 1-page A4 perfection. Switch effortlessly between corporate English ATS and official Korean <strong class="text-white font-bold">입사지원서 &amp; 자기소개서</strong> with 1-click watermark-free PDF export.
                     </p>
 
                     {{-- Action Buttons --}}
-                    <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 pt-1">
+                    <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-2">
                         <a href="#templates"
-                           class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-400 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md shadow-amber-400/20 hover:shadow-amber-400/35 transition-all transform hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2 cursor-pointer">
+                           class="w-full sm:w-auto px-7 py-3.5 rounded-xl font-extrabold text-xs uppercase tracking-wider transition-all transform hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+                           style="background: #f59e0b; color: #0f172a; box-shadow: 0 4px 14px 0 rgba(245, 158, 11, 0.35);">
                             <span>✨ Choose Template &amp; Start</span>
                             <span class="text-sm">↓</span>
                         </a>
 
                         @auth
                             <a href="{{ route('resume-builder.my-resumes') }}"
-                               class="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 text-white font-bold text-xs tracking-wide transition-all shadow-sm flex items-center justify-center gap-2 backdrop-blur-sm">
+                               class="w-full sm:w-auto px-5 py-3.5 rounded-xl font-bold text-xs tracking-wide transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                                style="background: rgba(30, 41, 59, 0.9); border: 1px solid rgba(71, 85, 105, 0.8); color: #ffffff;">
                                 <span>📂 My Saved Resumes</span>
                                 <span class="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[11px] font-black">{{ $userResumesCount }}</span>
                             </a>
                         @else
                             <a href="{{ route('login') }}"
-                               class="w-full sm:w-auto px-5 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white font-bold text-xs tracking-wide transition-all shadow-sm flex items-center justify-center gap-2 backdrop-blur-sm">
+                               class="w-full sm:w-auto px-5 py-3.5 rounded-xl font-bold text-xs tracking-wide transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                               style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.22); color: #ffffff;">
                                 <span>🔒 Log In to Save Resumes</span>
                             </a>
                         @endauth
                     </div>
 
                     {{-- Trust Pills Strip --}}
-                    <div class="pt-3 border-t border-slate-800/80 grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center lg:justify-start gap-2.5 text-[11px] text-slate-400 font-medium">
+                    <div class="pt-4 border-t border-slate-800/90 grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center lg:justify-start gap-3 text-xs text-slate-300 font-medium">
                         <div class="flex items-center gap-1.5">
                             <span class="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-bold">✓</span>
                             <span>100% Free PDF Export</span>
@@ -154,10 +157,11 @@
                 <div class="lg:col-span-5 relative">
                     
                     {{-- Window Frame Mockup --}}
-                    <div class="relative bg-slate-900/90 rounded-2xl border border-slate-700/70 shadow-xl p-3.5 sm:p-4 backdrop-blur-xl transition">
+                    <div class="relative rounded-2xl p-4 transition"
+                         style="background: #0f172a; border: 1px solid #334155; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);">
                         
                         {{-- Top Window Bar with Tab Selector --}}
-                        <div class="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-800">
+                        <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
                             {{-- macOS-style traffic dots --}}
                             <div class="flex items-center gap-1.5">
                                 <span class="w-2.5 h-2.5 rounded-full bg-red-500/80"></span>
@@ -166,16 +170,16 @@
                             </div>
 
                             {{-- Interactive Template Switcher Pills inside Hero --}}
-                            <div class="inline-flex p-0.5 rounded-lg bg-slate-800/90 border border-slate-700/60 text-[10px] font-bold">
+                            <div class="inline-flex p-0.5 rounded-lg bg-slate-800 border border-slate-700 text-[10.5px] font-bold">
                                 <button type="button"
                                         @click="heroTab = 'modern'"
-                                        :class="heroTab === 'modern' ? 'bg-amber-400 text-slate-950 font-black shadow-sm' : 'text-slate-400 hover:text-white'"
+                                        :style="heroTab === 'modern' ? 'background: #f59e0b; color: #0f172a; font-weight: 800;' : 'color: #94a3b8;'"
                                         class="px-2.5 py-1 rounded-md transition cursor-pointer flex items-center gap-1">
                                     <span>📄 Modern ATS</span>
                                 </button>
                                 <button type="button"
                                         @click="heroTab = 'korean'"
-                                        :class="heroTab === 'korean' ? 'bg-emerald-500 text-slate-950 font-black shadow-sm' : 'text-slate-400 hover:text-white'"
+                                        :style="heroTab === 'korean' ? 'background: #10b981; color: #0f172a; font-weight: 800;' : 'color: #94a3b8;'"
                                         class="px-2.5 py-1 rounded-md transition cursor-pointer flex items-center gap-1">
                                     <span>🇰🇷 한국 표준</span>
                                 </button>
@@ -189,8 +193,8 @@
                         </div>
 
                         {{-- TAB 1: MODERN PROFESSIONAL MINI PREVIEW --}}
-                        <div x-show="heroTab === 'modern'" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" class="bg-white text-slate-800 rounded-xl p-3 sm:p-3.5 shadow-sm border border-slate-200 space-y-2 text-[10px]">
-                            <div class="flex justify-between items-start pb-1.5 border-b border-slate-200">
+                        <div x-show="heroTab === 'modern'" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" class="bg-white text-slate-800 rounded-xl p-3.5 shadow-sm border border-slate-200 space-y-2.5 text-[10px]">
+                            <div class="flex justify-between items-start pb-2 border-b border-slate-200">
                                 <div>
                                     <h4 class="font-black text-slate-950 text-xs tracking-tight">ALEX JOHNSON / 김민수</h4>
                                     <p class="text-[9.5px] font-bold text-amber-700">Senior Full-Stack Software Engineer</p>
@@ -223,15 +227,16 @@
                                     <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 text-[8px] font-bold">Vue.js</span>
                                 </div>
                                 <button type="button" @click.stop="openSampleModal('modern', 'Modern Professional', 'en')"
-                                        class="text-[8.5px] font-bold text-amber-700 hover:text-amber-800 hover:underline">
-                                    View Full Sample →
+                                        class="text-[9px] font-bold text-amber-700 hover:text-amber-800 hover:underline cursor-pointer flex items-center gap-0.5">
+                                    <span>View Full Sample</span>
+                                    <span>→</span>
                                 </button>
                             </div>
                         </div>
 
                         {{-- TAB 2: KOREAN STANDARD MINI PREVIEW --}}
-                        <div x-show="heroTab === 'korean'" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" class="bg-white text-slate-800 rounded-xl p-3 sm:p-3.5 shadow-sm border border-slate-200 space-y-2 text-[9.5px]">
-                            <div class="text-center pb-1 border-b border-slate-200">
+                        <div x-show="heroTab === 'korean'" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" class="bg-white text-slate-800 rounded-xl p-3.5 shadow-sm border border-slate-200 space-y-2.5 text-[9.5px]">
+                            <div class="text-center pb-1.5 border-b border-slate-200">
                                 <span class="font-black text-slate-950 text-xs tracking-widest">입 사 지 원 서</span>
                                 <span class="text-[7.5px] text-slate-400 block">(이력서 &amp; 자기소개서)</span>
                             </div>
@@ -268,14 +273,15 @@
                                     Official Format
                                 </span>
                                 <button type="button" @click.stop="openSampleModal('korean_standard', 'Korean Standard (이력서)', 'ko')"
-                                        class="text-[8.5px] font-bold text-emerald-700 hover:text-emerald-800 hover:underline">
-                                    View Full Sample →
+                                        class="text-[9px] font-bold text-emerald-700 hover:text-emerald-800 hover:underline cursor-pointer flex items-center gap-0.5">
+                                    <span>View Full Sample</span>
+                                    <span>→</span>
                                 </button>
                             </div>
                         </div>
 
                         {{-- Floating Micro-pill Badges --}}
-                        <div class="mt-2.5 flex items-center justify-between text-[10px] text-slate-400 px-1">
+                        <div class="mt-3 flex items-center justify-between text-[10px] text-slate-400 px-1">
                             <span class="flex items-center gap-1">
                                 <span class="text-amber-400">⚡</span> 1-Click Watermark-Free Export
                             </span>
@@ -346,19 +352,19 @@
 
             {{-- 1. KOREAN STANDARD FORM (입사지원서) --}}
             <div x-show="activeFilter === 'all' || activeFilter === 'korean'"
-                 class="group bg-white rounded-2xl border-2 border-emerald-500/40 hover:border-emerald-500 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden hover:-translate-y-1 relative">
+                 class="group bg-white rounded-2xl border border-slate-200 hover:border-amber-400 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden hover:-translate-y-1 relative">
                 
                 {{-- Badge --}}
                 <div class="absolute top-2.5 right-2.5 z-10">
-                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-sm">
+                    <span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-slate-900 text-slate-200 shadow-sm">
                         🇰🇷 Official Standard
                     </span>
                 </div>
 
                 {{-- Clean Miniature Paper Canvas --}}
-                <div class="bg-gradient-to-b from-emerald-50/60 to-slate-100 p-3.5 border-b border-slate-200 relative group-hover:bg-emerald-50/90 transition">
+                <div class="bg-gradient-to-b from-slate-100 to-slate-200/60 p-3.5 border-b border-slate-200 relative group-hover:bg-amber-50/40 transition">
                     <div class="flex items-center justify-between mb-1.5">
-                        <span class="px-1.5 py-0.5 rounded bg-slate-900 text-amber-300 text-[8.5px] font-black uppercase">
+                        <span class="px-1.5 py-0.5 rounded bg-slate-900 text-white text-[8.5px] font-black uppercase">
                             Bilingual
                         </span>
                         <span class="text-[10px] font-black text-slate-500">입사지원서</span>
@@ -381,7 +387,7 @@
                             </tr>
                             <tr>
                                 <td class="border border-slate-200 bg-slate-100 font-bold p-0.5 text-center">지원분야</td>
-                                <td class="border border-slate-200 p-0.5 font-semibold text-emerald-700">SW 엔지니어</td>
+                                <td class="border border-slate-200 p-0.5 font-semibold text-slate-800">SW 엔지니어</td>
                             </tr>
                             <tr>
                                 <td class="border border-slate-200 bg-slate-100 font-bold p-0.5 text-center">어학성적</td>
@@ -396,8 +402,8 @@
                         {{-- Hover Quick-View Overlay --}}
                         <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
                             <button type="button"
-                                    @click.stop="openSampleModal('korean_standard', 'Korean Standard (한국어)', 'ko')"
-                                    class="px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-black text-xs shadow-md transform scale-95 group-hover:scale-100 transition">
+                                    @click.stop="openSampleModal('korean_standard', 'Korean Standard (이력서 & 자기소개서)', 'ko')"
+                                    class="px-3 py-1.5 rounded-lg bg-amber-400 text-slate-950 font-black text-xs shadow-md transform scale-95 group-hover:scale-100 transition">
                                 👁️ Preview Live A4
                             </button>
                         </div>
@@ -407,7 +413,7 @@
                 {{-- Card Info & Buttons --}}
                 <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
                     <div class="space-y-1.5">
-                        <h3 class="text-sm font-black text-slate-950 group-hover:text-emerald-700 transition">
+                        <h3 class="text-sm font-black text-slate-950 group-hover:text-amber-600 transition">
                             Korean Standard Application
                         </h3>
                         <p class="text-[11px] text-slate-500 leading-relaxed">
@@ -415,28 +421,21 @@
                         </p>
 
                         <div class="flex flex-wrap gap-1 pt-0.5">
-                            <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 text-[9.5px] font-bold border border-emerald-200">사진 3x4cm</span>
-                            <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 text-[9.5px] font-bold border border-emerald-200">자기소개서 4항목</span>
+                            <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 text-[9.5px] font-bold border border-slate-200">사진 3x4cm</span>
+                            <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 text-[9.5px] font-bold border border-slate-200">자기소개서 4항목</span>
                         </div>
                     </div>
 
                     <div class="space-y-1.5 pt-2 border-t border-slate-100">
-                        <div class="grid grid-cols-2 gap-1.5">
-                            <button type="button"
-                                    @click.stop="openSampleModal('korean_standard', 'Korean Standard (한국어)', 'ko')"
-                                    class="py-1.5 px-2 rounded-lg border border-emerald-400 bg-emerald-50/70 hover:bg-emerald-100 text-emerald-950 font-bold text-[10.5px] text-center transition cursor-pointer">
-                                🇰🇷 샘플 (KR)
-                            </button>
-                            <button type="button"
-                                    @click.stop="openSampleModal('korean_standard', 'Korean Standard (English Form)', 'en')"
-                                    class="py-1.5 px-2 rounded-lg border border-slate-300 hover:border-slate-400 bg-slate-50 text-slate-700 font-bold text-[10.5px] text-center transition cursor-pointer">
-                                🌐 Sample (EN)
-                            </button>
-                        </div>
+                        <button type="button"
+                                @click.stop="openSampleModal('korean_standard', 'Korean Standard (이력서 & 자기소개서)', 'ko')"
+                                class="w-full py-1.5 px-3 rounded-lg border border-slate-300 hover:border-amber-500 hover:bg-amber-50/70 text-slate-800 font-bold text-[10.5px] uppercase tracking-wider text-center transition cursor-pointer">
+                            👁️ View Live Sample
+                        </button>
 
                         <a href="{{ route('resume-builder.create', ['template' => 'korean_standard']) }}"
-                           class="w-full py-2 px-3 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs uppercase tracking-wider text-center block shadow-sm hover:shadow-md transition cursor-pointer">
-                            Build Korean Form →
+                           class="w-full py-2 px-3 rounded-lg bg-slate-900 hover:bg-amber-500 hover:text-slate-950 text-white font-black text-xs uppercase tracking-wider text-center block shadow-sm hover:shadow-md transition cursor-pointer">
+                            Build With Korean Form →
                         </a>
                     </div>
                 </div>
@@ -448,7 +447,7 @@
                 
                 {{-- Badge --}}
                 <div class="absolute top-2.5 right-2.5 z-10">
-                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-900 text-amber-400 shadow-sm">
+                    <span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-slate-900 text-slate-200 shadow-sm">
                         🔥 Most Popular
                     </span>
                 </div>
@@ -534,7 +533,7 @@
                 
                 {{-- Badge --}}
                 <div class="absolute top-2.5 right-2.5 z-10">
-                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-700 text-white shadow-sm">
+                    <span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-slate-900 text-slate-200 shadow-sm">
                         🎯 100% ATS Safe
                     </span>
                 </div>
@@ -619,7 +618,7 @@
                 
                 {{-- Badge --}}
                 <div class="absolute top-2.5 right-2.5 z-10">
-                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-indigo-900 text-amber-300 shadow-sm">
+                    <span class="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-slate-900 text-slate-200 shadow-sm">
                         🚀 High Impact
                     </span>
                 </div>
@@ -828,44 +827,37 @@
     </section>
 
     {{-- =========================================================================
-         6. EXECUTIVE FULL A4 LIVE STUDIO PREVIEW MODAL
+         6. PROFESSIONAL CLEAN LIVE PREVIEW MODAL
          ========================================================================= --}}
     <div x-show="previewModalOpen"
          x-cloak
          @keydown.escape.window="previewModalOpen = false"
          @click.self="previewModalOpen = false"
-         class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 p-2 sm:p-4 lg:p-6 backdrop-blur-md">
+         class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-2 sm:p-4 lg:p-6 backdrop-blur-sm">
         
-        <div class="bg-[#0B1222] rounded-2xl max-w-7xl w-full h-[94vh] shadow-2xl border border-slate-700/80 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div class="bg-white rounded-2xl max-w-6xl w-full shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+             style="height: 92vh; max-height: 94vh;">
             
-            {{-- Studio Navigation Toolbar --}}
-            <div class="px-4 sm:px-6 py-3 bg-[#070D1E] text-white flex items-center justify-between gap-3 shrink-0 border-b border-slate-800">
+            {{-- Clean Professional Header Toolbar --}}
+            <div class="px-5 py-3.5 bg-white text-slate-900 flex items-center justify-between gap-4 shrink-0 border-b border-slate-200">
                 
-                {{-- Left: Identity & Language Toggle --}}
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 flex items-center justify-center font-bold text-sm shadow-md shrink-0">
-                        📄
-                    </div>
+                {{-- Left: Template Title & Language Switcher --}}
+                <div class="flex items-center gap-3 shrink-0">
                     <div>
-                        <div class="flex items-center gap-2">
-                            <h3 class="font-black text-xs sm:text-sm text-white tracking-tight" x-text="activeTemplateName"></h3>
-                            <span class="hidden sm:inline-flex px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
-                                98% ATS Safe
-                            </span>
-                        </div>
-                        <p class="text-[10px] text-slate-400 hidden sm:block">Pixel-perfect A4 document rendering with authentic corporate profile.</p>
+                        <h3 class="font-bold text-sm sm:text-base text-slate-900 tracking-tight" x-text="activeTemplateName"></h3>
+                        <span class="text-[11px] text-slate-500 hidden sm:inline">Official Recruiter-Approved Format</span>
                     </div>
 
-                    {{-- Language Switcher Pills --}}
-                    <div class="inline-flex p-0.5 rounded-lg bg-slate-800/90 border border-slate-700/80 text-[11px] font-bold ml-1">
+                    {{-- Simple Bilingual Toggle --}}
+                    <div class="inline-flex p-0.5 rounded-lg bg-slate-100 border border-slate-200 text-xs font-semibold ml-2">
                         <button type="button" @click="setSampleLang('ko')"
-                                :class="sampleLang === 'ko' ? 'bg-emerald-500 text-slate-950 font-black shadow-sm' : 'text-slate-400 hover:text-white'"
+                                :class="sampleLang === 'ko' ? 'bg-white text-slate-900 font-bold shadow-xs' : 'text-slate-500 hover:text-slate-900'"
                                 class="px-2.5 py-1 rounded-md transition cursor-pointer flex items-center gap-1">
                             <span>🇰🇷</span>
                             <span>한국어</span>
                         </button>
                         <button type="button" @click="setSampleLang('en')"
-                                :class="sampleLang === 'en' ? 'bg-white text-slate-950 font-black shadow-sm' : 'text-slate-400 hover:text-white'"
+                                :class="sampleLang === 'en' ? 'bg-white text-slate-900 font-bold shadow-xs' : 'text-slate-500 hover:text-slate-900'"
                                 class="px-2.5 py-1 rounded-md transition cursor-pointer flex items-center gap-1">
                             <span>🌐</span>
                             <span>English</span>
@@ -873,123 +865,105 @@
                     </div>
                 </div>
 
-                {{-- Center: Segmented Template Switcher (Desktop) --}}
-                <div class="hidden xl:flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs font-bold">
-                    <button type="button" @click="switchModalTemplate('korean_standard', 'Korean Standard (이력서 & 자기소개서)')"
-                            :class="activeTemplateId === 'korean_standard' ? 'bg-emerald-500 text-slate-950 font-black shadow-sm' : 'text-slate-300 hover:text-white'"
-                            class="px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5">
-                        <span>🇰🇷</span>
-                        <span>Korean Standard</span>
+                {{-- Center: Clean Minimal Template Tabs --}}
+                <div class="hidden lg:flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-semibold border border-slate-200">
+                    <button type="button" @click="switchModalTemplate('korean_standard', 'Korean Standard (이력서)')"
+                            :class="activeTemplateId === 'korean_standard' ? 'bg-white text-slate-950 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+                            class="px-3 py-1.5 rounded-lg transition cursor-pointer">
+                        Korean Standard
                     </button>
                     <button type="button" @click="switchModalTemplate('modern', 'Modern Professional')"
-                            :class="activeTemplateId === 'modern' ? 'bg-amber-400 text-slate-950 font-black shadow-sm' : 'text-slate-300 hover:text-white'"
-                            class="px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5">
-                        <span>📄</span>
-                        <span>Modern ATS</span>
+                            :class="activeTemplateId === 'modern' ? 'bg-white text-slate-950 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+                            class="px-3 py-1.5 rounded-lg transition cursor-pointer">
+                        Modern ATS
                     </button>
                     <button type="button" @click="switchModalTemplate('classic', 'Executive Classic ATS')"
-                            :class="activeTemplateId === 'classic' ? 'bg-amber-400 text-slate-950 font-black shadow-sm' : 'text-slate-300 hover:text-white'"
-                            class="px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5">
-                        <span>🎯</span>
-                        <span>Classic ATS</span>
+                            :class="activeTemplateId === 'classic' ? 'bg-white text-slate-950 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+                            class="px-3 py-1.5 rounded-lg transition cursor-pointer">
+                        Classic ATS
                     </button>
                     <button type="button" @click="switchModalTemplate('creative', 'Creative & Impact')"
-                            :class="activeTemplateId === 'creative' ? 'bg-amber-400 text-slate-950 font-black shadow-sm' : 'text-slate-300 hover:text-white'"
-                            class="px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1.5">
-                        <span>🚀</span>
-                        <span>Creative</span>
+                            :class="activeTemplateId === 'creative' ? 'bg-white text-slate-950 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+                            class="px-3 py-1.5 rounded-lg transition cursor-pointer">
+                        Creative
                     </button>
                 </div>
 
-                {{-- Right: Zoom Controls, External Link, CTA, Close --}}
-                <div class="flex items-center gap-2">
-                    {{-- Zoom Level Controls --}}
-                    <div class="hidden sm:inline-flex items-center p-0.5 rounded-lg bg-slate-800/90 border border-slate-700/80 text-[10.5px] font-bold">
-                        <button type="button" @click="setZoom(85)"
-                                :class="zoomLevel === 85 ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'"
-                                class="px-2 py-1 rounded transition">85%</button>
-                        <button type="button" @click="setZoom(100)"
-                                :class="zoomLevel === 100 ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'"
-                                class="px-2 py-1 rounded transition">100%</button>
-                        <button type="button" @click="setZoom(115)"
-                                :class="zoomLevel === 115 ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white'"
-                                class="px-2 py-1 rounded transition">115%</button>
-                    </div>
-
-                    {{-- Fullscreen Tab Link --}}
+                {{-- Right: CTA Button & Close --}}
+                <div class="flex items-center gap-2.5 shrink-0">
+                    {{-- Open in Full Page Link --}}
                     <a :href="currentFullUrl" target="_blank"
                        title="Open full page in new tab"
-                       class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition border border-slate-700 flex items-center justify-center">
+                       class="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition border border-transparent hover:border-slate-200 flex items-center justify-center">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                         </svg>
                     </a>
 
-                    {{-- Primary CTA Button --}}
+                    {{-- Primary Action --}}
                     <a :href="currentCreateUrl"
-                       class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-400 hover:from-amber-300 hover:to-amber-500 text-slate-950 text-xs font-black uppercase tracking-wider shadow-md shadow-amber-400/25 transition transform hover:-translate-y-0.5 active:scale-95 flex items-center gap-1.5 shrink-0">
+                       class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-amber-500 hover:text-slate-950 text-white text-xs font-bold uppercase tracking-wider transition shadow-sm flex items-center gap-1.5">
                         <span>Use This Template</span>
-                        <span class="text-sm">→</span>
+                        <span>→</span>
                     </a>
 
                     {{-- Close Button --}}
                     <button @click="previewModalOpen = false"
                             title="Close (Esc)"
-                            class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-rose-500/20 hover:text-rose-400 hover:border-rose-500/30 text-slate-400 transition flex items-center justify-center text-sm font-bold border border-slate-700 ml-1">
+                            class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition flex items-center justify-center font-bold text-base">
                         ✕
                     </button>
                 </div>
             </div>
 
-            {{-- Mobile Template Switcher Ribbon (Only on < xl screens) --}}
-            <div class="xl:hidden px-3 py-2 bg-slate-900 border-b border-slate-800 flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs font-bold">
-                <button type="button" @click="switchModalTemplate('korean_standard', 'Korean Standard (이력서 & 자기소개서)')"
-                        :class="activeTemplateId === 'korean_standard' ? 'bg-emerald-500 text-slate-950 font-black shadow-sm' : 'text-slate-400 hover:text-white bg-slate-800'"
-                        class="px-2.5 py-1 rounded-md transition whitespace-nowrap shrink-0 flex items-center gap-1">
-                    <span>🇰🇷 Korean Standard</span>
+            {{-- Mobile Template Switcher (on small screens) --}}
+            <div class="lg:hidden px-3 py-2 bg-slate-50 border-b border-slate-200 flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs font-semibold">
+                <button type="button" @click="switchModalTemplate('korean_standard', 'Korean Standard (이력서)')"
+                        :class="activeTemplateId === 'korean_standard' ? 'bg-slate-900 text-white font-bold' : 'text-slate-600 bg-white border border-slate-200'"
+                        class="px-3 py-1 rounded-lg transition whitespace-nowrap shrink-0">
+                    Korean Standard
                 </button>
                 <button type="button" @click="switchModalTemplate('modern', 'Modern Professional')"
-                        :class="activeTemplateId === 'modern' ? 'bg-amber-400 text-slate-950 font-black shadow-sm' : 'text-slate-400 hover:text-white bg-slate-800'"
-                        class="px-2.5 py-1 rounded-md transition whitespace-nowrap shrink-0 flex items-center gap-1">
-                    <span>📄 Modern ATS</span>
+                        :class="activeTemplateId === 'modern' ? 'bg-slate-900 text-white font-bold' : 'text-slate-600 bg-white border border-slate-200'"
+                        class="px-3 py-1 rounded-lg transition whitespace-nowrap shrink-0">
+                    Modern ATS
                 </button>
                 <button type="button" @click="switchModalTemplate('classic', 'Executive Classic ATS')"
-                        :class="activeTemplateId === 'classic' ? 'bg-amber-400 text-slate-950 font-black shadow-sm' : 'text-slate-400 hover:text-white bg-slate-800'"
-                        class="px-2.5 py-1 rounded-md transition whitespace-nowrap shrink-0 flex items-center gap-1">
-                    <span>🎯 Classic ATS</span>
+                        :class="activeTemplateId === 'classic' ? 'bg-slate-900 text-white font-bold' : 'text-slate-600 bg-white border border-slate-200'"
+                        class="px-3 py-1 rounded-lg transition whitespace-nowrap shrink-0">
+                    Classic ATS
                 </button>
                 <button type="button" @click="switchModalTemplate('creative', 'Creative & Impact')"
-                        :class="activeTemplateId === 'creative' ? 'bg-amber-400 text-slate-950 font-black shadow-sm' : 'text-slate-400 hover:text-white bg-slate-800'"
-                        class="px-2.5 py-1 rounded-md transition whitespace-nowrap shrink-0 flex items-center gap-1">
-                    <span>🚀 Creative</span>
+                        :class="activeTemplateId === 'creative' ? 'bg-slate-900 text-white font-bold' : 'text-slate-600 bg-white border border-slate-200'"
+                        class="px-3 py-1 rounded-lg transition whitespace-nowrap shrink-0">
+                    Creative
                 </button>
             </div>
 
-            {{-- Studio Document Canvas --}}
-            <div class="flex-1 bg-[#070D1E] bg-[radial-gradient(#1E293B_1px,transparent_1px)] [background-size:20px_20px] overflow-auto relative flex flex-col items-center justify-start p-0">
+            {{-- Clean Light Canvas --}}
+            <div class="flex-1 bg-slate-100 overflow-auto relative flex flex-col items-center justify-start p-0">
                 
-                {{-- Smooth Loading Spinner Overlay --}}
+                {{-- Smooth Loading Spinner --}}
                 <div x-show="iframeLoading"
-                     x-transition:leave="transition ease-in duration-200"
+                     x-transition:leave="transition ease-in duration-150"
                      x-transition:leave-start="opacity-100"
                      x-transition:leave-end="opacity-0"
-                     class="absolute inset-0 flex flex-col items-center justify-center bg-[#070D1E]/90 z-20 backdrop-blur-xs">
-                    <div class="flex items-center gap-3 px-5 py-3 rounded-2xl bg-slate-900 border border-slate-700 text-amber-300 text-xs font-bold shadow-2xl">
-                        <svg class="animate-spin w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24">
+                     class="absolute inset-0 flex flex-col items-center justify-center bg-slate-100/80 z-20 backdrop-blur-xs">
+                    <div class="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold shadow-md">
+                        <svg class="animate-spin w-4 h-4 text-slate-700" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        <span>Rendering Live A4 Document...</span>
+                        <span>Loading Template Preview...</span>
                     </div>
                 </div>
 
-                {{-- Full Seamless Document Iframe --}}
-                <div class="w-full h-full flex items-start justify-center overflow-auto"
-                     :style="zoomLevel !== 100 ? 'transform: scale(' + (zoomLevel / 100) + '); transform-origin: top center; width: ' + (10000 / zoomLevel) + '%;' : ''">
+                {{-- Full Document Iframe --}}
+                <div class="w-full h-full flex-1 flex items-start justify-center overflow-auto" style="min-height: 0;">
                     <iframe :src="currentSampleUrl"
                             @load="iframeLoading = false"
                             class="w-full h-full border-0 bg-transparent block"
-                            style="min-height: 100%;"></iframe>
+                            style="width: 100%; height: 100%; border: none;"></iframe>
                 </div>
             </div>
 

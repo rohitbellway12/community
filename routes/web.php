@@ -61,6 +61,7 @@ Route::group([], function () {
         Route::get('/student/{test}/certificate/{attempt}', [\App\Http\Controllers\StudentTestController::class, 'certificate'])->name('certificate');
         Route::get('/student/{test}/certificate/{attempt}/print', [\App\Http\Controllers\StudentTestController::class, 'certificatePrint'])->name('certificate.print');
         Route::get('/student/{test}/certificate/{attempt}/download', [\App\Http\Controllers\StudentTestController::class, 'downloadCertificatePdf'])->name('certificate.download');
+        Route::post('/student/{test}/certificate/{attempt}/rotate-photo', [\App\Http\Controllers\StudentTestController::class, 'rotatePhoto'])->name('certificate.rotate-photo');
 
         Route::middleware('auth')->group(function () {
             Route::get('/student/{test}/show', [\App\Http\Controllers\StudentTestController::class, 'show'])->name('show');
