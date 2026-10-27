@@ -836,7 +836,7 @@
                                         @endif
                                     </div>
 
-                                    @if(!empty($exp['points']) && is_array($exp['points']))
+                                    @if(!empty($exp['points']) && is_array($exp['points']) && count(array_filter($exp['points'], 'strlen')) > 0)
                                         <ul class="points-list">
                                             @foreach($exp['points'] as $point)
                                                 @if(!empty(trim($point)))
@@ -844,6 +844,8 @@
                                                 @endif
                                             @endforeach
                                         </ul>
+                                    @elseif(!empty($exp['rawNotes']))
+                                        <p style="font-size: 9pt; color: #334155; margin-top: 5px; line-height: 1.45; white-space: pre-line;">{{ $exp['rawNotes'] }}</p>
                                     @elseif(!empty($exp['responsibilities']))
                                         <p style="font-size: 9pt; color: #334155; margin-top: 5px; line-height: 1.45;">{{ $exp['responsibilities'] }}</p>
                                     @elseif(!empty($exp['description']))

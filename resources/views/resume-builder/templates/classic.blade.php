@@ -302,7 +302,7 @@
                             <div class="sub-left">{{ $exp['location'] }}</div>
                         @endif
 
-                        @if(!empty($exp['points']) && is_array($exp['points']))
+                        @if(!empty($exp['points']) && is_array($exp['points']) && count(array_filter($exp['points'], 'strlen')) > 0)
                             <ul>
                                 @foreach($exp['points'] as $pt)
                                     @if(!empty(trim($pt)))
@@ -310,6 +310,8 @@
                                     @endif
                                 @endforeach
                             </ul>
+                        @elseif(!empty($exp['rawNotes']))
+                            <p style="font-size: 9.5pt; text-align: justify; margin-top: 2px; white-space: pre-line;">{{ $exp['rawNotes'] }}</p>
                         @elseif(!empty($exp['description']))
                             <p style="font-size: 9.5pt; text-align: justify; margin-top: 2px;">{{ $exp['description'] }}</p>
                         @endif

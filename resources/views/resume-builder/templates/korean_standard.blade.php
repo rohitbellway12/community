@@ -386,13 +386,30 @@
                 </tr>
                 <tr>
                     <th>{{ $isKo ? '연락처 (휴대폰)' : 'Mobile Phone' }}</th>
-                    <td>{{ $personal['phone'] ?? '' }}</td>
+                    <td>
+                        {{ $personal['phone'] ?? '' }}
+                        @if(!empty($personal['emergency_phone']))
+                            <div style="font-size: 7.5pt; color: #64748b;">{{ $isKo ? '(비상) ' : '(Alt) ' }}{{ $personal['emergency_phone'] }}</div>
+                        @endif
+                    </td>
                     <th>{{ $isKo ? '이메일' : 'E-mail' }}</th>
                     <td>{{ $personal['email'] ?? '' }}</td>
                 </tr>
                 <tr>
                     <th>{{ $isKo ? '주 소' : 'Address' }}</th>
-                    <td colspan="3">{{ $personal['location'] ?? ($personal['address'] ?? '') }}</td>
+                    <td colspan="3">
+                        {{ $personal['location'] ?? ($personal['address'] ?? '') }}
+                        @if(!empty($personal['linkedin']) || !empty($personal['github']))
+                            <div style="font-size: 7.5pt; color: #475569; margin-top: 2px;">
+                                @if(!empty($personal['linkedin']))
+                                    <span style="margin-right: 10px;">🔗 {{ $personal['linkedin'] }}</span>
+                                @endif
+                                @if(!empty($personal['github']))
+                                    <span>💻 {{ $personal['github'] }}</span>
+                                @endif
+                            </div>
+                        @endif
+                    </td>
                 </tr>
             </tbody>
         </table>
@@ -474,7 +491,7 @@
                         </td>
                         <td class="center">{{ $exp['title'] ?? ($exp['position'] ?? '') }}</td>
                         <td>
-                            @if(!empty($exp['points']) && is_array($exp['points']))
+                            @if(!empty($exp['points']) && is_array($exp['points']) && count($exp['points']) > 0)
                                 <ul style="margin-left: 14px; font-size: 8pt; line-height: 1.35;">
                                     @foreach($exp['points'] as $pt)
                                         @if(!empty(trim($pt)))
@@ -482,8 +499,10 @@
                                         @endif
                                     @endforeach
                                 </ul>
+                            @elseif(!empty($exp['rawNotes']))
+                                <div style="font-size: 8pt; line-height: 1.4; white-space: pre-line;">{{ $exp['rawNotes'] }}</div>
                             @else
-                                <div style="font-size: 8pt;">{{ $exp['description'] ?? '-' }}</div>
+                                <div style="font-size: 8pt; line-height: 1.4; white-space: pre-line;">{{ $exp['description'] ?? '-' }}</div>
                             @endif
                         </td>
                     </tr>
@@ -495,11 +514,15 @@
             </tbody>
         </table>
 
-        {{-- 5. LANGUAGE PROFICIENCY & CERTIFICATIONS --}}
+        {{-- 4. LANGUAGE PROFICIENCY & CERTIFICATIONS --}}
+        <div class="section-header">
+            <div><span class="sec-num">4.</span> {{ $isKo ? '어학능력 및 자격사항 (Language Proficiency & Certifications)' : 'Language Proficiency & Certifications' }}</div>
+        </div>
+
         <div style="display: table; width: 100%; border-spacing: 0;">
             <div style="display: table-cell; width: 49%; vertical-align: top; padding-right: 6px;">
-                <div class="section-header">
-                    <div><span class="sec-num">4.</span> {{ $isKo ? '어학능력 (Language Proficiency)' : 'Language Tests / Scores' }}</div>
+                <div style="font-size: 8pt; font-weight: 700; color: #475569; margin-bottom: 3px; padding-left: 2px;">
+                    ▪ {{ $isKo ? '공인어학성적 (Language Tests)' : 'Official Language Tests' }}
                 </div>
                 <table class="kr-table">
                     <thead>
@@ -512,15 +535,18 @@
                     <tbody>
                         @forelse($langTests as $lt)
                             <tr>
-                                <td class="center"><strong>{{ $lt['test_name'] ?? ($lt['name'] ?? '') }}</strong></td>
+                                <td class="center">
+                                    <strong>{{ $lt['test_name'] ?? ($lt['name'] ?? '') }}</strong>
+                                    @if(!empty($lt['organization']))
+                                        <div style="font-size: 7pt; color: #64748b;">{{ $lt['organization'] }}</div>
+                                    @endif
+                                </td>
                                 <td class="center">{{ $lt['score'] ?? ($lt['level'] ?? '') }}</td>
-                                <td class="center">{{ $lt['date'] ?? '' }}</td>
+                                <td class="center">{{ $lt['acquisition_date'] ?? ($lt['date'] ?? '') }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td class="center"><strong>{{ $isKo ? '영어 (English)' : 'English' }}</strong></td>
-                                <td class="center">{{ $isKo ? '비즈니스 회화' : 'Fluent / Business' }}</td>
-                                <td class="center">-</td>
+                                <td colspan="3" class="center" style="color: #94a3b8;">{{ $isKo ? '기재된 어학 성적이 없습니다.' : 'No language test scores recorded.' }}</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -528,8 +554,8 @@
             </div>
 
             <div style="display: table-cell; width: 50%; vertical-align: top; padding-left: 6px;">
-                <div class="section-header">
-                    <div><span class="sec-num">5.</span> {{ $isKo ? '자격증 및 면허 (Certificates)' : 'Certificates &amp; Licenses' }}</div>
+                <div style="font-size: 8pt; font-weight: 700; color: #475569; margin-bottom: 3px; padding-left: 2px;">
+                    ▪ {{ $isKo ? '자격증 및 면허 (Certificates & Licenses)' : 'Certificates & Licenses' }}
                 </div>
                 <table class="kr-table">
                     <thead>
@@ -556,11 +582,15 @@
             </div>
         </div>
 
-        {{-- 6. MILITARY SERVICE & COMPUTER SKILLS --}}
+        {{-- 5. MILITARY SERVICE & COMPUTER / TECHNICAL SKILLS --}}
+        <div class="section-header">
+            <div><span class="sec-num">5.</span> {{ $isKo ? '병역사항 및 주요 보유기술 (Military Service & Technical Skills)' : 'Military Service & Technical Skills' }}</div>
+        </div>
+
         <div style="display: table; width: 100%; border-spacing: 0;">
             <div style="display: table-cell; width: 49%; vertical-align: top; padding-right: 6px;">
-                <div class="section-header">
-                    <div><span class="sec-num">6.</span> {{ $isKo ? '병역사항 (Military Service)' : 'Military Status (If Applicable)' }}</div>
+                <div style="font-size: 8pt; font-weight: 700; color: #475569; margin-bottom: 3px; padding-left: 2px;">
+                    ▪ {{ $isKo ? '병역사항 (Military Status)' : 'Military Service' }}
                 </div>
                 <table class="kr-table">
                     <thead>
@@ -573,16 +603,27 @@
                     <tbody>
                         <tr>
                             <td class="center">{{ $military['status'] ?? ($isKo ? '군필 / 해당없음' : 'Completed / N/A') }}</td>
-                            <td class="center">{{ $military['branch'] ?? ($isKo ? '육군 / 병장' : 'Army / Sergeant') }}</td>
-                            <td class="center">{{ $military['period'] ?? ($isKo ? '만기제대' : 'Honorable Discharge') }}</td>
+                            <td class="center">
+                                @if(!empty($military['branch']) && !empty($military['rank']))
+                                    {{ $military['branch'] }} / {{ $military['rank'] }}
+                                @else
+                                    {{ $military['branch'] ?? ($military['rank'] ?? ($isKo ? '육군 / 병장' : 'Army / Sergeant')) }}
+                                @endif
+                            </td>
+                            <td class="center">
+                                {{ $military['period'] ?? ($isKo ? '만기제대' : 'Honorable Discharge') }}
+                                @if(!empty($military['discharge_reason']))
+                                    <div style="font-size: 7pt; color: #64748b;">({{ $military['discharge_reason'] }})</div>
+                                @endif
+                            </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
             <div style="display: table-cell; width: 50%; vertical-align: top; padding-left: 6px;">
-                <div class="section-header">
-                    <div><span class="sec-num">7.</span> {{ $isKo ? '주요 보유기술 (Skills &amp; Tools)' : 'Technical Skills &amp; Tools' }}</div>
+                <div style="font-size: 8pt; font-weight: 700; color: #475569; margin-bottom: 3px; padding-left: 2px;">
+                    ▪ {{ $isKo ? '주요 보유기술 및 역량 (Skills & Tools)' : 'Technical Skills & Tools' }}
                 </div>
                 <table class="kr-table">
                     <thead>
@@ -593,19 +634,29 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @if(!empty($resume->skills) && is_array($resume->skills))
+                        @if(!empty($compSkills) && count($compSkills) > 0)
+                            @foreach(array_slice($compSkills, 0, 3) as $cSkill)
+                                <tr>
+                                    <td><strong>{{ $cSkill['tool_name'] ?? '' }}</strong></td>
+                                    <td class="center">{{ $cSkill['proficiency'] ?? '-' }}</td>
+                                    <td style="font-size: 7.5pt;">{{ $cSkill['description'] ?? ($cSkill['category'] ?? '-') }}</td>
+                                </tr>
+                            @endforeach
+                        @endif
+                        @if(!empty($resume->skills) && is_array($resume->skills) && count($resume->skills) > 0)
                             <tr>
-                                <td colspan="3" style="padding: 6px;">
-                                    @foreach(array_slice($resume->skills, 0, 8) as $sk)
+                                <td colspan="3" style="padding: 5px;">
+                                    @foreach(array_slice($resume->skills, 0, 10) as $sk)
                                         <span style="display: inline-block; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 2px 6px; border-radius: 3px; font-size: 7.5pt; margin: 1px 2px; font-weight: bold;">
                                             {{ $sk }}
                                         </span>
                                     @endforeach
                                 </td>
                             </tr>
-                        @else
+                        @endif
+                        @if((empty($compSkills) || count($compSkills) === 0) && (empty($resume->skills) || count($resume->skills) === 0))
                             <tr>
-                                <td colspan="3" class="center" style="color: #94a3b8;">-</td>
+                                <td colspan="3" class="center" style="color: #94a3b8; padding: 8px;">{{ $isKo ? '등록된 보유기술이 없습니다.' : 'No skills recorded.' }}</td>
                             </tr>
                         @endif
                     </tbody>
@@ -640,12 +691,17 @@
             </div>
         @endif
 
-        {{-- 7. KOREAN SELF-INTRODUCTION / COVER LETTER (자기소개서) --}}
-        <div style="page-break-before: always; margin-top: 20px;"></div>
+        {{-- 6. KOREAN SELF-INTRODUCTION / COVER LETTER (자기소개서) --}}
+        <div style="page-break-before: always; margin-top: 18px;"></div>
 
-        <div class="doc-title-wrap" style="margin-top: 15px; margin-bottom: 15px;">
+        <div class="section-header" style="margin-top: 10px; margin-bottom: 12px; font-size: 10.5pt;">
+            <div><span class="sec-num">6.</span> {{ $isKo ? '자 기 소 개 서 (Personal Statement)' : 'Personal Statement' }}</div>
+            <span style="font-size: 8pt; color: #64748b; font-weight: normal;">{{ $isKo ? '지원자: ' . ($personal['full_name'] ?? '성명') : 'Candidate: ' . ($personal['full_name'] ?? 'Candidate') }}</span>
+        </div>
+
+        <div class="doc-title-wrap" style="margin-top: 8px; margin-bottom: 14px;">
             <h2 class="doc-title" style="font-size: 18pt;">{{ $isKo ? '자 기 소 개 서' : 'PERSONAL STATEMENT' }}</h2>
-            <div class="doc-subtitle">{{ $isKo ? '지원자: ' . ($personal['full_name'] ?? '성명') : 'Candidate: ' . ($personal['full_name'] ?? 'Candidate') }}</div>
+            <div class="doc-subtitle">{{ $isKo ? '(성장과정 • 성격의 장단점 • 직무역량 • 지원동기)' : '(Growth • Personality • Core Competencies • Motivation)' }}</div>
         </div>
 
         {{-- 1. Growth Process --}}
@@ -660,16 +716,18 @@
             <div class="essay-content">{{ $selfIntro['personality'] ?? ($isKo ? '긍정적인 마인드와 철저한 실행력으로 팀 프로젝트에서 신뢰받는 조력자 역할을 해왔습니다.' : 'A proactive problem-solver and collaborative team player known for reliable execution and resilience under pressure.') }}</div>
         </div>
 
-        {{-- 3. School Days & Key Career Experience --}}
+        {{-- 3. Key Projects & Job Competencies --}}
         <div class="essay-block">
-            <div class="essay-title">{{ $isKo ? '3. 주요 프로젝트 및 직무역량 (Key Projects & Capabilities)' : '3. Core Competencies & Key Projects' }}</div>
+            <div class="essay-title">{{ $isKo ? '3. 주요경력 및 직무수행 역량 (Key Projects & Job Competencies)' : '3. Core Competencies & Key Projects' }}</div>
             <div class="essay-content">
-@if(!empty($resume->projects) && is_array($resume->projects))
+@if(!empty($selfIntro['strengths']))
+{{ $selfIntro['strengths'] }}
+@elseif(!empty($resume->projects) && is_array($resume->projects) && count($resume->projects) > 0)
 @foreach($resume->projects as $p)
-• {{ $p['title'] ?? '' }} ({{ $p['tech'] ?? '' }}): {{ $p['description'] ?? '' }}
+• {{ $p['title'] ?? '' }}{{ !empty($p['tech']) ? ' (' . $p['tech'] . ')' : '' }}: {{ $p['description'] ?? '' }}
 @endforeach
 @else
-{{ $selfIntro['experience_school'] ?? ($isKo ? '다양한 직무 프로젝트를 직접 주도하며 문제 해결 능력과 실무 감각을 체득했습니다.' : 'Led multiple end-to-end technical initiatives demonstrating engineering rigor and cross-functional leadership.') }}
+{{ $isKo ? '다양한 직무 프로젝트를 직접 주도하며 문제 해결 능력과 실무 감각을 체득했습니다.' : 'Led multiple technical initiatives demonstrating engineering rigor and cross-functional leadership.' }}
 @endif
             </div>
         </div>
@@ -677,11 +735,15 @@
         {{-- 4. Reason for Applying & Future Aspirations --}}
         <div class="essay-block">
             <div class="essay-title">{{ $isKo ? '4. 지원동기 및 입사 후 포부 (Motivation for Applying & Future Goals)' : '4. Motivation for Applying & Future Aspirations' }}</div>
-            <div class="essay-content">{{ $selfIntro['motivation'] ?? ($isKo ? '귀사의 혁신적인 비전에 깊이 공감하며, 축적된 역량을 바탕으로 회사와 함께 지속적인 성과를 창출하겠습니다.' : 'Deeply aligned with the organizational vision, I aim to leverage my skills to deliver measurable business impact and long-term value.') }}</div>
+            <div class="essay-content">{{ !empty($selfIntro['motivation_and_aspirations']) ? $selfIntro['motivation_and_aspirations'] : ($selfIntro['motivation'] ?? ($isKo ? '귀사의 혁신적인 비전에 깊이 공감하며, 축적된 역량을 바탕으로 회사와 함께 지속적인 성과를 창출하겠습니다.' : 'Deeply aligned with the organizational vision, I aim to leverage my skills to deliver measurable business impact and long-term value.')) }}</div>
         </div>
 
-        {{-- 8. PLEDGE & SIGNATURE BLOCK --}}
-        <div class="pledge-box">
+        {{-- 7. PLEDGE & SIGNATURE BLOCK --}}
+        <div class="section-header" style="margin-top: 18px; margin-bottom: 8px;">
+            <div><span class="sec-num">7.</span> {{ $isKo ? '사실 확인 및 서약 (Declaration & Signature)' : 'Declaration & Signature' }}</div>
+        </div>
+
+        <div class="pledge-box" style="margin-top: 8px; border-top: none; padding-top: 4px;">
             <div class="pledge-text">
                 {{ $isKo ? '위의 모든 기재사항은 사실과 다름없음을 확인합니다.' : 'I hereby certify that all information stated above is true and correct.' }}
             </div>

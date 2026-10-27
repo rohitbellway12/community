@@ -111,7 +111,7 @@ class OpenAiResumeService
             }
 
             // High quality deterministic fallback
-            return $this->smartFallbackExperience($rawNotes, $jobTitle);
+            return $this->smartFallbackExperience($rawNotes, $jobTitle, $company);
         });
     }
 
@@ -189,8 +189,16 @@ class OpenAiResumeService
     protected function smartFallbackSummary(string $raw, ?string $role): string
     {
         $rolePrefix = $role ? "Dedicated and results-oriented {$role} with a strong foundation in collaborative problem-solving and modern practices. " : "Motivated and adaptable professional with a proven track record of initiative and dedication. ";
-        
-        $cleaned = ucfirst(trim($raw, " \t\n\r\0\x0B."));
+
+        // Clean out previously generated fallback prefixes & boilerplate if user clicks AI multiple times
+        $cleaned = preg_replace('/^(?:Dedicated and results-oriented.*?practices\.\s*|Motivated and adaptable.*?dedication\.\s*|Experienced in\s*)+/i', '', $raw);
+        $cleaned = preg_replace('/\s*Committed to driving operational efficiency.*?contributions\.?/i', '', $cleaned);
+        $cleaned = ucfirst(trim($cleaned, " \t\n\r\0\x0B."));
+
+        if (empty($cleaned) || strlen($cleaned) < 5) {
+            return "{$rolePrefix}Committed to driving operational excellence, continuous learning, and delivering high-value contributions.";
+        }
+
         if (!str_ends_with($cleaned, '.')) {
             $cleaned .= '.';
         }
@@ -201,7 +209,7 @@ class OpenAiResumeService
     /**
      * Intelligent heuristic fallback for experience bullets.
      */
-    protected function smartFallbackExperience(string $raw, ?string $role): array
+    protected function smartFallbackExperience(string $raw, ?string $role, ?string $company = null): array
     {
         $lines = preg_split('/[\r\n]+|[•\*\-]|\.\s+/', $raw);
         $bullets = [];
@@ -210,19 +218,32 @@ class OpenAiResumeService
 
         foreach ($lines as $line) {
             $trimmed = trim($line, " \t\n\r\0\x0B.,;");
-            if (strlen($trimmed) >= 10) {
+
+            // Strip any previously prepended action verbs (greedy/repeating) to prevent "Spearheaded spearheaded..."
+            $cleaned = preg_replace('/^(?:\s*(?:spearheaded|coordinated|implemented|streamlined|delivered|collaborated\s+on|successfully\s+executed|applied|resolved|managed|developed|led)\s*)+/i', '', $trimmed);
+            // Strip repetitive fallback trailing clauses
+            $cleaned = preg_replace('/,\s*(?:ensuring high quality standards|maintaining high productivity|contributing directly to ongoing process improvements).*$/i', '', $cleaned);
+            $cleaned = trim($cleaned, " \t\n\r\0\x0B.,;");
+
+            if (strlen($cleaned) >= 10) {
                 $verb = $actionVerbs[$idx % count($actionVerbs)];
-                $lowerFirst = lcfirst($trimmed);
+                $lowerFirst = lcfirst($cleaned);
                 $bullets[] = "{$verb} {$lowerFirst}, ensuring high quality standards and adherence to project objectives.";
                 $idx++;
             }
         }
 
         if (empty($bullets)) {
-            $bullets[] = "Successfully executed key responsibilities for the " . ($role ?: 'assigned') . " position while collaborating effectively across teams.";
-            $bullets[] = "Applied industry best practices to streamline daily workflows and maintain high productivity standards.";
-            $bullets[] = "Resolved complex challenges proactively and contributed to ongoing process improvements.";
+            $roleLabel = ($role && strlen($role) > 2) ? $role : 'assigned';
+            $companyLabel = ($company && strlen($company) > 1) ? " at {$company}" : "";
+
+            $bullets[] = "Spearheaded key technical and operational responsibilities for the {$roleLabel} position{$companyLabel}, collaborating closely with cross-functional teams.";
+            $bullets[] = "Applied modern industry best practices and quality standards to optimize daily workflows and elevate overall team velocity.";
+            $bullets[] = "Implemented reliable solutions for complex challenges proactively, contributing directly to ongoing process and delivery improvements.";
         }
+
+        // Deduplicate any repeated bullets
+        $bullets = array_values(array_unique($bullets));
 
         return array_slice($bullets, 0, 4);
     }

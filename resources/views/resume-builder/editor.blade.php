@@ -132,7 +132,7 @@
                     </div>
                 </div>
 
-                {{-- WORKFLOW A: KOREAN STANDARD STEPS (BILINGUAL KOREAN & ENGLISH) --}}
+                {{-- WORKFLOW A: KOREAN STANDARD STEPS (7 STEPS BILINGUAL KOREAN & ENGLISH) --}}
                 <div x-show="resume.template === 'korean_standard'" class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar sm:flex-wrap py-0.5">
                     <button type="button" @click="activeStep = 'personal'"
                             :class="activeStep === 'personal' ? 'bg-emerald-600 text-white font-extrabold shadow-sm ring-2 ring-emerald-500/30' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold border border-slate-200/80'"
@@ -149,21 +149,26 @@
                             class="px-3 sm:px-3.5 py-2 rounded-xl text-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0">
                         <span x-text="resume.language === 'ko' ? '💼 3. 경력사항' : '💼 3. Experience'"></span>
                     </button>
-                    <button type="button" @click="activeStep = 'tests_military'"
-                            :class="activeStep === 'tests_military' ? 'bg-emerald-600 text-white font-extrabold shadow-sm ring-2 ring-emerald-500/30' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold border border-slate-200/80'"
+                    <button type="button" @click="activeStep = 'languages_certs'"
+                            :class="activeStep === 'languages_certs' ? 'bg-emerald-600 text-white font-extrabold shadow-sm ring-2 ring-emerald-500/30' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold border border-slate-200/80'"
                             class="px-3 sm:px-3.5 py-2 rounded-xl text-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0">
-                        <span x-text="resume.language === 'ko' ? '🎖️ 4. 어학/자격/병역' : '🎖️ 4. Tests & Military'"></span>
+                        <span x-text="resume.language === 'ko' ? '📜 4. 어학/자격증' : '📜 4. Languages & Certs'"></span>
+                    </button>
+                    <button type="button" @click="activeStep = 'military_skills'"
+                            :class="activeStep === 'military_skills' ? 'bg-emerald-600 text-white font-extrabold shadow-sm ring-2 ring-emerald-500/30' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold border border-slate-200/80'"
+                            class="px-3 sm:px-3.5 py-2 rounded-xl text-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0">
+                        <span x-text="resume.language === 'ko' ? '🎖️ 5. 병역/보유기술' : '🎖️ 5. Military & Skills'"></span>
                     </button>
                     <button type="button" @click="activeStep = 'self_intro'"
                             :class="activeStep === 'self_intro' ? 'bg-emerald-600 text-white font-extrabold shadow-sm ring-2 ring-emerald-500/30' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold border border-slate-200/80'"
                             class="px-3 sm:px-3.5 py-2 rounded-xl text-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0">
-                        <span x-text="resume.language === 'ko' ? '✍️ 5. 자기소개서 (4항목)' : '✍️ 5. Statement (4 Prompts)'"></span>
+                        <span x-text="resume.language === 'ko' ? '✍️ 6. 자기소개서 (4항목)' : '✍️ 6. Statement (4 Prompts)'"></span>
                         <span class="text-[9px] bg-amber-400 text-slate-950 px-1 py-0.2 rounded font-black">AI</span>
                     </button>
                     <button type="button" @click="activeStep = 'declaration'"
                             :class="activeStep === 'declaration' ? 'bg-emerald-600 text-white font-extrabold shadow-sm ring-2 ring-emerald-500/30' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold border border-slate-200/80'"
                             class="px-3 sm:px-3.5 py-2 rounded-xl text-xs transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0">
-                        <span x-text="resume.language === 'ko' ? '🖋️ 6. 서약, 미리보기 & 다운로드' : '🖋️ 6. Review & Download'"></span>
+                        <span x-text="resume.language === 'ko' ? '🖋️ 7. 서약, 미리보기 & 다운로드' : '🖋️ 7. Review & Download'"></span>
                     </button>
                 </div>
 
@@ -215,7 +220,7 @@
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
                     <div>
                         <div class="inline-flex items-center gap-1.5 text-amber-600 text-[11px] font-black uppercase tracking-wider mb-1">
-                            <span x-text="resume.template === 'korean_standard' ? 'Step 1 of 6' : 'Step 1 of 7'"></span>
+                            <span>Step 1 of 7</span>
                             <span>•</span>
                             <span>Candidate Information</span>
                         </div>
@@ -456,7 +461,7 @@
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
                         <div>
                             <div class="inline-flex items-center gap-1.5 text-amber-600 text-[11px] font-black uppercase tracking-wider mb-1">
-                                <span x-text="resume.template === 'korean_standard' ? 'Step 2 of 6' : 'Step 4 of 7'"></span>
+                                <span x-text="resume.template === 'korean_standard' ? 'Step 2 of 7' : 'Step 4 of 7'"></span>
                                 <span>•</span>
                                 <span>Academic Background</span>
                             </div>
@@ -673,26 +678,148 @@
                                 <span x-text="resume.template === 'korean_standard' ? (resume.language === 'ko' ? '이전: 학력사항' : 'Back to Education') : 'Back to Summary'"></span>
                             </button>
                             <button type="button"
-                                    @click="activeStep = (resume.template === 'korean_standard' ? 'tests_military' : 'education')"
+                                    @click="activeStep = (resume.template === 'korean_standard' ? 'languages_certs' : 'education')"
                                     class="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-xs sm:text-sm uppercase tracking-wider shadow-sm hover:shadow-md transition-all cursor-pointer group active:scale-[0.98]">
-                                <span x-text="resume.template === 'korean_standard' ? (resume.language === 'ko' ? '다음: 어학/자격/병역' : 'Next: Tests & Military') : 'Next: Education'"></span>
+                                <span x-text="resume.template === 'korean_standard' ? (resume.language === 'ko' ? '다음: 어학/자격증' : 'Next: Languages & Certs') : 'Next: Education'"></span>
                                 <span class="transition-transform group-hover:translate-x-1 font-bold">→</span>
                             </button>
                         </div>
                     </div>
                 </div>
 
-                {{-- ===================== STEP 5: TESTS, MILITARY & COMPUTER SKILLS ===================== --}}
-                <div x-show="activeStep === 'tests_military'" x-cloak class="bg-white border border-slate-200/90 rounded-2xl sm:rounded-3xl p-4 sm:p-7 shadow-sm space-y-6">
+                {{-- ===================== STEP 4: KOREAN LANGUAGES & CERTIFICATIONS ===================== --}}
+                <div x-show="activeStep === 'languages_certs'" x-cloak class="bg-white border border-slate-200/90 rounded-2xl sm:rounded-3xl p-4 sm:p-7 shadow-sm space-y-6">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
                         <div>
                             <div class="inline-flex items-center gap-1.5 text-emerald-600 text-[11px] font-black uppercase tracking-wider mb-1">
-                                <span>Step 4 of 6</span>
+                                <span>Step 4 of 7</span>
                                 <span>•</span>
-                                <span>Korean Corporate Standard</span>
+                                <span>Language Tests &amp; Licenses</span>
                             </div>
-                            <h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Language Tests, Military &amp; IT Skills (어학/병역/전산)</h2>
-                            <p class="text-xs text-slate-500 mt-0.5">Mandatory fields for Korean job applications and major conglomerates.</p>
+                            <h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight"
+                                x-text="resume.language === 'ko' ? '어학능력 및 자격사항 (Languages & Certifications)' : 'Languages & Certifications'"></h2>
+                            <p class="text-xs text-slate-500 mt-0.5">Official language scores and professional licenses required for Korean enterprises.</p>
+                        </div>
+                    </div>
+
+                    {{-- 1. Official Language Tests Box --}}
+                    <div class="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200/90 space-y-3.5 transition hover:border-slate-300">
+                        <div class="flex items-center justify-between border-b border-slate-200/80 pb-2.5">
+                            <h3 class="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                                <span>🗣️</span>
+                                <span>1. Language Proficiency Tests (공인어학성적)</span>
+                            </h3>
+                            <button type="button" @click="addLanguageTest()"
+                                    class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition cursor-pointer shadow-2xs active:scale-95">
+                                + Add Score
+                            </button>
+                        </div>
+
+                        <div class="space-y-3">
+                            <template x-for="(test, index) in resume.language_tests" :key="index">
+                                <div class="p-3.5 rounded-xl bg-white border border-slate-200/90 text-xs space-y-2 relative shadow-2xs">
+                                    <button type="button" @click="removeLanguageTest(index)" class="absolute top-2.5 right-2.5 text-slate-400 hover:text-rose-600 font-bold p-1">✕</button>
+                                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5 pr-6">
+                                        <div>
+                                            <label class="block font-bold text-slate-700 text-[11px] mb-1">Test Name *</label>
+                                            <input type="text" x-model="test.test_name" placeholder="TOEIC / OPIc / JLPT" class="w-full bg-slate-50/70 border border-slate-200 rounded-lg px-2.5 py-2 text-slate-900 font-bold outline-none focus:border-amber-500">
+                                        </div>
+                                        <div>
+                                            <label class="block font-bold text-slate-700 text-[11px] mb-1">Score / Grade *</label>
+                                            <input type="text" x-model="test.score" placeholder="950 / AL / N1" class="w-full bg-slate-50/70 border border-slate-200 rounded-lg px-2.5 py-2 text-emerald-700 font-black outline-none focus:border-amber-500">
+                                        </div>
+                                        <div>
+                                            <label class="block font-bold text-slate-700 text-[11px] mb-1">Date</label>
+                                            <input type="text" x-model="test.acquisition_date" placeholder="2023.09.15" class="w-full bg-slate-50/70 border border-slate-200 rounded-lg px-2.5 py-2 text-slate-900 outline-none focus:border-amber-500">
+                                        </div>
+                                        <div>
+                                            <label class="block font-bold text-slate-700 text-[11px] mb-1">Authority</label>
+                                            <input type="text" x-model="test.organization" placeholder="ETS / ACTFL" class="w-full bg-slate-50/70 border border-slate-200 rounded-lg px-2.5 py-2 text-slate-900 outline-none focus:border-amber-500">
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <div x-show="resume.language_tests.length === 0" class="py-5 text-center bg-white rounded-xl border border-dashed border-slate-200 text-xs text-slate-400">
+                                No test scores added yet. Click <strong>+ Add Score</strong> (e.g. TOEIC, OPIc, TOEFL).
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- 2. Licenses & Certifications Box --}}
+                    <div class="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200/90 space-y-3.5 transition hover:border-slate-300">
+                        <div class="flex items-center justify-between border-b border-slate-200/80 pb-2.5">
+                            <h3 class="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                                <span>📜</span>
+                                <span>2. Licenses &amp; Certifications (자격증 및 면허)</span>
+                            </h3>
+                            <button type="button" @click="addCertification()"
+                                    class="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition cursor-pointer shadow-2xs active:scale-95">
+                                + Add Certificate
+                            </button>
+                        </div>
+
+                        <div class="space-y-3">
+                            <template x-for="(cert, index) in resume.certifications" :key="index">
+                                <div class="p-3.5 rounded-xl bg-white border border-slate-200/90 text-xs space-y-2 relative shadow-2xs">
+                                    <button type="button" @click="removeCertification(index)" class="absolute top-2.5 right-2.5 text-slate-400 hover:text-rose-600 font-bold p-1">✕</button>
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pr-6">
+                                        <div>
+                                            <label class="block font-bold text-slate-700 text-[11px] mb-1">Certificate Name *</label>
+                                            <input type="text" x-model="cert.name" placeholder="정보처리기사 / AWS SAA" class="w-full bg-slate-50/70 border border-slate-200 rounded-lg px-2.5 py-2 text-slate-900 font-bold outline-none focus:border-amber-500">
+                                        </div>
+                                        <div>
+                                            <label class="block font-bold text-slate-700 text-[11px] mb-1">Issuer / Authority</label>
+                                            <input type="text" x-model="cert.issuer" placeholder="한국산업인력공단 / Amazon" class="w-full bg-slate-50/70 border border-slate-200 rounded-lg px-2.5 py-2 text-slate-900 outline-none focus:border-amber-500">
+                                        </div>
+                                        <div>
+                                            <label class="block font-bold text-slate-700 text-[11px] mb-1">Year / Date</label>
+                                            <input type="text" x-model="cert.year" placeholder="2023.06" class="w-full bg-slate-50/70 border border-slate-200 rounded-lg px-2.5 py-2 text-slate-900 outline-none focus:border-amber-500">
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <div x-show="resume.certifications.length === 0" class="py-5 text-center bg-white rounded-xl border border-dashed border-slate-200 text-xs text-slate-400">
+                                No certifications added yet. Click <strong>+ Add Certificate</strong>.
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Bottom Action Bar --}}
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-5 border-t border-slate-100">
+                        <button type="button" @click="saveResume(false)" :disabled="isSaving"
+                                class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-2xs transition cursor-pointer hover:border-slate-300 disabled:opacity-50">
+                            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                            <span x-text="isSaving ? 'Saving Draft...' : 'Save Draft'"></span>
+                        </button>
+                        <div class="flex items-center gap-2 justify-end">
+                            <button type="button" @click="activeStep = 'experience'"
+                                    class="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs transition cursor-pointer">
+                                <span>←</span>
+                                <span x-text="resume.language === 'ko' ? '이전: 경력사항' : 'Back to Experience'"></span>
+                            </button>
+                            <button type="button" @click="activeStep = 'military_skills'"
+                                    class="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-sm hover:shadow-md transition-all cursor-pointer group active:scale-[0.98]">
+                                <span x-text="resume.language === 'ko' ? '다음: 병역/보유기술' : 'Next: Military & Skills'"></span>
+                                <span class="transition-transform group-hover:translate-x-1 font-bold">→</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- ===================== STEP 5: KOREAN MILITARY & TECHNICAL SKILLS ===================== --}}
+                <div x-show="activeStep === 'military_skills'" x-cloak class="bg-white border border-slate-200/90 rounded-2xl sm:rounded-3xl p-4 sm:p-7 shadow-sm space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                        <div>
+                            <div class="inline-flex items-center gap-1.5 text-emerald-600 text-[11px] font-black uppercase tracking-wider mb-1">
+                                <span>Step 5 of 7</span>
+                                <span>•</span>
+                                <span>Military &amp; Core Competencies</span>
+                            </div>
+                            <h2 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight"
+                                x-text="resume.language === 'ko' ? '병역사항 및 주요 보유기술 (Military & Skills)' : 'Military Service & Skills'"></h2>
+                            <p class="text-xs text-slate-500 mt-0.5">Military service status and technical skill competencies for application verification.</p>
                         </div>
                     </div>
 
@@ -744,56 +871,51 @@
                         </div>
                     </div>
 
-                    {{-- 2. Official Language Tests Box --}}
+                    {{-- 2. Technical Skills Tags Cloud (주요 보유기술 태그) --}}
                     <div class="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200/90 space-y-3.5 transition hover:border-slate-300">
-                        <div class="flex items-center justify-between border-b border-slate-200/80 pb-2.5">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-2.5">
                             <h3 class="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                                <span>🗣️</span>
-                                <span>2. Language Proficiency Tests (공인어학성적)</span>
+                                <span>⚡</span>
+                                <span>2. Technical Skills &amp; Tools (주요 보유기술 태그)</span>
                             </h3>
-                            <button type="button" @click="addLanguageTest()"
-                                    class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition cursor-pointer shadow-2xs active:scale-95">
-                                + Add Score
+                            <button type="button" @click="aiSuggestSkills()" :disabled="isSuggestingSkills"
+                                    class="self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs uppercase tracking-wider shadow-2xs transition flex items-center gap-1 cursor-pointer disabled:opacity-50">
+                                <span x-show="!isSuggestingSkills">✨ AI Suggest Skills</span>
+                                <span x-show="isSuggestingSkills">Suggesting...</span>
                             </button>
                         </div>
 
-                        <div class="space-y-3">
-                            <template x-for="(test, index) in resume.language_tests" :key="index">
-                                <div class="p-3.5 rounded-xl bg-white border border-slate-200/90 text-xs space-y-2 relative shadow-2xs">
-                                    <button type="button" @click="removeLanguageTest(index)" class="absolute top-2.5 right-2.5 text-slate-400 hover:text-rose-600 font-bold p-1">✕</button>
-                                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5 pr-6">
-                                        <div>
-                                            <label class="block font-bold text-slate-700 text-[11px] mb-1">Test Name *</label>
-                                            <input type="text" x-model="test.test_name" placeholder="TOEIC / OPIc / JLPT" class="w-full bg-slate-50/70 border border-slate-200 rounded-lg px-2.5 py-2 text-slate-900 font-bold outline-none focus:border-amber-500">
-                                        </div>
-                                        <div>
-                                            <label class="block font-bold text-slate-700 text-[11px] mb-1">Score / Grade *</label>
-                                            <input type="text" x-model="test.score" placeholder="950 / AL / N1" class="w-full bg-slate-50/70 border border-slate-200 rounded-lg px-2.5 py-2 text-emerald-700 font-black outline-none focus:border-amber-500">
-                                        </div>
-                                        <div>
-                                            <label class="block font-bold text-slate-700 text-[11px] mb-1">Date</label>
-                                            <input type="text" x-model="test.acquisition_date" placeholder="2023.09.15" class="w-full bg-slate-50/70 border border-slate-200 rounded-lg px-2.5 py-2 text-slate-900 outline-none focus:border-amber-500">
-                                        </div>
-                                        <div>
-                                            <label class="block font-bold text-slate-700 text-[11px] mb-1">Authority</label>
-                                            <input type="text" x-model="test.organization" placeholder="ETS / ACTFL" class="w-full bg-slate-50/70 border border-slate-200 rounded-lg px-2.5 py-2 text-slate-900 outline-none focus:border-amber-500">
-                                        </div>
-                                    </div>
-                                </div>
-                            </template>
+                        {{-- Add Skill Input --}}
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input type="text" x-model="newSkillInput" @keydown.enter.prevent="addSkill()"
+                                   placeholder="Type a skill (e.g. Java, Python, Spring Boot, MySQL, Docker) and press Enter..."
+                                   class="flex-1 text-xs bg-white border border-slate-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-400/15 rounded-xl px-3.5 py-2 text-slate-900 font-semibold outline-none transition shadow-2xs">
+                            <button type="button" @click="addSkill()"
+                                    class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition cursor-pointer active:scale-95 shadow-2xs">
+                                + Add Skill
+                            </button>
+                        </div>
 
-                            <div x-show="resume.language_tests.length === 0" class="py-5 text-center bg-white rounded-xl border border-dashed border-slate-200 text-xs text-slate-400">
-                                No test scores added yet. Click <strong>+ Add Score</strong> (e.g. TOEIC, OPIc, TOEFL).
+                        {{-- Skills Badges Cloud --}}
+                        <div class="flex flex-wrap gap-2 p-3.5 rounded-xl bg-white border border-slate-200/90 min-h-[60px]">
+                            <template x-for="(skill, index) in resume.skills" :key="index">
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-100 text-slate-800 font-bold text-xs border border-slate-200 shadow-2xs">
+                                    <span x-text="skill"></span>
+                                    <button type="button" @click="removeSkill(index)" class="text-slate-400 hover:text-rose-600 font-bold text-xs ml-0.5">✕</button>
+                                </span>
+                            </template>
+                            <div x-show="resume.skills.length === 0" class="text-slate-400 text-xs italic self-center">
+                                No skill tags added yet. Type a skill above or click "AI Suggest Skills".
                             </div>
                         </div>
                     </div>
 
-                    {{-- 3. Computer & IT Skills (상/중/하) --}}
+                    {{-- 3. Computer & IT Competencies (상/중/하) --}}
                     <div class="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200/90 space-y-3.5 transition hover:border-slate-300">
                         <div class="flex items-center justify-between border-b border-slate-200/80 pb-2.5">
                             <h3 class="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
                                 <span>💻</span>
-                                <span>3. Computer &amp; IT Competencies (전산 및 OA 활용능력)</span>
+                                <span>3. Computer &amp; OA Proficiency (전산 및 OA 활용능력)</span>
                             </h3>
                             <button type="button" @click="addComputerSkill()"
                                     class="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition cursor-pointer shadow-2xs active:scale-95">
@@ -841,10 +963,10 @@
                             <span x-text="isSaving ? 'Saving Draft...' : 'Save Draft'"></span>
                         </button>
                         <div class="flex items-center gap-2 justify-end">
-                            <button type="button" @click="activeStep = 'experience'"
+                            <button type="button" @click="activeStep = 'languages_certs'"
                                     class="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs transition cursor-pointer">
                                 <span>←</span>
-                                <span x-text="resume.language === 'ko' ? '이전: 경력사항' : 'Back to Experience'"></span>
+                                <span x-text="resume.language === 'ko' ? '이전: 어학/자격증' : 'Back to Languages & Certs'"></span>
                             </button>
                             <button type="button" @click="activeStep = 'self_intro'"
                                     class="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-sm hover:shadow-md transition-all cursor-pointer group active:scale-[0.98]">
@@ -860,7 +982,7 @@
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
                         <div>
                             <div class="inline-flex items-center gap-1.5 text-amber-600 text-[11px] font-black uppercase tracking-wider mb-1">
-                                <span>Step 5 of 6</span>
+                                <span>Step 6 of 7</span>
                                 <span>•</span>
                                 <span>Official 4-Question Statement</span>
                             </div>
@@ -945,10 +1067,10 @@
                             <span x-text="isSaving ? 'Saving Draft...' : 'Save Draft'"></span>
                         </button>
                         <div class="flex items-center gap-2 justify-end">
-                            <button type="button" @click="activeStep = 'tests_military'"
+                            <button type="button" @click="activeStep = 'military_skills'"
                                     class="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs transition cursor-pointer">
                                 <span>←</span>
-                                <span x-text="resume.language === 'ko' ? '이전: 어학/자격/병역' : 'Back to Tests & Military'"></span>
+                                <span x-text="resume.language === 'ko' ? '이전: 병역/보유기술' : 'Back to Military & Skills'"></span>
                             </button>
                             <button type="button" @click="activeStep = 'declaration'"
                                     class="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-sm hover:shadow-md transition-all cursor-pointer group active:scale-[0.98]">
@@ -1134,7 +1256,7 @@
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
                         <div>
                             <div class="inline-flex items-center gap-1.5 text-amber-600 text-[11px] font-black uppercase tracking-wider mb-1">
-                                <span x-text="resume.template === 'korean_standard' ? 'Step 6 of 6' : 'Step 7 of 7'"></span>
+                                <span>Step 7 of 7</span>
                                 <span>•</span>
                                 <span>Official Certification</span>
                             </div>
@@ -1336,7 +1458,7 @@ function resumeEditorApp(initial) {
                         this.activeStep = 'personal';
                     }
                 } else {
-                    if (['tests_military', 'self_intro'].includes(this.activeStep)) {
+                    if (['languages_certs', 'military_skills', 'self_intro', 'tests_military'].includes(this.activeStep)) {
                         this.activeStep = 'summary';
                     }
                 }
@@ -1529,7 +1651,9 @@ function resumeEditorApp(initial) {
 
         async aiPolishExperience(idx) {
             const exp = this.resume.experience[idx];
-            const notes = exp.rawNotes || (exp.points ? exp.points.join('\n') : '');
+            const notes = (exp.rawNotes && exp.rawNotes.trim().length > 0)
+                ? exp.rawNotes.trim()
+                : (exp.points && exp.points.length > 0 ? exp.points.join('\n') : '');
             if (!notes) return;
             exp.isPolishing = true;
 
@@ -1550,7 +1674,6 @@ function resumeEditorApp(initial) {
                 const data = await res.json();
                 if (data.success && data.bullets) {
                     exp.points = data.bullets;
-                    exp.rawNotes = '';
                 }
             } catch (e) {
                 console.error(e);

@@ -357,7 +357,7 @@
                             {{ $exp['company'] ?? '' }} {{ !empty($exp['location']) ? '• ' . $exp['location'] : '' }}
                         </div>
 
-                        @if(!empty($exp['points']) && is_array($exp['points']))
+                        @if(!empty($exp['points']) && is_array($exp['points']) && count(array_filter($exp['points'], 'strlen')) > 0)
                             <ul class="bullet-list">
                                 @foreach($exp['points'] as $pt)
                                     @if(!empty(trim($pt)))
@@ -365,6 +365,8 @@
                                     @endif
                                 @endforeach
                             </ul>
+                        @elseif(!empty($exp['rawNotes']))
+                            <div class="summary-text" style="white-space: pre-line;">{{ $exp['rawNotes'] }}</div>
                         @elseif(!empty($exp['description']))
                             <div class="summary-text">{{ $exp['description'] }}</div>
                         @endif
