@@ -16,6 +16,11 @@ class AdminResumeController extends Controller
      */
     public function index(Request $request)
     {
+        $activeTab = $request->query('tab', 'resumes');
+        if (!in_array($activeTab, ['resumes', 'verifications', 'settings'])) {
+            $activeTab = 'resumes';
+        }
+
         $search = $request->query('search');
         $watermarkFilter = $request->query('watermark');
 
@@ -37,7 +42,7 @@ class AdminResumeController extends Controller
             $query->where('is_watermark_removed', false);
         }
 
-        $resumes = $query->paginate(15)->withQueryString();
+        $resumes = $query->paginate(15, ['*'], 'resumes_page')->withQueryString();
 
         $stats = [
             'total' => Resume::count(),
@@ -46,31 +51,42 @@ class AdminResumeController extends Controller
             'downloads' => (int) Resume::sum('download_count'),
         ];
 
-        return view('admin.resumes.index', compact('resumes', 'stats', 'search', 'watermarkFilter'));
-    }
-
-    /**
-     * Reshare verifications queue.
-     */
-    public function verifications(Request $request)
-    {
-        $status = $request->query('status', 'pending');
-
-        $query = ResumeShareVerification::with(['user', 'resume', 'reviewer'])->latest();
-
-        if (in_array($status, ['pending', 'approved', 'rejected'])) {
-            $query->where('status', $status);
+        // Verifications query
+        $verificationStatus = $request->query('verification_status', 'pending');
+        $vQuery = ResumeShareVerification::with(['user', 'resume', 'reviewer'])->latest();
+        if (in_array($verificationStatus, ['pending', 'approved', 'rejected'])) {
+            $vQuery->where('status', $verificationStatus);
         }
+        $verifications = $vQuery->paginate(15, ['*'], 'verifications_page')->withQueryString();
 
-        $verifications = $query->paginate(20)->withQueryString();
-
-        $counts = [
+        $verificationCounts = [
             'pending' => ResumeShareVerification::where('status', 'pending')->count(),
             'approved' => ResumeShareVerification::where('status', 'approved')->count(),
             'rejected' => ResumeShareVerification::where('status', 'rejected')->count(),
         ];
 
-        return view('admin.resumes.verifications', compact('verifications', 'status', 'counts'));
+        // Global Resume Settings
+        $setting = ResumeSetting::config();
+
+        return view('admin.resumes.index', compact(
+            'resumes',
+            'stats',
+            'search',
+            'watermarkFilter',
+            'activeTab',
+            'verifications',
+            'verificationStatus',
+            'verificationCounts',
+            'setting'
+        ));
+    }
+
+    /**
+     * Reshare verifications queue (Redirects to unified hub tab).
+     */
+    public function verifications(Request $request)
+    {
+        return redirect()->route('admin.resumes.index', array_merge($request->query(), ['tab' => 'verifications']));
     }
 
     /**
@@ -89,7 +105,8 @@ class AdminResumeController extends Controller
             'watermark_removed_at' => now(),
         ]);
 
-        return back()->with('success', "Verification for {$verification->user->name} approved! Watermark removed.");
+        return redirect()->route('admin.resumes.index', ['tab' => 'verifications'])
+            ->with('success', "Verification for {$verification->user->name} approved! Watermark permanently removed.");
     }
 
     /**
@@ -108,18 +125,16 @@ class AdminResumeController extends Controller
             'reviewed_at' => now(),
         ]);
 
-        return back()->with('success', "Verification rejected. Reason recorded.");
+        return redirect()->route('admin.resumes.index', ['tab' => 'verifications'])
+            ->with('success', "Verification rejected. Rejection reason recorded.");
     }
 
     /**
-     * Edit Resume & Watermark Settings.
+     * Edit Resume & Watermark Settings (Redirects to unified hub tab).
      */
     public function settings()
     {
-        $setting = ResumeSetting::config();
-        $pendingCount = ResumeShareVerification::where('status', 'pending')->count();
-
-        return view('admin.resumes.settings', compact('setting', 'pendingCount'));
+        return redirect()->route('admin.resumes.index', ['tab' => 'settings']);
     }
 
     /**
@@ -145,6 +160,7 @@ class AdminResumeController extends Controller
 
         ResumeSetting::clearCache();
 
-        return back()->with('success', 'Resume Builder & Watermark settings saved successfully!');
+        return redirect()->route('admin.resumes.index', ['tab' => 'settings'])
+            ->with('success', 'Resume Builder & Watermark settings saved successfully!');
     }
 }

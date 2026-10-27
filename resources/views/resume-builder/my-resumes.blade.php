@@ -159,71 +159,128 @@
     {{-- UNLOCK WATERMARK / SHARE MODAL --}}
     <div x-show="unlockModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-xs">
         <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] overflow-y-auto" @click.away="unlockModalOpen = false">
+            {{-- MODAL HEADER --}}
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div class="flex items-center gap-2">
-                    <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 font-black text-sm flex items-center justify-center">🛡️</span>
+                <div class="flex items-center gap-3">
+                    <span class="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-white font-black text-lg flex items-center justify-center shadow-xs">✨</span>
                     <div>
-                        <h3 class="font-black text-base text-slate-900">Unlock Clean Watermark-Free PDF</h3>
-                        <p class="text-[11px] text-slate-400">Share REIAC Community to remove the watermark forever.</p>
+                        <h3 class="font-black text-base text-slate-900">Download Clean PDF (No Watermark)</h3>
+                        <p class="text-[11px] text-slate-500">Share REIAC Community to permanently unlock your watermark-free CV.</p>
                     </div>
                 </div>
-                <button @click="unlockModalOpen = false" class="text-slate-400 hover:text-slate-700 text-lg font-bold">✕</button>
+                <button @click="unlockModalOpen = false" class="text-slate-400 hover:text-slate-700 text-lg font-bold p-1">✕</button>
             </div>
 
-            {{-- GUIDELINES --}}
-            <div class="my-4 p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-2 text-xs">
-                <span class="font-extrabold text-amber-900 block text-xs">📋 Reshare Guidelines:</span>
-                <p class="text-slate-600 text-[11px] whitespace-pre-line leading-relaxed">{{ $setting->reshare_guidelines }}</p>
+            {{-- RESHARE GUIDELINE TIP --}}
+            <div class="mt-4 p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/90 text-xs">
+                <div class="flex items-start gap-2">
+                    <span class="text-amber-700 font-bold text-sm">📋</span>
+                    <div class="text-[11px] text-amber-900 leading-relaxed">
+                        <span class="font-extrabold">Guidelines: </span>
+                        {{ $setting->reshare_guidelines }}
+                    </div>
+                </div>
             </div>
 
-            {{-- SOCIAL SHARE BUTTONS (INSTANT METHOD) --}}
+            {{-- MODE TABS (When admin allows 'both') --}}
+            @if($setting->verification_mode === 'both')
+                <div class="flex items-center p-1 bg-slate-100 rounded-xl my-4">
+                    <button type="button" @click="unlockTab = 'instant'"
+                            :class="unlockTab === 'instant' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-500 font-semibold hover:text-slate-700'"
+                            class="flex-1 py-2 text-xs rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer">
+                        <span>⚡ 1-Click Instant Share</span>
+                        <span class="px-1.5 py-0.5 rounded text-[9px] bg-emerald-100 text-emerald-800 font-bold">Instant</span>
+                    </button>
+                    <button type="button" @click="unlockTab = 'manual'"
+                            :class="unlockTab === 'manual' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-500 font-semibold hover:text-slate-700'"
+                            class="flex-1 py-2 text-xs rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer">
+                        <span>📸 Upload Proof</span>
+                        <span class="px-1.5 py-0.5 rounded text-[9px] bg-amber-100 text-amber-800 font-bold">Admin Review</span>
+                    </button>
+                </div>
+            @endif
+
+            {{-- ========================================================= --}}
+            {{-- TAB 1: INSTANT 1-CLICK SHARE --}}
+            {{-- ========================================================= --}}
             @if($setting->verification_mode === 'both' || $setting->verification_mode === 'instant')
-                <div class="space-y-3 pb-4 border-b border-slate-100">
-                    <span class="text-xs font-black text-slate-800 block">Option 1: Quick 1-Click Share &amp; Unlock</span>
-                    <p class="text-[11px] text-slate-500">Click below to share on your favorite platform. The watermark will unlock immediately upon sharing.</p>
+                <div x-show="unlockTab === 'instant'" class="space-y-4 pt-2">
+                    <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200/70 text-xs text-emerald-950">
+                        <div class="flex items-center gap-1.5 font-black text-emerald-900">
+                            <span>🚀</span>
+                            <span>Instant Unlock — No Waiting Required!</span>
+                        </div>
+                        <p class="text-[11px] text-emerald-800 mt-1 leading-relaxed">
+                            Click any button below to share REIAC with your friends or colleagues. As soon as you click, <strong>your watermark will be unlocked immediately</strong>!
+                        </p>
+                    </div>
 
-                    <div class="grid grid-cols-2 gap-2.5 pt-1">
-                        {{-- WhatsApp --}}
+                    <div class="space-y-2">
+                        <span class="text-xs font-black text-slate-700 block">Choose Where to Share:</span>
+                        
+                        {{-- WhatsApp (Primary Highlight) --}}
                         <button type="button" @click="handleInstantShare('whatsapp')"
-                                class="py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition cursor-pointer">
-                            <span>💬</span>
-                            <span>WhatsApp</span>
+                                class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center justify-between shadow-xs transition cursor-pointer">
+                            <span class="flex items-center gap-2.5">
+                                <span class="text-base">💬</span>
+                                <span>Share on WhatsApp</span>
+                            </span>
+                            <span class="px-2 py-0.5 rounded bg-emerald-700/60 text-[10px] uppercase font-bold tracking-wider">Instant Unlock →</span>
                         </button>
 
-                        {{-- LinkedIn --}}
-                        <button type="button" @click="handleInstantShare('linkedin')"
-                                class="py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition cursor-pointer">
-                            <span>💼</span>
-                            <span>LinkedIn</span>
-                        </button>
+                        {{-- Grid for other socials --}}
+                        <div class="grid grid-cols-2 gap-2 pt-1">
+                            {{-- LinkedIn --}}
+                            <button type="button" @click="handleInstantShare('linkedin')"
+                                    class="py-2.5 px-3 rounded-xl bg-[#0A66C2] hover:bg-[#084e96] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition cursor-pointer">
+                                <span>💼</span>
+                                <span>LinkedIn</span>
+                            </button>
 
-                        {{-- Twitter / X --}}
-                        <button type="button" @click="handleInstantShare('twitter')"
-                                class="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition cursor-pointer">
-                            <span>🐦</span>
-                            <span>Twitter / X</span>
-                        </button>
+                            {{-- Twitter / X --}}
+                            <button type="button" @click="handleInstantShare('twitter')"
+                                    class="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition cursor-pointer">
+                                <span>🐦</span>
+                                <span>Twitter / X</span>
+                            </button>
 
-                        {{-- Facebook --}}
-                        <button type="button" @click="handleInstantShare('facebook')"
-                                class="py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition cursor-pointer">
-                            <span>👥</span>
-                            <span>Facebook</span>
-                        </button>
+                            {{-- Facebook --}}
+                            <button type="button" @click="handleInstantShare('facebook')"
+                                    class="py-2.5 px-3 rounded-xl bg-[#1877F2] hover:bg-[#125ec7] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition cursor-pointer">
+                                <span>👥</span>
+                                <span>Facebook</span>
+                            </button>
+
+                            {{-- Copy Share Link Button --}}
+                            <button type="button" @click="copyShareLink()"
+                                    class="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer border border-slate-200">
+                                <span>📋</span>
+                                <span x-text="copiedLink ? '✓ Copied Link!' : 'Copy Link'"></span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             @endif
 
-            {{-- SCREENSHOT PROOF UPLOAD (MANUAL METHOD) --}}
+            {{-- ========================================================= --}}
+            {{-- TAB 2: UPLOAD SCREENSHOT PROOF (MANUAL) --}}
+            {{-- ========================================================= --}}
             @if($setting->verification_mode === 'both' || $setting->verification_mode === 'manual')
-                <div class="space-y-3 pt-4">
-                    <span class="text-xs font-black text-slate-800 block">Option 2: Upload Share Screenshot Proof</span>
-                    <p class="text-[11px] text-slate-500">Already posted on your story or feed? Upload a screenshot for fast admin approval.</p>
+                <div x-show="unlockTab === 'manual'" class="space-y-4 pt-2">
+                    <div class="p-3.5 rounded-2xl bg-purple-50/70 border border-purple-200/70 text-xs text-purple-950">
+                        <div class="flex items-center gap-1.5 font-black text-purple-900">
+                            <span>📸</span>
+                            <span>Upload Screenshot Proof</span>
+                        </div>
+                        <p class="text-[11px] text-purple-800 mt-1 leading-relaxed">
+                            Shared on Instagram Story or WhatsApp Status? Upload a screenshot of your post. Our admin will approve it to unlock your clean PDF.
+                        </p>
+                    </div>
 
-                    <form @submit.prevent="submitProofForm()" class="space-y-3 pt-1">
+                    <form @submit.prevent="submitProofForm()" class="space-y-3">
                         <div>
                             <label class="block text-[11px] font-bold text-slate-700 mb-1">Select Platform *</label>
-                            <select x-model="proofPlatform" class="w-full text-xs border border-slate-200 rounded-xl px-3 py-2 bg-slate-50">
+                            <select x-model="proofPlatform" class="w-full text-xs border border-slate-200 rounded-xl px-3 py-2.5 bg-slate-50 focus:bg-white focus:outline-none focus:border-slate-400">
                                 <option value="instagram">Instagram Story / Post</option>
                                 <option value="whatsapp">WhatsApp Status</option>
                                 <option value="linkedin">LinkedIn Post</option>
@@ -236,22 +293,25 @@
                             <label class="block text-[11px] font-bold text-slate-700 mb-1">Screenshot Proof Image *</label>
                             <input type="file" @change="proofFile = $event.target.files[0]" accept="image/*" required
                                    class="w-full text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-900 file:text-white hover:file:bg-slate-800 border border-slate-200 rounded-xl p-2 bg-slate-50">
+                            <p class="text-[10px] text-slate-400 mt-1">Accepts PNG, JPG up to 5MB.</p>
                         </div>
 
-                        <div class="pt-1">
+                        <div class="pt-2">
                             <button type="submit" :disabled="isUploadingProof"
-                                    class="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs uppercase tracking-wider shadow-xs transition flex items-center justify-center gap-2 cursor-pointer">
+                                    class="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs uppercase tracking-wider shadow-xs transition flex items-center justify-center gap-2 cursor-pointer">
                                 <span x-show="!isUploadingProof">Submit Proof for Review</span>
-                                <span x-show="isUploadingProof">Uploading...</span>
+                                <span x-show="isUploadingProof">Uploading Proof...</span>
                             </button>
                         </div>
                     </form>
                 </div>
             @endif
 
-            <div class="mt-4 pt-3 border-t border-slate-100 flex justify-end">
-                <button type="button" @click="unlockModalOpen = false" class="text-xs font-bold text-slate-400 hover:text-slate-600">
-                    Cancel
+            {{-- MODAL FOOTER --}}
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span class="text-[11px] text-slate-400">Takes less than 10 seconds</span>
+                <button type="button" @click="unlockModalOpen = false" class="font-bold text-slate-400 hover:text-slate-600">
+                    Close
                 </button>
             </div>
         </div>
@@ -265,9 +325,11 @@ function myResumesManager() {
         unlockModalOpen: false,
         activeResumeId: null,
         activeResumeTitle: '',
+        unlockTab: '{{ $setting->verification_mode === "manual" ? "manual" : "instant" }}',
         proofPlatform: 'instagram',
         proofFile: null,
         isUploadingProof: false,
+        copiedLink: false,
         shareText: @js($setting->reshare_content),
         shareUrl: @js($setting->reshare_target_url ?: url('/resume-builder')),
 
@@ -275,6 +337,18 @@ function myResumesManager() {
             this.activeResumeId = id;
             this.activeResumeTitle = title;
             this.unlockModalOpen = true;
+        },
+
+        copyShareLink() {
+            const fullText = `${this.shareText} ${this.shareUrl}`;
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(fullText).then(() => {
+                    this.copiedLink = true;
+                    setTimeout(() => { this.copiedLink = false; }, 2500);
+                });
+            } else {
+                alert('Share link: ' + fullText);
+            }
         },
 
         async handleInstantShare(platform) {
