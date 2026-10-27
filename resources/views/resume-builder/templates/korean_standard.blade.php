@@ -34,7 +34,7 @@
             text-align: center;
             font-size: 36pt;
             font-weight: 900;
-            color: rgba(180, 190, 205, 0.22);
+            color: rgba(220, 38, 38, 0.20);
             text-transform: uppercase;
             letter-spacing: 4px;
             transform: rotate(-30deg);
@@ -48,7 +48,7 @@
             margin-top: 8px;
             font-weight: 700;
             letter-spacing: 2px;
-            color: rgba(180, 190, 205, 0.28);
+            color: rgba(220, 38, 38, 0.24);
         }
 
         /* Form Title */
@@ -247,6 +247,17 @@
                 border: none !important;
                 margin: 0 !important;
             }
+            .watermark {
+                display: block !important;
+                position: fixed !important;
+                top: 40% !important;
+                left: 5% !important;
+                width: 90% !important;
+                transform: rotate(-30deg) !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                z-index: 99999 !important;
+            }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
 
@@ -275,6 +286,34 @@
     </style>
 </head>
 <body>
+
+    {{-- DOMPDF NATIVE WATERMARK CANVAS SCRIPT (FOR PDF EXPORTS) --}}
+    @if(!empty($forPdf) && !$isClean)
+        <script type="text/php">
+            if (isset($pdf)) {
+                $w = $pdf->get_width();
+                $h = $pdf->get_height();
+                $font = $fontMetrics->get_font("helvetica", "bold");
+                
+                if (method_exists($pdf, "set_opacity")) {
+                    $pdf->set_opacity(0.18, "Normal");
+                }
+                
+                // Primary Diagonal Watermark
+                $watermarkText = "{{ addslashes($setting->watermark_text ?: 'REIAC COMMUNITY') }}";
+                $pdf->page_text($w * 0.12, $h * 0.56, $watermarkText, $font, 46, [0.85, 0.20, 0.20], 0, 0, -35);
+                
+                // Watermark Subtitle
+                $subFont = $fontMetrics->get_font("helvetica", "bold");
+                $subText = "{{ ($resume->language ?? 'en') === 'ko' ? '워터마크 제거를 위해 공유하세요 • reiac.org' : 'SHARE TO REMOVE WATERMARK • REIAC.ORG' }}";
+                $pdf->page_text($w * 0.16, $h * 0.60, $subText, $subFont, 12, [0.85, 0.20, 0.20], 0, 0, -35);
+                
+                if (method_exists($pdf, "set_opacity")) {
+                    $pdf->set_opacity(1.0, "Normal");
+                }
+            }
+        </script>
+    @endif
 
     @php
         $isKo = ($resume->language ?? 'en') === 'ko';

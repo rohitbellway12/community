@@ -6,22 +6,22 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Batang', 'AppleMyungjo', 'Nanum Myeongjo', 'Georgia', 'Garamond', 'Times New Roman', serif;
-            color: #111827;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #0f172a;
             background: #ffffff;
-            font-size: 10.5pt;
-            line-height: 1.45;
+            font-size: 10pt;
+            line-height: 1.5;
         }
         .page {
             position: relative;
-            padding: 34px 44px;
+            padding: 30px 40px;
             width: 100%;
             max-width: 820px;
             margin: 0 auto;
             background: #ffffff;
         }
 
-        /* Watermark */
+        /* Web View Watermark */
         .watermark {
             position: fixed;
             top: 42%;
@@ -30,7 +30,7 @@
             text-align: center;
             font-size: 38pt;
             font-weight: 900;
-            color: rgba(160, 160, 160, 0.22);
+            color: rgba(220, 38, 38, 0.18);
             text-transform: uppercase;
             letter-spacing: 5px;
             transform: rotate(-30deg);
@@ -39,52 +39,53 @@
             font-family: Arial, sans-serif;
         }
         .watermark-sub {
-            font-size: 14pt;
+            font-size: 13pt;
             display: block;
             margin-top: 8px;
             font-weight: 700;
             letter-spacing: 2px;
-            color: rgba(160, 160, 160, 0.28);
+            color: rgba(220, 38, 38, 0.22);
         }
 
         .header {
             text-align: center;
-            border-bottom: 1.5px solid #111827;
-            padding-bottom: 10px;
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 12px;
             margin-bottom: 16px;
         }
         .name {
-            font-size: 24pt;
-            font-weight: bold;
+            font-size: 22pt;
+            font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 1.5px;
-            color: #111827;
+            color: #0f172a;
+            margin-bottom: 2px;
         }
         .title {
-            font-size: 11.5pt;
-            font-style: italic;
-            color: #4b5563;
+            font-size: 11pt;
+            font-weight: 600;
+            color: #475569;
             margin-top: 2px;
         }
         .contact {
             margin-top: 6px;
             font-size: 9pt;
-            color: #4b5563;
-            font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+            color: #475569;
+            font-weight: 500;
         }
 
         .section {
-            margin-bottom: 15px;
+            margin-bottom: 16px;
         }
         .section-title {
             font-size: 10.5pt;
-            font-weight: bold;
+            font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 1.2px;
-            border-bottom: 1.5px solid #111827;
-            padding-bottom: 2px;
+            letter-spacing: 1px;
+            border-bottom: 1.5px solid #0f172a;
+            padding-bottom: 3px;
             margin-bottom: 8px;
-            color: #111827;
+            color: #0f172a;
         }
 
         .entry {
@@ -96,14 +97,14 @@
         .left {
             float: left;
             font-weight: bold;
-            font-size: 10.5pt;
-            color: #111827;
+            font-size: 10pt;
+            color: #0f172a;
         }
         .right {
             float: right;
             font-style: italic;
             font-size: 9pt;
-            color: #4b5563;
+            color: #475569;
         }
         .clear {
             clear: both;
@@ -111,18 +112,18 @@
         .sub-left {
             font-style: italic;
             font-size: 9.5pt;
-            color: #374151;
+            color: #334155;
             margin-bottom: 3px;
         }
 
         ul {
             margin-left: 20px;
-            margin-top: 2px;
+            margin-top: 3px;
         }
         ul li {
             font-size: 9.5pt;
             margin-bottom: 3px;
-            color: #1f2937;
+            color: #1e293b;
             text-align: justify;
         }
 
@@ -187,18 +188,30 @@
                 border: none !important;
                 margin: 0 !important;
             }
+            .watermark {
+                display: block !important;
+                position: fixed !important;
+                top: 40% !important;
+                left: 5% !important;
+                width: 90% !important;
+                transform: rotate(-30deg) !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                z-index: 99999 !important;
+            }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
 
         @if(!empty($forPdf))
         @page {
             size: A4 portrait;
-            margin: 8mm 10mm 8mm 10mm;
+            margin: 10mm 12mm 10mm 12mm;
         }
         html, body {
             margin: 0 !important;
             padding: 0 !important;
             background: #ffffff !important;
+            font-family: Helvetica, Arial, sans-serif !important;
         }
         .page {
             width: 100% !important;
@@ -209,12 +222,40 @@
             border: none !important;
         }
         .watermark {
-            display: none !important;
+            display: none !important; /* Managed via DomPDF native canvas script below */
         }
         @endif
     </style>
 </head>
 <body>
+
+    {{-- DOMPDF NATIVE WATERMARK CANVAS SCRIPT (FOR PDF EXPORTS) --}}
+    @if(!empty($forPdf) && !$isClean)
+        <script type="text/php">
+            if (isset($pdf)) {
+                $w = $pdf->get_width();
+                $h = $pdf->get_height();
+                $font = $fontMetrics->get_font("helvetica", "bold");
+                
+                if (method_exists($pdf, "set_opacity")) {
+                    $pdf->set_opacity(0.18, "Normal");
+                }
+                
+                // Primary Diagonal Watermark
+                $watermarkText = "{{ addslashes($setting->watermark_text ?: 'REIAC COMMUNITY') }}";
+                $pdf->page_text($w * 0.12, $h * 0.56, $watermarkText, $font, 46, [0.85, 0.20, 0.20], 0, 0, -35);
+                
+                // Watermark Subtitle
+                $subFont = $fontMetrics->get_font("helvetica", "bold");
+                $subText = "{{ ($resume->language ?? 'en') === 'ko' ? '워터마크 제거를 위해 공유하세요 • reiac.org' : 'SHARE TO REMOVE WATERMARK • REIAC.ORG' }}";
+                $pdf->page_text($w * 0.16, $h * 0.60, $subText, $subFont, 12, [0.85, 0.20, 0.20], 0, 0, -35);
+                
+                if (method_exists($pdf, "set_opacity")) {
+                    $pdf->set_opacity(1.0, "Normal");
+                }
+            }
+        </script>
+    @endif
 
     @if(!$forPdf && empty($isEmbed))
         <div class="web-preview-bar">
@@ -263,12 +304,20 @@
                         @if(!empty($resume->personal_info['job_title']))
                             <div class="title">{{ $resume->personal_info['job_title'] }}</div>
                         @endif
-                        <div class="contact">
-                            @if(!empty($resume->personal_info['location'])) {{ $resume->personal_info['location'] }} • @endif
-                            @if(!empty($resume->personal_info['email'])) {{ $resume->personal_info['email'] }} • @endif
-                            @if(!empty($resume->personal_info['phone'])) {{ $resume->personal_info['phone'] }} • @endif
-                            @if(!empty($resume->personal_info['linkedin'])) {{ $resume->personal_info['linkedin'] }} @endif
-                        </div>
+                        @php
+                            $contactParts = array_filter([
+                                $resume->personal_info['location'] ?? null,
+                                $resume->personal_info['email'] ?? null,
+                                $resume->personal_info['phone'] ?? null,
+                                $resume->personal_info['linkedin'] ?? null,
+                                $resume->personal_info['github'] ?? null,
+                            ]);
+                        @endphp
+                        @if(count($contactParts) > 0)
+                            <div class="contact">
+                                {{ implode('  •  ', $contactParts) }}
+                            </div>
+                        @endif
                     </td>
                     @if(!empty($resume->personal_info['photo_url']))
                         <td style="width: 85px; vertical-align: middle; text-align: right; padding-left: 14px;">

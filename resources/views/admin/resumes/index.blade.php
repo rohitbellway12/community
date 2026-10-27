@@ -269,7 +269,7 @@
                                             Preview
                                         </a>
 
-                                        <a href="{{ route('resume-builder.download', $resume->id) }}"
+                                        <a href="{{ route('resume-builder.preview', $resume->id) }}?print=1" target="_blank"
                                            class="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-[11px] transition">
                                             PDF
                                         </a>

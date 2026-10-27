@@ -111,8 +111,8 @@
                             <span>Edit CV</span>
                         </a>
 
-                        <a href="{{ route('resume-builder.download', $resume->id) }}"
-                           class="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs text-center transition flex items-center justify-center gap-1.5 shadow-xs">
+                        <a href="{{ route('resume-builder.preview', $resume->id) }}?print=1" target="_blank"
+                           class="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs text-center transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
                             <span>📥</span>
                             <span>PDF</span>
                         </a>

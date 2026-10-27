@@ -34,7 +34,7 @@
             text-align: center;
             font-size: 38pt;
             font-weight: 900;
-            color: rgba(180, 190, 205, 0.22);
+            color: rgba(220, 38, 38, 0.20);
             text-transform: uppercase;
             letter-spacing: 4px;
             transform: rotate(-32deg);
@@ -43,12 +43,12 @@
             line-height: 1.2;
         }
         .watermark-sub {
-            font-size: 15pt;
+            font-size: 14pt;
             display: block;
             margin-top: 10px;
             font-weight: 700;
             letter-spacing: 2px;
-            color: rgba(180, 190, 205, 0.28);
+            color: rgba(220, 38, 38, 0.24);
         }
 
         /* Header */
@@ -227,6 +227,17 @@
                 border: none !important;
                 margin: 0 !important;
             }
+            .watermark {
+                display: block !important;
+                position: fixed !important;
+                top: 40% !important;
+                left: 5% !important;
+                width: 90% !important;
+                transform: rotate(-32deg) !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                z-index: 99999 !important;
+            }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
 
@@ -255,6 +266,34 @@
     </style>
 </head>
 <body>
+
+    {{-- DOMPDF NATIVE WATERMARK CANVAS SCRIPT (FOR PDF EXPORTS) --}}
+    @if(!empty($forPdf) && !$isClean)
+        <script type="text/php">
+            if (isset($pdf)) {
+                $w = $pdf->get_width();
+                $h = $pdf->get_height();
+                $font = $fontMetrics->get_font("helvetica", "bold");
+                
+                if (method_exists($pdf, "set_opacity")) {
+                    $pdf->set_opacity(0.18, "Normal");
+                }
+                
+                // Primary Diagonal Watermark
+                $watermarkText = "{{ addslashes($setting->watermark_text ?: 'REIAC COMMUNITY') }}";
+                $pdf->page_text($w * 0.12, $h * 0.56, $watermarkText, $font, 46, [0.85, 0.20, 0.20], 0, 0, -35);
+                
+                // Watermark Subtitle
+                $subFont = $fontMetrics->get_font("helvetica", "bold");
+                $subText = "{{ ($resume->language ?? 'en') === 'ko' ? '워터마크 제거를 위해 공유하세요 • reiac.org' : 'SHARE TO REMOVE WATERMARK • REIAC.ORG' }}";
+                $pdf->page_text($w * 0.16, $h * 0.60, $subText, $subFont, 12, [0.85, 0.20, 0.20], 0, 0, -35);
+                
+                if (method_exists($pdf, "set_opacity")) {
+                    $pdf->set_opacity(1.0, "Normal");
+                }
+            }
+        </script>
+    @endif
 
     @if(!$forPdf && empty($isEmbed))
         <div class="web-preview-bar">
@@ -305,23 +344,20 @@
                             <div class="candidate-title">{{ $resume->personal_info['job_title'] }}</div>
                         @endif
 
-                        <div class="contact-row">
-                            @if(!empty($resume->personal_info['email']))
-                                <span class="contact-item">✉ {{ $resume->personal_info['email'] }}</span>
-                            @endif
-                            @if(!empty($resume->personal_info['phone']))
-                                <span class="contact-item">📞 {{ $resume->personal_info['phone'] }}</span>
-                            @endif
-                            @if(!empty($resume->personal_info['location']))
-                                <span class="contact-item">📍 {{ $resume->personal_info['location'] }}</span>
-                            @endif
-                            @if(!empty($resume->personal_info['linkedin']))
-                                <span class="contact-item">🔗 {{ $resume->personal_info['linkedin'] }}</span>
-                            @endif
-                            @if(!empty($resume->personal_info['github']))
-                                <span class="contact-item">💻 {{ $resume->personal_info['github'] }}</span>
-                            @endif
-                        </div>
+                        @php
+                            $contacts = array_filter([
+                                !empty($resume->personal_info['email']) ? $resume->personal_info['email'] : null,
+                                !empty($resume->personal_info['phone']) ? $resume->personal_info['phone'] : null,
+                                !empty($resume->personal_info['location']) ? $resume->personal_info['location'] : null,
+                                !empty($resume->personal_info['linkedin']) ? $resume->personal_info['linkedin'] : null,
+                                !empty($resume->personal_info['github']) ? $resume->personal_info['github'] : null,
+                            ]);
+                        @endphp
+                        @if(count($contacts) > 0)
+                            <div class="contact-row" style="font-size: 9pt; color: #475569; margin-top: 6px; font-weight: 500;">
+                                {{ implode('  •  ', $contacts) }}
+                            </div>
+                        @endif
                     </td>
                     @if(!empty($resume->personal_info['photo_url']))
                         <td style="width: 85px; vertical-align: middle; text-align: right; padding-left: 14px;">

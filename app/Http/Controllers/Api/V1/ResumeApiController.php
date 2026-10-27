@@ -217,7 +217,7 @@ class ResumeApiController extends Controller
                 'created_at' => $r->created_at?->toIso8601String(),
                 'updated_at' => $r->updated_at?->toIso8601String(),
                 'preview_url' => url("/resume-builder/{$r->id}/preview"),
-                'download_pdf_url' => url("/resume-builder/{$r->id}/preview?print=1"),
+                'download_pdf_url' => url("/resume-builder/{$r->id}/download"),
                 'verification_status' => $r->latestVerification?->status ?? null,
             ];
         });
@@ -255,7 +255,7 @@ class ResumeApiController extends Controller
         $response = $resume->toArray();
         $response['is_clean'] = $isClean;
         $response['preview_url'] = url("/resume-builder/{$resume->id}/preview");
-        $response['download_pdf_url'] = url("/resume-builder/{$resume->id}/preview?print=1");
+        $response['download_pdf_url'] = url("/resume-builder/{$resume->id}/download");
 
         return $this->successResponse($response, 'Resume details retrieved.');
     }
@@ -341,7 +341,7 @@ class ResumeApiController extends Controller
             'language' => $resume->language,
             'is_clean' => $isClean,
             'preview_url' => url("/resume-builder/{$resume->id}/preview"),
-            'download_pdf_url' => url("/resume-builder/{$resume->id}/preview?print=1"),
+            'download_pdf_url' => url("/resume-builder/{$resume->id}/download"),
         ], 'Resume saved successfully!');
     }
 

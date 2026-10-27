@@ -268,7 +268,9 @@ class ResumeBuilderController extends Controller
 
     public function preview(Resume $resume)
     {
-        if ($resume->user_id !== Auth::id()) {
+        $role = Auth::user() ? (is_object(Auth::user()->role) ? Auth::user()->role->value : Auth::user()->role) : null;
+        $isAdmin = $role && trim(strtolower($role)) === 'admin';
+        if ($resume->user_id !== Auth::id() && !$isAdmin) {
             abort(403);
         }
 
@@ -290,7 +292,9 @@ class ResumeBuilderController extends Controller
      */
     public function downloadPdf(Resume $resume)
     {
-        if ($resume->user_id !== Auth::id()) {
+        $role = Auth::user() ? (is_object(Auth::user()->role) ? Auth::user()->role->value : Auth::user()->role) : null;
+        $isAdmin = $role && trim(strtolower($role)) === 'admin';
+        if ($resume->user_id !== Auth::id() && !$isAdmin) {
             abort(403);
         }
 
@@ -325,6 +329,7 @@ class ResumeBuilderController extends Controller
           ->setOption([
               'isHtml5ParserEnabled' => true,
               'isRemoteEnabled' => true,
+              'isPhpEnabled' => true,
               'dpi' => 150,
               'defaultFont' => 'DejaVu Sans',
           ]);
