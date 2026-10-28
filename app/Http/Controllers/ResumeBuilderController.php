@@ -390,29 +390,48 @@ class ResumeBuilderController extends Controller
             ]);
         }
 
-        // Screenshot proof verification
-        if (!$request->hasFile('proof_image')) {
+        // Screenshot proof verification (supports single file or multiple images array)
+        $hasProofFile = $request->hasFile('proof_image') || $request->hasFile('proof_images');
+        if (!$hasProofFile) {
             return response()->json([
                 'success' => false,
                 'message' => 'Please select a screenshot file showing your share.',
             ], 422);
         }
 
-        $path = $request->file('proof_image')->store('resume-proofs', 'public');
+        $rawFiles = $request->file('proof_images') ?: $request->file('proof_image');
+        $fileList = is_array($rawFiles) ? $rawFiles : [$rawFiles];
+        $storedPaths = [];
+
+        foreach ($fileList as $f) {
+            if ($f && $f->isValid()) {
+                $storedPaths[] = $f->store('resume-proofs', 'public');
+            }
+        }
+
+        if (empty($storedPaths)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No valid proof images were uploaded.',
+            ], 422);
+        }
+
+        $primaryPath = $storedPaths[0];
 
         ResumeShareVerification::create([
             'resume_id' => $resume->id,
             'user_id' => Auth::id(),
-            'platform' => $validated['platform'],
+            'platform' => $request->input('platform', 'whatsapp'),
             'verification_method' => 'screenshot',
-            'proof_image' => $path,
-            'post_url' => $validated['post_url'] ?? null,
+            'proof_image' => $primaryPath,
+            'proof_images' => $storedPaths,
+            'post_url' => $request->input('post_url'),
             'status' => 'pending',
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Your share proof has been submitted! Our admin team will verify it shortly to remove the watermark.',
+            'message' => 'Your share proof (' . count($storedPaths) . ' image' . (count($storedPaths) > 1 ? 's' : '') . ') has been submitted! Our admin team will verify it shortly to remove the watermark.',
             'is_watermark_removed' => false,
             'is_pending' => true,
         ]);

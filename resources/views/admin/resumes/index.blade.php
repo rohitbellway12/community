@@ -384,12 +384,18 @@
                                 </td>
 
                                 <td class="py-3.5 px-4 text-center">
-                                    @if($v->proof_image)
-                                        <button type="button" @click="openProof('{{ asset('storage/' . $v->proof_image) }}')"
-                                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-200 hover:bg-slate-100 text-[11px] font-bold text-slate-800 transition cursor-pointer">
-                                            <span>🔍</span>
-                                            <span>View Proof</span>
-                                        </button>
+                                    @php $proofUrls = $v->proof_urls; @endphp
+                                    @if(!empty($proofUrls))
+                                        <div class="flex flex-wrap items-center justify-center gap-1.5">
+                                            @foreach($proofUrls as $idx => $url)
+                                                <button type="button" @click="openProof('{{ $url }}')"
+                                                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-[10.5px] font-bold text-slate-800 transition cursor-pointer">
+                                                    <span>📸 Proof {{ count($proofUrls) > 1 ? '#' . ($idx + 1) : '' }}</span>
+                                                </button>
+                                            @endforeach
+                                        </div>
+                                    @elseif($v->post_url)
+                                        <a href="{{ $v->post_url }}" target="_blank" class="text-indigo-600 hover:underline text-[11px] font-bold">Link</a>
                                     @else
                                         <span class="text-slate-400 text-[11px]">Instant Share Link</span>
                                     @endif

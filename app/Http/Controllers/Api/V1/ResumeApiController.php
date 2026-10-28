@@ -525,7 +525,10 @@ class ResumeApiController extends Controller
         // Accept flexible keys from both Mobile App and Web
         $platform = $request->input('platform') ?: ($request->input('channel') ?: 'whatsapp');
         $postUrl = $request->input('post_url') ?: $request->input('share_link');
-        $hasProofFile = $request->hasFile('proof_image') || $request->hasFile('screenshot');
+        $hasProofFile = $request->hasFile('proof_image') 
+            || $request->hasFile('proof_images') 
+            || $request->hasFile('screenshot') 
+            || $request->hasFile('screenshots');
 
         $method = $request->input('verification_method');
         if (empty($method)) {
@@ -563,31 +566,56 @@ class ResumeApiController extends Controller
             ], 'Watermark successfully removed! Your resume is now clean.');
         }
 
-        // Screenshot proof verification
+        // Screenshot proof verification (supports both single file and multiple images array)
         if (!$hasProofFile) {
             return $this->errorResponse('Please upload a screenshot proof showing your share.', 422);
         }
 
-        $file = $request->file('proof_image') ?: $request->file('screenshot');
-        $proofPath = $file->store('resume-proofs', 'public');
+        // Collect all files (whether sent as proof_image, proof_images[], screenshot, screenshots[])
+        $rawFiles = $request->file('proof_images') 
+            ?: ($request->file('proof_image') 
+            ?: ($request->file('screenshots') 
+            ?: $request->file('screenshot')));
+
+        $fileList = is_array($rawFiles) ? $rawFiles : [$rawFiles];
+        $storedPaths = [];
+
+        foreach ($fileList as $f) {
+            if ($f && $f->isValid()) {
+                $storedPaths[] = $f->store('resume-proofs', 'public');
+            }
+        }
+
+        if (empty($storedPaths)) {
+            return $this->errorResponse('No valid proof images were uploaded. Please try again.', 422);
+        }
+
+        $primaryProof = $storedPaths[0];
 
         $verification = ResumeShareVerification::create([
             'resume_id' => $resume->id,
             'user_id' => $user->id,
             'platform' => $platform,
             'verification_method' => 'screenshot',
-            'proof_image' => $proofPath,
+            'proof_image' => $primaryProof,
+            'proof_images' => $storedPaths,
             'post_url' => $postUrl,
             'status' => 'pending',
         ]);
+
+        $proofUrls = array_map(function ($path) {
+            return asset('storage/' . $path);
+        }, $storedPaths);
 
         return $this->successResponse([
             'verification_id' => $verification->id,
             'status' => 'pending',
             'is_watermark_removed' => (bool) $resume->is_watermark_removed,
+            'proof_images_count' => count($storedPaths),
+            'proof_images' => $proofUrls,
             'preview_url' => url("/api/v1/resumes/{$resume->id}/preview"),
             'download_pdf_url' => url("/api/v1/resumes/{$resume->id}/download"),
-        ], 'Your share screenshot proof has been submitted for admin verification.');
+        ], 'Your share screenshot proof (' . count($storedPaths) . ' image' . (count($storedPaths) > 1 ? 's' : '') . ') has been submitted for admin verification.');
     }
 
     /**
