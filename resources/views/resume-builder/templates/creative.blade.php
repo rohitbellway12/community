@@ -25,10 +25,66 @@
 
         .page {
             position: relative;
-            width: 100%;
-            max-width: 840px;
+            width: 800px;
+            min-width: 800px;
+            max-width: 800px;
+            min-height: 1130px;
             margin: 0 auto;
             background: #ffffff;
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-sizing: border-box;
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .a4-canvas-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: {{ !empty($isEmbed) ? '10px 4px 24px 4px' : '16px 8px 40px 8px' }};
+            box-sizing: border-box;
+            transition: height 0.2s ease;
+        }
+        .a4-zoom-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            width: 100%;
+            max-width: 800px;
+        }
+        .a4-zoom-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #0F172A;
+            color: #FFFFFF;
+            border: 1px solid #334155;
+            padding: 5px 12px;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            transition: all 0.15s ease;
+        }
+        .a4-zoom-pill:hover {
+            background: #1E293B;
+            border-color: #F59E0B;
+            color: #F59E0B;
+        }
+        .a4-page-badge {
+            font-size: 10.5px;
+            font-weight: 700;
+            color: #64748B;
+            background: #E2E8F0;
+            padding: 3px 9px;
+            border-radius: 9999px;
         }
 
         /* Watermark (for unverified user drafts) */
@@ -457,39 +513,11 @@
             }
         }
 
-        @if(empty($isEmbed))
-        /* Mobile & Tablet Responsive View */
+        /* Mobile & Tablet Responsive View - Keeps A4 Proportion through Canvas Auto-Scaling */
         @media screen and (max-width: 768px) {
             body {
-                padding: 10px 4px !important;
-                background: #f8fafc !important;
-            }
-            .page {
-                border-radius: 6px !important;
-                max-width: 100% !important;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.06) !important;
-            }
-            .header-banner {
-                padding: 18px 14px !important;
-            }
-            .name-title-box h1 {
-                font-size: 18pt !important;
-            }
-            .name-title-box .role-badge {
-                font-size: 8.5pt !important;
-            }
-            .col-sidebar {
-                width: 38% !important;
-                padding: 14px 10px !important;
-                font-size: 8.5pt !important;
-            }
-            .col-main {
-                width: 62% !important;
-                padding: 14px 14px !important;
-                font-size: 8.5pt !important;
-            }
-            .main-title, .side-title {
-                font-size: 9.5pt !important;
+                padding: 6px 2px !important;
+                background: #f1f5f9 !important;
             }
             .web-preview-bar {
                 padding: 10px 12px !important;
@@ -515,39 +543,6 @@
                 font-size: 10pt !important;
             }
         }
-        @endif
-
-        @if(!empty($isEmbed))
-        @media screen {
-            html, body {
-                margin: 0 !important;
-                padding: 0 !important;
-                background: #e2e8f0 !important;
-                overflow-x: hidden !important;
-            }
-            .page {
-                width: 840px !important;
-                max-width: 840px !important;
-                margin: 0 auto !important;
-                border-radius: 0 !important;
-                overflow: hidden !important;
-            }
-            .top-banner {
-                background-color: #0F1C3F !important;
-                background: linear-gradient(135deg, #091124 0%, #0F1C3F 65%, #182C5E 100%) !important;
-                color: #ffffff !important;
-            }
-            .name { color: #ffffff !important; }
-            .layout-table {
-                width: 100% !important;
-                table-layout: fixed !important;
-            }
-            .col-sidebar, .col-main {
-                overflow-wrap: anywhere;
-                word-break: break-word;
-            }
-        }
-        @endif
 
         @page {
             size: A4 portrait;
@@ -555,7 +550,8 @@
         }
 
         @media print {
-            .web-preview-bar { display: none !important; }
+            .web-preview-bar, .a4-zoom-bar, .no-print { display: none !important; }
+            .a4-canvas-container { padding: 0 !important; height: auto !important; width: 100% !important; }
             html, body {
                 background: #ffffff !important;
                 padding: 0 !important;
@@ -568,9 +564,11 @@
                 box-shadow: none !important;
                 border-radius: 0 !important;
                 border: none !important;
+                width: 100% !important;
+                min-width: 0 !important;
                 max-width: 100% !important;
                 margin: 0 !important;
-                width: 100% !important;
+                transform: none !important;
             }
             .top-banner {
                 padding: 26px 32px 22px 32px !important;
@@ -810,7 +808,19 @@
         </div>
     @endif
 
-    <div class="page">
+    <div class="a4-canvas-container" id="a4CanvasContainer">
+        @if(!$forPdf && empty($isEmbed))
+        <div class="a4-zoom-bar no-print" id="a4ZoomBar">
+            <div class="a4-zoom-group">
+                <button type="button" id="a4FitBtn" class="a4-zoom-pill is-active" onclick="setA4ScaleMode('fit')">Fit</button>
+                <button type="button" id="a4FullBtn" class="a4-zoom-pill" onclick="setA4ScaleMode('full')">100%</button>
+            </div>
+            <span class="a4-page-badge">A4 · 210×297mm</span>
+        </div>
+        @endif
+
+        <div class="a4-sheet-wrap" id="a4SheetWrap">
+        <div class="page" id="resumePage">
         {{-- WATERMARK (Shown only for unverified user drafts) --}}
         @if(!$isClean)
             <div class="watermark">
@@ -1047,7 +1057,11 @@
                 </td>
             </tr>
         </table>
+        </div>
+        </div>
     </div>
+
+    @include('resume-builder.partials.a4-fit-script')
 
     @if(request()->boolean('print'))
         <script>
