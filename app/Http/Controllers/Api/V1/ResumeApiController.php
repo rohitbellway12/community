@@ -393,7 +393,7 @@ class ResumeApiController extends Controller
     public function aiPolishSummary(Request $request, OpenAiResumeService $aiService): JsonResponse
     {
         $summary = $request->input('summary', '');
-        $targetRole = $request->input('target_role', 'Professional');
+        $targetRole = $request->input('target_role') ?: ($request->input('job_title') ?: 'Professional');
 
         if (empty(trim($summary))) {
             return $this->errorResponse('Summary text is required for AI enhancement.', 422);
@@ -404,6 +404,7 @@ class ResumeApiController extends Controller
         return $this->successResponse([
             'polished_summary' => $polished,
             'original_summary' => $summary,
+            'target_role' => $targetRole,
         ], 'Summary polished successfully.');
     }
 
@@ -414,7 +415,7 @@ class ResumeApiController extends Controller
     public function aiPolishExperience(Request $request, OpenAiResumeService $aiService): JsonResponse
     {
         $notes = $request->input('notes', '');
-        $role = $request->input('role', 'Professional');
+        $role = $request->input('role') ?: ($request->input('job_title') ?: ($request->input('target_role') ?: 'Professional'));
         $company = $request->input('company', '');
 
         if (empty(trim($notes))) {
@@ -426,6 +427,7 @@ class ResumeApiController extends Controller
         return $this->successResponse([
             'bullets' => $bullets,
             'raw_notes' => $notes,
+            'role' => $role,
         ], 'Experience bullets generated successfully.');
     }
 
@@ -435,14 +437,17 @@ class ResumeApiController extends Controller
      */
     public function aiSuggestSkills(Request $request, OpenAiResumeService $aiService): JsonResponse
     {
-        $role = $request->input('target_role', 'Software Engineer');
+        $role = $request->input('target_role') ?: ($request->input('job_title') ?: ($request->input('role') ?: 'Professional'));
         $existing = $request->input('existing_skills', []);
 
         if (!is_array($existing)) {
             $existing = [];
         }
 
-        $suggested = $aiService->suggestSkills($role, $existing);
+        $suggested = $aiService->suggestSkills($role);
+        if (!empty($existing)) {
+            $suggested = array_values(array_diff($suggested, $existing));
+        }
 
         return $this->successResponse([
             'skills' => $suggested,

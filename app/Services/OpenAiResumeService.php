@@ -249,28 +249,73 @@ class OpenAiResumeService
     }
 
     /**
-     * Intelligent fallback skills based on keyword matching.
+     * Intelligent fallback skills based on keyword matching across major industries.
      */
     protected function smartFallbackSkills(string $title): array
     {
         $titleLower = strtolower($title);
 
-        if (str_contains($titleLower, 'developer') || str_contains($titleLower, 'software') || str_contains($titleLower, 'engineer')) {
+        // 1. Software / Tech / Developers
+        if (str_contains($titleLower, 'developer') || str_contains($titleLower, 'software') || str_contains($titleLower, 'coder') || str_contains($titleLower, 'programmer') || str_contains($titleLower, 'frontend') || str_contains($titleLower, 'backend') || str_contains($titleLower, 'fullstack')) {
             return ['JavaScript / TypeScript', 'PHP / Laravel', 'RESTful APIs', 'Database Design (MySQL/PostgreSQL)', 'Git Version Control', 'Agile / Scrum', 'Problem Solving', 'Unit Testing'];
         }
 
-        if (str_contains($titleLower, 'design') || str_contains($titleLower, 'ui') || str_contains($titleLower, 'ux')) {
+        // 2. Finance, Accounting & Banking
+        if (str_contains($titleLower, 'account') || str_contains($titleLower, 'finance') || str_contains($titleLower, 'audit') || str_contains($titleLower, 'bank') || str_contains($titleLower, 'tax') || str_contains($titleLower, 'ca')) {
+            return ['Financial Accounting', 'Auditing & Compliance', 'Taxation & GST', 'Balance Sheet Reconciliation', 'Tally / ERP', 'Advanced Excel Modeling', 'Budgeting & Forecasting', 'Financial Reporting'];
+        }
+
+        // 3. Human Resources & Recruitment
+        if (str_contains($titleLower, 'hr') || str_contains($titleLower, 'human resource') || str_contains($titleLower, 'recruit') || str_contains($titleLower, 'talent') || str_contains($titleLower, 'people')) {
+            return ['Talent Acquisition', 'End-to-End Recruitment', 'Employee Relations', 'Payroll Management', 'HR Policies & Compliance', 'Onboarding & Training', 'Performance Appraisal', 'Conflict Resolution'];
+        }
+
+        // 4. Healthcare, Medical & Nursing
+        if (str_contains($titleLower, 'nurse') || str_contains($titleLower, 'medical') || str_contains($titleLower, 'doctor') || str_contains($titleLower, 'health') || str_contains($titleLower, 'pharma') || str_contains($titleLower, 'clinic')) {
+            return ['Patient Care & Safety', 'Clinical Documentation', 'Vital Signs Monitoring', 'Emergency Response', 'Medication Administration', 'Infection Control', 'Medical Terminology', 'Healthcare Compliance'];
+        }
+
+        // 5. Teaching & Education
+        if (str_contains($titleLower, 'teach') || str_contains($titleLower, 'educat') || str_contains($titleLower, 'professor') || str_contains($titleLower, 'tutor') || str_contains($titleLower, 'trainer') || str_contains($titleLower, 'faculty')) {
+            return ['Curriculum Development', 'Classroom Management', 'Lesson Planning', 'Student Assessment & Evaluation', 'Educational Technology', 'Pedagogy', 'Interactive Learning', 'Communication & Mentorship'];
+        }
+
+        // 6. Design, UI/UX & Creative
+        if (str_contains($titleLower, 'design') || str_contains($titleLower, 'ui') || str_contains($titleLower, 'ux') || str_contains($titleLower, 'graphic') || str_contains($titleLower, 'animat') || str_contains($titleLower, 'art')) {
             return ['Figma', 'UI/UX Design', 'Wireframing & Prototyping', 'Design Systems', 'User Research', 'Adobe Creative Suite', 'Responsive Design', 'Visual Communication'];
         }
 
-        if (str_contains($titleLower, 'market') || str_contains($titleLower, 'sales') || str_contains($titleLower, 'growth')) {
-            return ['Digital Marketing', 'SEO / SEM', 'Content Strategy', 'Social Media Management', 'Google Analytics', 'CRM Systems', 'Lead Generation', 'Communication & Negotiation'];
+        // 7. Marketing, Sales & Growth
+        if (str_contains($titleLower, 'market') || str_contains($titleLower, 'sales') || str_contains($titleLower, 'growth') || str_contains($titleLower, 'seo') || str_contains($titleLower, 'brand') || str_contains($titleLower, 'business develop')) {
+            return ['Digital Marketing', 'SEO / SEM', 'Content Strategy', 'Social Media Management', 'Google Analytics', 'CRM Systems', 'Lead Generation', 'Client Relationship & Negotiation'];
         }
 
-        if (str_contains($titleLower, 'data') || str_contains($titleLower, 'analyst')) {
-            return ['Data Analysis', 'SQL', 'Python / R', 'Data Visualization (PowerBI / Tableau)', 'Excel Modeling', 'Statistical Analysis', 'Critical Thinking', 'Business Intelligence'];
+        // 8. Data & Analytics
+        if (str_contains($titleLower, 'data') || str_contains($titleLower, 'analyst') || str_contains($titleLower, 'bi') || str_contains($titleLower, 'business intelligence')) {
+            return ['Data Analysis', 'SQL Queries', 'Python / R', 'Data Visualization (PowerBI / Tableau)', 'Excel Modeling', 'Statistical Analysis', 'Critical Thinking', 'Business Intelligence'];
         }
 
+        // 9. Civil, Mechanical & Core Engineering
+        if (str_contains($titleLower, 'civil') || str_contains($titleLower, 'mechanical') || str_contains($titleLower, 'electrical') || str_contains($titleLower, 'construction') || str_contains($titleLower, 'architect')) {
+            return ['AutoCAD / SolidWorks', 'Site Inspection & Supervision', 'Project Planning & Estimation', 'Quality Assurance & Safety', 'Structural Analysis', 'Vendor Management', 'Technical Drawing', 'Compliance & Codes'];
+        }
+
+        // 10. Customer Support & Operations
+        if (str_contains($titleLower, 'support') || str_contains($titleLower, 'customer') || str_contains($titleLower, 'client') || str_contains($titleLower, 'service') || str_contains($titleLower, 'call center') || str_contains($titleLower, 'bpo')) {
+            return ['Customer Relationship Management (CRM)', 'Helpdesk / Ticketing Systems', 'Active Listening & Empathy', 'Conflict Resolution', 'Service Level Agreement (SLA) Adherence', 'Client Retention', 'Problem Solving', 'Multi-channel Support'];
+        }
+
+        // 11. Hospitality, Hotel & Culinary
+        if (str_contains($titleLower, 'hotel') || str_contains($titleLower, 'chef') || str_contains($titleLower, 'cook') || str_contains($titleLower, 'hospitality') || str_contains($titleLower, 'restaurant') || str_contains($titleLower, 'food')) {
+            return ['Food Safety & Hygiene (HACCP)', 'Menu Planning & Execution', 'Guest Relations & Hospitality', 'Inventory & Cost Control', 'Team Leadership', 'Fine Dining Standards', 'Kitchen Operations', 'Customer Satisfaction'];
+        }
+
+        // 12. Supply Chain, Logistics & Warehouse
+        if (str_contains($titleLower, 'logistics') || str_contains($titleLower, 'supply') || str_contains($titleLower, 'warehouse') || str_contains($titleLower, 'inventory') || str_contains($titleLower, 'procurement')) {
+            return ['Supply Chain Optimization', 'Inventory Control & Auditing', 'Logistics & Dispatch Coordination', 'Vendor Negotiation', 'Warehouse Management Systems (WMS)', 'Route Planning', 'Quality Inspection', 'Procurement'];
+        }
+
+        // Default General Professional Competencies
         return ['Team Leadership', 'Project Management', 'Cross-functional Collaboration', 'Analytical Problem Solving', 'Strategic Planning', 'Written & Verbal Communication', 'Time Management', 'Process Optimization'];
     }
 }
