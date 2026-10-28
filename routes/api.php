@@ -272,10 +272,15 @@ Route::prefix('v1')->group(function () {
         Route::post('tests/{test}/attempts/{attempt}/mark-review', [StudentTestController::class, 'toggleMarkReview'])->name('api.v1.tests.mark-review');
         Route::post('tests/{test}/attempts/{attempt}/submit', [StudentTestController::class, 'submit'])->name('api.v1.tests.submit');
         Route::get('tests/{test}/attempts/{attempt}/result', [StudentTestController::class, 'result'])->name('api.v1.tests.result');
+    });
 
     // ============================================================
     // RESUME BUILDER (Auth Required)
     // ============================================================
+
+    // Mobile App Direct Preview & PDF Download (Supports Bearer Header & ?token= query parameter)
+    Route::get('resumes/{id}/preview', [ResumeApiController::class, 'preview'])->whereNumber('id')->name('api.v1.resumes.preview');
+    Route::get('resumes/{id}/download', [ResumeApiController::class, 'downloadPdf'])->whereNumber('id')->name('api.v1.resumes.download');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('resumes', [ResumeApiController::class, 'index'])->name('api.v1.resumes.index');
@@ -293,6 +298,4 @@ Route::prefix('v1')->group(function () {
         Route::post('resume/ai/enhance-bullets', [ResumeApiController::class, 'aiPolishExperience'])->name('api.v1.resume.ai.experience');
         Route::post('resume/ai/suggest-skills', [ResumeApiController::class, 'aiSuggestSkills'])->name('api.v1.resume.ai.skills');
     });
-    });
-
 });

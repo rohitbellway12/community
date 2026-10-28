@@ -450,6 +450,64 @@
             }
         }
 
+        /* Mobile & Tablet Responsive View */
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 10px 4px !important;
+                background: #f8fafc !important;
+            }
+            .page {
+                border-radius: 6px !important;
+                max-width: 100% !important;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.06) !important;
+            }
+            .header-banner {
+                padding: 18px 14px !important;
+            }
+            .name-title-box h1 {
+                font-size: 18pt !important;
+            }
+            .name-title-box .role-badge {
+                font-size: 8.5pt !important;
+            }
+            .col-sidebar {
+                width: 38% !important;
+                padding: 14px 10px !important;
+                font-size: 8.5pt !important;
+            }
+            .col-main {
+                width: 62% !important;
+                padding: 14px 14px !important;
+                font-size: 8.5pt !important;
+            }
+            .main-title, .side-title {
+                font-size: 9.5pt !important;
+            }
+            .web-preview-bar {
+                padding: 10px 12px !important;
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 8px !important;
+            }
+            .preview-meta, .preview-actions {
+                width: 100% !important;
+                justify-content: center !important;
+            }
+            .web-preview-bar a, .web-preview-bar button {
+                display: block !important;
+                width: 100% !important;
+                margin: 4px 0 !important;
+                text-align: center !important;
+                box-sizing: border-box !important;
+            }
+            .watermark {
+                font-size: 24pt !important;
+            }
+            .watermark-sub {
+                font-size: 10pt !important;
+            }
+        }
+
         @page {
             size: A4 portrait;
             margin: 0;
@@ -653,12 +711,12 @@
                 
                 // Primary Diagonal Watermark
                 $watermarkText = "{{ addslashes($setting->watermark_text ?: 'REIAC COMMUNITY') }}";
-                $pdf->page_text($w * 0.12, $h * 0.56, $watermarkText, $font, 46, [0.85, 0.20, 0.20], 0, 0, -35);
+                $pdf->page_text($w * 0.10, $h * 0.44, $watermarkText, $font, 36, [0.85, 0.20, 0.20], 0, 0, -32);
                 
                 // Watermark Subtitle
                 $subFont = $fontMetrics->get_font("helvetica", "bold");
                 $subText = "{{ ($resume->language ?? 'en') === 'ko' ? '워터마크 제거를 위해 공유하세요 • reiac.org' : 'SHARE TO REMOVE WATERMARK • REIAC.ORG' }}";
-                $pdf->page_text($w * 0.16, $h * 0.60, $subText, $subFont, 12, [0.85, 0.20, 0.20], 0, 0, -35);
+                $pdf->page_text($w * 0.16, $h * 0.48, $subText, $subFont, 11, [0.85, 0.20, 0.20], 0, 0, -32);
                 
                 if (method_exists($pdf, "set_opacity")) {
                     $pdf->set_opacity(1.0, "Normal");
@@ -914,7 +972,7 @@
                                         <div class="project-desc">{{ $proj['description'] }}</div>
                                     @endif
                                     @if(!empty($proj['url']))
-                                        <div style="font-size: 8pt; color: #2563EB; margin-top: 4px; font-weight: 600;">🔗 {{ $proj['url'] }}</div>
+                                        <div style="font-size: 8pt; color: #2563EB; margin-top: 4px; font-weight: 600;">Link: {{ $proj['url'] }}</div>
                                     @endif
                                 </div>
                             @endforeach
@@ -922,7 +980,8 @@
                     @endif
 
                     {{-- FORMAL DECLARATION, DATE & SIGNATURE BLOCK --}}
-                    <div class="declaration-block" style="margin-top: 18px; padding-top: 10px; border-top: 1px solid #cbd5e1; font-size: 8pt; color: #475569; page-break-inside: avoid;">
+                    @if(!empty($resume->personal_info['declaration_date']) || !empty($resume->personal_info['signature_name']) || ($resume->language ?? '') === 'ko')
+                    <div class="declaration-block" style="margin-top: 14px; padding-top: 8px; border-top: 1px solid #cbd5e1; font-size: 8pt; color: #475569; page-break-inside: avoid;">
                         <div style="font-style: italic; margin-bottom: 6px; color: #64748b;">
                             {{ $isKo ? '위 기재사항은 사실과 틀림없음을 확인합니다.' : 'I hereby declare that all the information furnished above is true and complete to the best of my knowledge.' }}
                         </div>
@@ -942,6 +1001,7 @@
                             </tr>
                         </table>
                     </div>
+                    @endif
 
                 </td>
             </tr>

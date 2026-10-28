@@ -2,6 +2,7 @@
 <html lang="{{ ($resume->language ?? 'en') === 'ko' ? 'ko' : 'en' }}">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $resume->title }} - {{ $resume->personal_info['full_name'] ?? 'Candidate' }}</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -165,6 +166,77 @@
             }
         }
 
+        /* Mobile & Tablet Responsive View */
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 10px 6px !important;
+                background: #f8fafc !important;
+            }
+            .page {
+                padding: 20px 16px !important;
+                border-radius: 6px !important;
+                max-width: 100% !important;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.06) !important;
+            }
+            .name {
+                font-size: 18pt !important;
+                letter-spacing: 0.5px !important;
+            }
+            .title {
+                font-size: 10pt !important;
+            }
+            .contact {
+                font-size: 8.5pt !important;
+                line-height: 1.5 !important;
+                word-break: break-word !important;
+            }
+            .section-title {
+                font-size: 9.5pt !important;
+            }
+            .row {
+                display: block !important;
+            }
+            .left {
+                float: none !important;
+                display: block !important;
+                font-size: 9.5pt !important;
+            }
+            .right {
+                float: none !important;
+                display: block !important;
+                text-align: left !important;
+                margin-top: 2px !important;
+                font-size: 8pt !important;
+                color: #b45309 !important;
+            }
+            .sub-left {
+                font-size: 8.5pt !important;
+            }
+            .web-preview-bar {
+                padding: 10px 12px !important;
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 8px !important;
+            }
+            .web-preview-bar div {
+                text-align: center !important;
+                width: 100% !important;
+            }
+            .web-preview-bar a, .web-preview-bar button {
+                display: block !important;
+                width: 100% !important;
+                margin: 4px 0 !important;
+                text-align: center !important;
+                box-sizing: border-box !important;
+            }
+            .watermark {
+                font-size: 24pt !important;
+            }
+            .watermark-sub {
+                font-size: 10pt !important;
+            }
+        }
+
         @page {
             size: A4 portrait;
             margin: 0;
@@ -243,12 +315,12 @@
                 
                 // Primary Diagonal Watermark
                 $watermarkText = "{{ addslashes($setting->watermark_text ?: 'REIAC COMMUNITY') }}";
-                $pdf->page_text($w * 0.12, $h * 0.56, $watermarkText, $font, 46, [0.85, 0.20, 0.20], 0, 0, -35);
+                $pdf->page_text($w * 0.10, $h * 0.44, $watermarkText, $font, 36, [0.85, 0.20, 0.20], 0, 0, -32);
                 
                 // Watermark Subtitle
                 $subFont = $fontMetrics->get_font("helvetica", "bold");
                 $subText = "{{ ($resume->language ?? 'en') === 'ko' ? '워터마크 제거를 위해 공유하세요 • reiac.org' : 'SHARE TO REMOVE WATERMARK • REIAC.ORG' }}";
-                $pdf->page_text($w * 0.16, $h * 0.60, $subText, $subFont, 12, [0.85, 0.20, 0.20], 0, 0, -35);
+                $pdf->page_text($w * 0.16, $h * 0.48, $subText, $subFont, 11, [0.85, 0.20, 0.20], 0, 0, -32);
                 
                 if (method_exists($pdf, "set_opacity")) {
                     $pdf->set_opacity(1.0, "Normal");
@@ -443,17 +515,18 @@
         @endif
 
         {{-- FORMAL DECLARATION, DATE & SIGNATURE BLOCK --}}
-        <div class="declaration-block" style="margin-top: 18px; padding-top: 10px; border-top: 1px solid #cbd5e1; font-size: 8.5pt; color: #334155; page-break-inside: avoid;">
-            <div style="font-style: italic; margin-bottom: 8px; color: #475569;">
+        @if(!empty($resume->personal_info['declaration_date']) || !empty($resume->personal_info['signature_name']) || ($resume->language ?? '') === 'ko')
+        <div class="declaration-block" style="margin-top: 14px; padding-top: 8px; border-top: 1px solid #cbd5e1; font-size: 8pt; color: #334155; page-break-inside: avoid;">
+            <div style="font-style: italic; margin-bottom: 6px; color: #475569;">
                 {{ $isKo ? '위 기재사항은 사실과 틀림없음을 확인합니다.' : 'I hereby declare that all the information furnished above is true and complete to the best of my knowledge.' }}
             </div>
             <table style="width: 100%; border-collapse: collapse; margin-top: 4px;">
                 <tr>
-                    <td style="text-align: left; vertical-align: bottom; font-size: 8.5pt; color: #475569;">
+                    <td style="text-align: left; vertical-align: bottom; font-size: 8pt; color: #475569;">
                         <strong>{{ $isKo ? '작성일자 :' : 'Date :' }}</strong>
                         <span style="margin-left: 4px;">{{ $resume->personal_info['declaration_date'] ?? date($isKo ? 'Y년 m월 d일' : 'F d, Y') }}</span>
                     </td>
-                    <td style="text-align: right; vertical-align: bottom; font-size: 8.5pt;">
+                    <td style="text-align: right; vertical-align: bottom; font-size: 8pt;">
                         <strong>{{ $isKo ? '지원자(작성자) :' : 'Applicant Signature :' }}</strong>
                         <span style="display: inline-block; border-bottom: 1px solid #334155; min-width: 120px; text-align: center; font-weight: 700; color: #0f172a; padding: 0 8px; margin: 0 4px;">
                             {{ $resume->personal_info['signature_name'] ?? ($resume->personal_info['full_name'] ?? ($isKo ? '성명' : 'Candidate Name')) }}
@@ -463,6 +536,7 @@
                 </tr>
             </table>
         </div>
+        @endif
 
     </div>
 

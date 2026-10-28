@@ -216,8 +216,8 @@ class ResumeApiController extends Controller
                 'download_count' => (int) $r->download_count,
                 'created_at' => $r->created_at?->toIso8601String(),
                 'updated_at' => $r->updated_at?->toIso8601String(),
-                'preview_url' => url("/resume-builder/{$r->id}/preview"),
-                'download_pdf_url' => url("/resume-builder/{$r->id}/download"),
+                'preview_url' => url("/api/v1/resumes/{$r->id}/preview"),
+                'download_pdf_url' => url("/api/v1/resumes/{$r->id}/download"),
                 'verification_status' => $r->latestVerification?->status ?? null,
             ];
         });
@@ -254,8 +254,8 @@ class ResumeApiController extends Controller
 
         $response = $resume->toArray();
         $response['is_clean'] = $isClean;
-        $response['preview_url'] = url("/resume-builder/{$resume->id}/preview");
-        $response['download_pdf_url'] = url("/resume-builder/{$resume->id}/download");
+        $response['preview_url'] = url("/api/v1/resumes/{$resume->id}/preview");
+        $response['download_pdf_url'] = url("/api/v1/resumes/{$resume->id}/download");
 
         return $this->successResponse($response, 'Resume details retrieved.');
     }
@@ -340,8 +340,8 @@ class ResumeApiController extends Controller
             'template' => $resume->template,
             'language' => $resume->language,
             'is_clean' => $isClean,
-            'preview_url' => url("/resume-builder/{$resume->id}/preview"),
-            'download_pdf_url' => url("/resume-builder/{$resume->id}/download"),
+            'preview_url' => url("/api/v1/resumes/{$resume->id}/preview"),
+            'download_pdf_url' => url("/api/v1/resumes/{$resume->id}/download"),
         ], 'Resume saved successfully!');
     }
 
@@ -504,8 +504,127 @@ class ResumeApiController extends Controller
             'verification_id' => $verification->id,
             'status' => $verification->status,
             'is_watermark_removed' => (bool) $resume->is_watermark_removed,
-            'preview_url' => url("/resume-builder/{$resume->id}/preview"),
+            'preview_url' => url("/api/v1/resumes/{$resume->id}/preview"),
+            'download_pdf_url' => url("/api/v1/resumes/{$resume->id}/download"),
         ], $isInstant ? 'Watermark successfully removed!' : 'Proof submitted for verification.');
+    }
+
+    /**
+     * Preview resume via API (HTML embed for mobile WebView or PDF stream).
+     * GET /api/v1/resumes/{id}/preview
+     */
+    public function preview(Request $request, $id)
+    {
+        // Authenticate via Sanctum Bearer token OR ?token query parameter
+        $user = Auth::guard('sanctum')->user();
+        if (!$user && $request->has('token')) {
+            $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($request->query('token'));
+            if ($tokenModel) {
+                $user = $tokenModel->tokenable;
+            }
+        }
+
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        $resume = Resume::where('id', $id)->first();
+        if (!$resume) {
+            return response()->json(['success' => false, 'message' => 'Resume not found.'], 404);
+        }
+
+        $role = is_object($user->role) ? $user->role->value : $user->role;
+        $isAdmin = $role && trim(strtolower($role)) === 'admin';
+        if ($resume->user_id !== $user->id && !$isAdmin) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized access.'], 403);
+        }
+
+        $setting = ResumeSetting::config();
+        $isClean = $resume->is_watermark_removed || !$setting->watermark_enabled;
+
+        if ($request->query('format') === 'pdf' || $request->header('Accept') === 'application/pdf') {
+            return $this->downloadPdf($request, $id);
+        }
+
+        return view("resume-builder.templates.{$resume->template}", [
+            'resume' => $resume,
+            'setting' => $setting,
+            'isClean' => $isClean,
+            'forPdf' => false,
+            'isEmbed' => true,
+        ]);
+    }
+
+    /**
+     * Download resume PDF directly via API (Binary PDF stream).
+     * GET /api/v1/resumes/{id}/download
+     */
+    public function downloadPdf(Request $request, $id)
+    {
+        // Authenticate via Sanctum Bearer token OR ?token query parameter
+        $user = Auth::guard('sanctum')->user();
+        if (!$user && $request->has('token')) {
+            $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($request->query('token'));
+            if ($tokenModel) {
+                $user = $tokenModel->tokenable;
+            }
+        }
+
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        $resume = Resume::where('id', $id)->first();
+        if (!$resume) {
+            return response()->json(['success' => false, 'message' => 'Resume not found.'], 404);
+        }
+
+        $role = is_object($user->role) ? $user->role->value : $user->role;
+        $isAdmin = $role && trim(strtolower($role)) === 'admin';
+        if ($resume->user_id !== $user->id && !$isAdmin) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized access.'], 403);
+        }
+
+        $setting = ResumeSetting::config();
+        $isClean = $resume->is_watermark_removed || !$setting->watermark_enabled;
+
+        $resume->increment('download_count');
+
+        // Resolve candidate photo to base64 so DomPDF renders it instantly without HTTP calls
+        $personal = $resume->personal_info ?? [];
+        if (!empty($personal['photo_url'])) {
+            $photo = $personal['photo_url'];
+            if (!str_starts_with($photo, 'data:image')) {
+                $path = parse_url($photo, PHP_URL_PATH);
+                $cleanPath = preg_replace('#^/?(community/)?(public/)?#', '', $path);
+                $abs = public_path($cleanPath);
+                if (file_exists($abs)) {
+                    $type = pathinfo($abs, PATHINFO_EXTENSION);
+                    $data = file_get_contents($abs);
+                    $personal['photo_url'] = 'data:image/' . $type . ';base64,' . base64_encode($data);
+                    $resume->personal_info = $personal;
+                }
+            }
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView("resume-builder.templates.{$resume->template}", [
+            'resume' => $resume,
+            'setting' => $setting,
+            'isClean' => $isClean,
+            'forPdf' => true,
+        ])->setPaper('a4', 'portrait')
+          ->setOption([
+              'isHtml5ParserEnabled' => true,
+              'isRemoteEnabled' => true,
+              'isPhpEnabled' => true,
+              'dpi' => 96,
+              'defaultFont' => 'DejaVu Sans',
+              'enable_font_subsetting' => true,
+          ]);
+
+        $fileName = \Illuminate\Support\Str::slug($resume->personal_info['full_name'] ?? 'Resume') . '-CV.pdf';
+
+        return $pdf->download($fileName);
     }
 }
 

@@ -330,8 +330,9 @@ class ResumeBuilderController extends Controller
               'isHtml5ParserEnabled' => true,
               'isRemoteEnabled' => true,
               'isPhpEnabled' => true,
-              'dpi' => 150,
+              'dpi' => 96,
               'defaultFont' => 'DejaVu Sans',
+              'enable_font_subsetting' => true,
           ]);
 
         $fileName = \Illuminate\Support\Str::slug($resume->personal_info['full_name'] ?? 'Resume') . '-CV.pdf';

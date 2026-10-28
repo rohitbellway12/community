@@ -2,6 +2,7 @@
 <html lang="{{ ($resume->language ?? 'en') === 'ko' ? 'ko' : 'en' }}">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $resume->title }} - {{ $resume->personal_info['full_name'] ?? 'Candidate' }}</title>
     <style>
         * {
@@ -76,12 +77,12 @@
         table.kr-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 14px;
+            margin-bottom: 11px;
             font-size: 8.5pt;
         }
         table.kr-table th, table.kr-table td {
             border: 1px solid #94a3b8;
-            padding: 5px 7px;
+            padding: 6px 8px;
             vertical-align: middle;
         }
         table.kr-table th {
@@ -100,11 +101,11 @@
 
         /* Section Header Bar */
         .section-header {
-            font-size: 10pt;
+            font-size: 9.5pt;
             font-weight: 800;
             color: #0f172a;
-            margin-top: 14px;
-            margin-bottom: 5px;
+            margin-top: 10px;
+            margin-bottom: 4px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -118,9 +119,9 @@
 
         /* Photo Box */
         .photo-box {
-            width: 95px;
-            height: 120px;
-            border: 1px dashed #94a3b8;
+            width: 100px;
+            height: 125px;
+            border: 1px solid #cbd5e1;
             background: #f8fafc;
             display: flex;
             align-items: center;
@@ -222,6 +223,73 @@
                 margin-left: 8px;
             }
         }
+
+        /* Mobile & Tablet Responsive View for Korean Standard Table */
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 10px 4px !important;
+                background: #f8fafc !important;
+            }
+            .page {
+                padding: 14px 10px !important;
+                border-radius: 6px !important;
+                max-width: 100% !important;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.06) !important;
+            }
+            .doc-title {
+                font-size: 15pt !important;
+                letter-spacing: 2px !important;
+            }
+            .doc-subtitle {
+                font-size: 8pt !important;
+            }
+            table.kr-table {
+                font-size: 7.5pt !important;
+                margin-bottom: 8px !important;
+            }
+            table.kr-table th, table.kr-table td {
+                padding: 4px 4px !important;
+            }
+            .photo-box {
+                width: 70px !important;
+                height: 90px !important;
+            }
+            .section-header {
+                font-size: 8.5pt !important;
+                margin-top: 8px !important;
+                margin-bottom: 3px !important;
+            }
+            .pledge-box {
+                margin-top: 10px !important;
+                padding-top: 6px !important;
+            }
+            .pledge-text {
+                font-size: 7.5pt !important;
+            }
+            .web-preview-bar {
+                padding: 10px 12px !important;
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 8px !important;
+            }
+            .web-preview-bar div {
+                text-align: center !important;
+                width: 100% !important;
+            }
+            .web-preview-bar a, .web-preview-bar button {
+                display: block !important;
+                width: 100% !important;
+                margin: 4px 0 !important;
+                text-align: center !important;
+                box-sizing: border-box !important;
+            }
+            .watermark {
+                font-size: 22pt !important;
+            }
+            .watermark-sub {
+                font-size: 9pt !important;
+            }
+        }
         @page {
             size: A4 portrait;
             margin: 0;
@@ -264,7 +332,7 @@
         @if(!empty($forPdf))
         @page {
             size: A4 portrait;
-            margin: 8mm 10mm 8mm 10mm;
+            margin: 10mm 12mm 10mm 12mm;
         }
         html, body {
             margin: 0 !important;
@@ -301,12 +369,12 @@
                 
                 // Primary Diagonal Watermark
                 $watermarkText = "{{ addslashes($setting->watermark_text ?: 'REIAC COMMUNITY') }}";
-                $pdf->page_text($w * 0.12, $h * 0.56, $watermarkText, $font, 46, [0.85, 0.20, 0.20], 0, 0, -35);
+                $pdf->page_text($w * 0.10, $h * 0.44, $watermarkText, $font, 36, [0.85, 0.20, 0.20], 0, 0, -32);
                 
                 // Watermark Subtitle
                 $subFont = $fontMetrics->get_font("helvetica", "bold");
                 $subText = "{{ ($resume->language ?? 'en') === 'ko' ? '워터마크 제거를 위해 공유하세요 • reiac.org' : 'SHARE TO REMOVE WATERMARK • REIAC.ORG' }}";
-                $pdf->page_text($w * 0.16, $h * 0.60, $subText, $subFont, 12, [0.85, 0.20, 0.20], 0, 0, -35);
+                $pdf->page_text($w * 0.16, $h * 0.48, $subText, $subFont, 11, [0.85, 0.20, 0.20], 0, 0, -32);
                 
                 if (method_exists($pdf, "set_opacity")) {
                     $pdf->set_opacity(1.0, "Normal");
@@ -408,10 +476,10 @@
                             @if(!empty($personal['photo_url']))
                                 <img src="{{ $personal['photo_url'] }}" alt="Photo">
                             @else
-                                <div>
-                                    <span style="font-size: 16pt;">📷</span><br>
-                                    <span>{{ $isKo ? '사진' : 'Photo' }}</span><br>
-                                    <span style="font-size: 6.5pt; color: #94a3b8;">(3cm x 4cm)</span>
+                                <div style="padding-top: 25px; line-height: 1.4;">
+                                    <div style="font-size: 11pt; color: #94a3b8; font-weight: bold;">[ PHOTO ]</div>
+                                    <div style="font-size: 8pt; color: #64748b; margin-top: 4px;">{{ $isKo ? '사진 부착' : 'Attach Photo' }}</div>
+                                    <div style="font-size: 7pt; color: #94a3b8; margin-top: 2px;">(3cm x 4cm)</div>
                                 </div>
                             @endif
                         </div>
@@ -441,10 +509,10 @@
                         @if(!empty($personal['linkedin']) || !empty($personal['github']))
                             <div style="font-size: 7.5pt; color: #475569; margin-top: 2px;">
                                 @if(!empty($personal['linkedin']))
-                                    <span style="margin-right: 10px;">🔗 {{ $personal['linkedin'] }}</span>
+                                    <span style="margin-right: 10px;">LinkedIn: {{ $personal['linkedin'] }}</span>
                                 @endif
                                 @if(!empty($personal['github']))
-                                    <span>💻 {{ $personal['github'] }}</span>
+                                    <span>GitHub: {{ $personal['github'] }}</span>
                                 @endif
                             </div>
                         @endif
@@ -489,7 +557,10 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="center" style="color: #94a3b8; padding: 10px;">{{ $isKo ? '기재된 학력 정보가 없습니다.' : 'No education history recorded.' }}</td>
+                        <td class="center">-</td>
+                        <td class="center" style="color: #64748b;">{{ $isKo ? '해당사항 없음' : 'None / Not Applicable' }}</td>
+                        <td class="center">-</td>
+                        <td class="center">-</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -547,7 +618,10 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="center" style="color: #94a3b8; padding: 10px;">{{ $isKo ? '기재된 경력사항이 없습니다.' : 'No experience records added.' }}</td>
+                        <td class="center">-</td>
+                        <td class="center" style="color: #64748b;">{{ $isKo ? '해당사항 없음' : 'None / Not Applicable' }}</td>
+                        <td class="center">-</td>
+                        <td class="center">-</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -641,16 +715,20 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td class="center">{{ $military['status'] ?? ($isKo ? '군필 / 해당없음' : 'Completed / N/A') }}</td>
+                            <td class="center">{{ !empty($military['status']) ? ($isKo && $military['status'] === 'exempted' ? '면제' : ($military['status'] === 'completed' ? ($isKo ? '군필' : 'Completed') : $military['status'])) : ($isKo ? '해당없음' : 'N/A') }}</td>
                             <td class="center">
                                 @if(!empty($military['branch']) && !empty($military['rank']))
                                     {{ $military['branch'] }} / {{ $military['rank'] }}
+                                @elseif(!empty($military['branch']))
+                                    {{ $military['branch'] }}
+                                @elseif(!empty($military['rank']))
+                                    {{ $military['rank'] }}
                                 @else
-                                    {{ $military['branch'] ?? ($military['rank'] ?? ($isKo ? '육군 / 병장' : 'Army / Sergeant')) }}
+                                    -
                                 @endif
                             </td>
                             <td class="center">
-                                {{ $military['period'] ?? ($isKo ? '만기제대' : 'Honorable Discharge') }}
+                                {{ $military['period'] ?? '-' }}
                                 @if(!empty($military['discharge_reason']))
                                     <div style="font-size: 7pt; color: #64748b;">({{ $military['discharge_reason'] }})</div>
                                 @endif
@@ -730,73 +808,78 @@
             </div>
         @endif
 
-        {{-- 6. KOREAN SELF-INTRODUCTION / COVER LETTER (자기소개서) --}}
-        <div style="page-break-before: always; margin-top: 18px;"></div>
-
-        <div class="section-header" style="margin-top: 10px; margin-bottom: 12px; font-size: 10.5pt;">
-            <div><span class="sec-num">6.</span> {{ $isKo ? '자 기 소 개 서 (Personal Statement)' : 'Personal Statement' }}</div>
-            <span style="font-size: 8pt; color: #64748b; font-weight: normal;">{{ $isKo ? '지원자: ' . ($personal['full_name'] ?? '성명') : 'Candidate: ' . ($personal['full_name'] ?? 'Candidate') }}</span>
-        </div>
-
-        <div class="doc-title-wrap" style="margin-top: 8px; margin-bottom: 14px;">
-            <h2 class="doc-title" style="font-size: 18pt;">{{ $isKo ? '자 기 소 개 서' : 'PERSONAL STATEMENT' }}</h2>
-            <div class="doc-subtitle">{{ $isKo ? '(성장과정 • 성격의 장단점 • 직무역량 • 지원동기)' : '(Growth • Personality • Core Competencies • Motivation)' }}</div>
-        </div>
-
-        {{-- 1. Growth Process --}}
-        <div class="essay-block">
-            <div class="essay-title">{{ $isKo ? '1. 성장과정 (Growth Background & Values)' : '1. Background & Personal Values' }}</div>
-            <div class="essay-content">{{ $selfIntro['growth'] ?? ($resume->summary ?? ($isKo ? '도전적인 자세와 성실함을 바탕으로 목표를 설정하고 끊임없이 성장해 왔습니다.' : 'Driven by curiosity and a commitment to excellence, I have consistently pursued growth and learning.')) }}</div>
-        </div>
-
-        {{-- 2. Personality Strengths --}}
-        <div class="essay-block">
-            <div class="essay-title">{{ $isKo ? '2. 성격의 장단점 및 생활신조 (Personality & Work Ethic)' : '2. Key Strengths & Work Ethic' }}</div>
-            <div class="essay-content">{{ $selfIntro['personality'] ?? ($isKo ? '긍정적인 마인드와 철저한 실행력으로 팀 프로젝트에서 신뢰받는 조력자 역할을 해왔습니다.' : 'A proactive problem-solver and collaborative team player known for reliable execution and resilience under pressure.') }}</div>
-        </div>
-
-        {{-- 3. Key Projects & Job Competencies --}}
-        <div class="essay-block">
-            <div class="essay-title">{{ $isKo ? '3. 주요경력 및 직무수행 역량 (Key Projects & Job Competencies)' : '3. Core Competencies & Key Projects' }}</div>
-            <div class="essay-content">
-@if(!empty($selfIntro['strengths']))
-{{ $selfIntro['strengths'] }}
-@elseif(!empty($resume->projects) && is_array($resume->projects) && count($resume->projects) > 0)
-@foreach($resume->projects as $p)
-• {{ $p['title'] ?? '' }}{{ !empty($p['tech']) ? ' (' . $p['tech'] . ')' : '' }}: {{ $p['description'] ?? '' }}
-@endforeach
-@else
-{{ $isKo ? '다양한 직무 프로젝트를 직접 주도하며 문제 해결 능력과 실무 감각을 체득했습니다.' : 'Led multiple technical initiatives demonstrating engineering rigor and cross-functional leadership.' }}
-@endif
-            </div>
-        </div>
-
-        {{-- 4. Reason for Applying & Future Aspirations --}}
-        <div class="essay-block">
-            <div class="essay-title">{{ $isKo ? '4. 지원동기 및 입사 후 포부 (Motivation for Applying & Future Goals)' : '4. Motivation for Applying & Future Aspirations' }}</div>
-            <div class="essay-content">{{ !empty($selfIntro['motivation_and_aspirations']) ? $selfIntro['motivation_and_aspirations'] : ($selfIntro['motivation'] ?? ($isKo ? '귀사의 혁신적인 비전에 깊이 공감하며, 축적된 역량을 바탕으로 회사와 함께 지속적인 성과를 창출하겠습니다.' : 'Deeply aligned with the organizational vision, I aim to leverage my skills to deliver measurable business impact and long-term value.')) }}</div>
-        </div>
-
-        {{-- 7. PLEDGE & SIGNATURE BLOCK --}}
-        <div class="section-header" style="margin-top: 18px; margin-bottom: 8px;">
-            <div><span class="sec-num">7.</span> {{ $isKo ? '사실 확인 및 서약 (Declaration & Signature)' : 'Declaration & Signature' }}</div>
-        </div>
-
-        <div class="pledge-box" style="margin-top: 8px; border-top: none; padding-top: 4px;">
-            <div class="pledge-text">
+        {{-- FORMAL DECLARATION & APPLICANT SIGNATURE (PAGE 1) --}}
+        <div class="pledge-box" style="margin-top: 14px; padding-top: 10px; border-top: 1px solid #94a3b8; page-break-inside: avoid;">
+            <div class="pledge-text" style="font-size: 8.5pt; font-weight: 600; color: #334155; margin-bottom: 8px;">
                 {{ $isKo ? '위의 모든 기재사항은 사실과 다름없음을 확인합니다.' : 'I hereby certify that all information stated above is true and correct.' }}
             </div>
-            <div class="pledge-date">
-                {{ $personal['declaration_date'] ?? date($isKo ? 'Y년 m월 d일' : 'F d, Y') }}
-            </div>
-            <div class="pledge-signature">
-                {{ $isKo ? '지원자(작성자) :' : 'Applicant Signature :' }}
-                <span style="border-bottom: 1px solid #000; padding: 0 25px; margin-left: 6px; font-weight: 700;">
-                    {{ $personal['signature_name'] ?? ($personal['full_name'] ?? ($isKo ? '성명' : 'Candidate Name')) }}
-                </span>
-                <span style="font-size: 8pt; color: #64748b; margin-left: 6px;">{{ $isKo ? '(인 / 서명)' : '(Signed)' }}</span>
-            </div>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 6px;">
+                <tr>
+                    <td style="text-align: left; vertical-align: middle; border: none; font-size: 8.5pt; color: #475569; width: 45%;">
+                        <strong>{{ $isKo ? '작성일자 :' : 'Date :' }}</strong>
+                        <span style="margin-left: 6px;">{{ $personal['declaration_date'] ?? date($isKo ? 'Y년 m월 d일' : 'F d, Y') }}</span>
+                    </td>
+                    <td style="text-align: right; vertical-align: middle; border: none; font-size: 8.5pt; width: 55%;">
+                        <strong>{{ $isKo ? '지원자(작성자) :' : 'Applicant Signature :' }}</strong>
+                        <span style="display: inline-block; border-bottom: 1px solid #000; min-width: 120px; text-align: center; font-weight: 700; color: #0f172a; padding: 0 10px; margin: 0 4px;">
+                            {{ $personal['signature_name'] ?? ($personal['full_name'] ?? ($isKo ? '성명' : 'Candidate Name')) }}
+                        </span>
+                        <span style="font-size: 8pt; color: #64748b;">{{ $isKo ? '(인 / 서명)' : '(Signed)' }}</span>
+                    </td>
+                </tr>
+            </table>
         </div>
+
+        @php
+            $hasSelfIntro = !empty($selfIntro['growth']) || !empty($selfIntro['personality']) || !empty($selfIntro['strengths']) || !empty($selfIntro['motivation']) || !empty($selfIntro['motivation_and_aspirations']);
+        @endphp
+
+        {{-- 6. KOREAN SELF-INTRODUCTION / COVER LETTER (PAGE 2 - ONLY IF PROVIDED) --}}
+        @if($hasSelfIntro)
+            <div style="page-break-before: always; margin-top: 18px;"></div>
+
+            <div class="section-header" style="margin-top: 10px; margin-bottom: 12px; font-size: 10.5pt;">
+                <div><span class="sec-num">★</span> {{ $isKo ? '자 기 소 개 서 (Personal Statement)' : 'Personal Statement' }}</div>
+                <span style="font-size: 8pt; color: #64748b; font-weight: normal;">{{ $isKo ? '지원자: ' . ($personal['full_name'] ?? '성명') : 'Candidate: ' . ($personal['full_name'] ?? 'Candidate') }}</span>
+            </div>
+
+            <div class="doc-title-wrap" style="margin-top: 8px; margin-bottom: 14px;">
+                <h2 class="doc-title" style="font-size: 18pt;">{{ $isKo ? '자 기 소 개 서' : 'PERSONAL STATEMENT' }}</h2>
+                <div class="doc-subtitle">{{ $isKo ? '(성장과정 • 성격의 장단점 • 직무역량 • 지원동기)' : '(Growth • Personality • Core Competencies • Motivation)' }}</div>
+            </div>
+
+            {{-- 1. Growth Process --}}
+            @if(!empty($selfIntro['growth']))
+                <div class="essay-block">
+                    <div class="essay-title">{{ $isKo ? '1. 성장과정 (Growth Background & Values)' : '1. Background & Personal Values' }}</div>
+                    <div class="essay-content">{{ $selfIntro['growth'] }}</div>
+                </div>
+            @endif
+
+            {{-- 2. Personality Strengths --}}
+            @if(!empty($selfIntro['personality']))
+                <div class="essay-block">
+                    <div class="essay-title">{{ $isKo ? '2. 성격의 장단점 및 생활신조 (Personality & Work Ethic)' : '2. Key Strengths & Work Ethic' }}</div>
+                    <div class="essay-content">{{ $selfIntro['personality'] }}</div>
+                </div>
+            @endif
+
+            {{-- 3. Key Projects & Job Competencies --}}
+            @if(!empty($selfIntro['strengths']))
+                <div class="essay-block">
+                    <div class="essay-title">{{ $isKo ? '3. 주요경력 및 직무수행 역량 (Key Projects & Job Competencies)' : '3. Core Competencies & Key Projects' }}</div>
+                    <div class="essay-content">{{ $selfIntro['strengths'] }}</div>
+                </div>
+            @endif
+
+            {{-- 4. Reason for Applying & Future Aspirations --}}
+            @if(!empty($selfIntro['motivation_and_aspirations']) || !empty($selfIntro['motivation']))
+                <div class="essay-block">
+                    <div class="essay-title">{{ $isKo ? '4. 지원동기 및 입사 후 포부 (Motivation for Applying & Future Goals)' : '4. Motivation for Applying & Future Aspirations' }}</div>
+                    <div class="essay-content">{{ !empty($selfIntro['motivation_and_aspirations']) ? $selfIntro['motivation_and_aspirations'] : $selfIntro['motivation'] }}</div>
+                </div>
+            @endif
+        @endif
 
     </div>
 
