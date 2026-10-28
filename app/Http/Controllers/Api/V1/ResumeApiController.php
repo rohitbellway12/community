@@ -456,7 +456,7 @@ class ResumeApiController extends Controller
     }
 
     /**
-     * Submit community share to remove watermark.
+     * Submit community share to remove watermark (Instant 1-click OR Screenshot Proof).
      * POST /api/v1/resumes/{id}/submit-share
      */
     public function submitShare(Request $request, $id): JsonResponse
@@ -468,50 +468,74 @@ class ResumeApiController extends Controller
             return $this->errorResponse('Resume not found or unauthorized.', 404);
         }
 
-        $validator = Validator::make($request->all(), [
-            'channel' => 'required|string|in:kakao,whatsapp,linkedin,facebook,twitter,link_copy',
-            'share_link' => 'nullable|string|url|max:500',
-            'screenshot' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
-        ]);
+        $setting = ResumeSetting::config();
 
-        if ($validator->fails()) {
-            return $this->errorResponse('Validation error', 422, $validator->errors());
+        // Accept flexible keys from both Mobile App and Web
+        $platform = $request->input('platform') ?: ($request->input('channel') ?: 'whatsapp');
+        $postUrl = $request->input('post_url') ?: $request->input('share_link');
+        $hasProofFile = $request->hasFile('proof_image') || $request->hasFile('screenshot');
+
+        $method = $request->input('verification_method');
+        if (empty($method)) {
+            $method = $hasProofFile ? 'screenshot' : 'instant';
         }
 
-        $channel = $request->input('channel');
-        $screenshotPath = null;
-        if ($request->hasFile('screenshot')) {
-            $screenshotPath = $request->file('screenshot')->store('resumes/share_proofs', 'public');
-        }
+        if ($method === 'instant') {
+            if ($setting->verification_mode === 'manual') {
+                return $this->errorResponse('Instant verification is disabled by admin. Please upload a screenshot proof of your share.', 422);
+            }
 
-        // Auto-approve link_copy, kakao, whatsapp for instant frictionless mobile user experience
-        $instantChannels = ['link_copy', 'kakao', 'whatsapp'];
-        $isInstant = in_array($channel, $instantChannels);
+            // Create approved verification record
+            $verification = ResumeShareVerification::create([
+                'resume_id' => $resume->id,
+                'user_id' => $user->id,
+                'platform' => $platform,
+                'verification_method' => 'instant',
+                'post_url' => $postUrl,
+                'status' => 'approved',
+                'reviewed_at' => now(),
+            ]);
 
-        $verification = ResumeShareVerification::create([
-            'resume_id' => $resume->id,
-            'user_id' => $user->id,
-            'channel' => $channel,
-            'share_link' => $request->input('share_link'),
-            'screenshot_path' => $screenshotPath,
-            'status' => $isInstant ? 'approved' : 'pending',
-            'verified_at' => $isInstant ? now() : null,
-        ]);
-
-        if ($isInstant) {
+            // Permanently unlock watermark
             $resume->update([
                 'is_watermark_removed' => true,
                 'watermark_removed_at' => now(),
             ]);
+
+            return $this->successResponse([
+                'verification_id' => $verification->id,
+                'status' => 'approved',
+                'is_watermark_removed' => true,
+                'preview_url' => url("/api/v1/resumes/{$resume->id}/preview"),
+                'download_pdf_url' => url("/api/v1/resumes/{$resume->id}/download"),
+            ], 'Watermark successfully removed! Your resume is now clean.');
         }
+
+        // Screenshot proof verification
+        if (!$hasProofFile) {
+            return $this->errorResponse('Please upload a screenshot proof showing your share.', 422);
+        }
+
+        $file = $request->file('proof_image') ?: $request->file('screenshot');
+        $proofPath = $file->store('resume-proofs', 'public');
+
+        $verification = ResumeShareVerification::create([
+            'resume_id' => $resume->id,
+            'user_id' => $user->id,
+            'platform' => $platform,
+            'verification_method' => 'screenshot',
+            'proof_image' => $proofPath,
+            'post_url' => $postUrl,
+            'status' => 'pending',
+        ]);
 
         return $this->successResponse([
             'verification_id' => $verification->id,
-            'status' => $verification->status,
+            'status' => 'pending',
             'is_watermark_removed' => (bool) $resume->is_watermark_removed,
             'preview_url' => url("/api/v1/resumes/{$resume->id}/preview"),
             'download_pdf_url' => url("/api/v1/resumes/{$resume->id}/download"),
-        ], $isInstant ? 'Watermark successfully removed!' : 'Proof submitted for verification.');
+        ], 'Your share screenshot proof has been submitted for admin verification.');
     }
 
     /**
