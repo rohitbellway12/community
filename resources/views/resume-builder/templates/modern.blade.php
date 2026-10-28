@@ -170,7 +170,7 @@
         @media screen {
             body {
                 background: #f1f5f9;
-                padding: 24px 12px;
+                padding: {{ !empty($isEmbed) ? '10px 4px' : '24px 12px' }};
             }
             .page {
                 box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
@@ -204,6 +204,7 @@
             }
         }
 
+        @if(empty($isEmbed))
         /* Mobile & Tablet Responsive View */
         @media screen and (max-width: 768px) {
             body {
@@ -275,6 +276,23 @@
                 font-size: 10pt !important;
             }
         }
+        @endif
+
+        @if(!empty($isEmbed))
+        @media screen {
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #e2e8f0 !important;
+            }
+            .page {
+                width: 820px !important;
+                max-width: 820px !important;
+                margin: 0 auto !important;
+                border-radius: 0 !important;
+            }
+        }
+        @endif
         @page {
             size: A4 portrait;
             margin: 0;

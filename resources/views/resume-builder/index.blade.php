@@ -13,6 +13,48 @@
     <style>
         [x-cloak] { display: none !important; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .preview-scroll { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+        .resume-preview-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(4px);
+            padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+        }
+        .resume-preview-dialog {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 72rem;
+            height: 100dvh;
+            max-height: 100dvh;
+            min-height: 0;
+            overflow: hidden;
+            background: #ffffff;
+        }
+        @media (min-width: 640px) {
+            .resume-preview-overlay {
+                align-items: center;
+                padding: 12px;
+            }
+            .resume-preview-dialog {
+                height: min(94dvh, 940px);
+                max-height: calc(100dvh - 24px);
+                border-radius: 1rem;
+                border: 1px solid #e2e8f0;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+            }
+        }
+        @media (min-width: 768px) {
+            .resume-preview-overlay { padding: 20px; }
+            .resume-preview-dialog { max-height: calc(100dvh - 40px); }
+        }
     </style>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -30,32 +72,94 @@
         activeTemplateId: 'korean_standard',
         activeTemplateName: 'Korean Standard Job Application',
         sampleLang: 'ko',
-        zoomLevel: 100,
+        zoomMode: 'fit',
+        previewScale: 1,
+        a4Width: 840,
+        iframeHeight: 1188,
+        _previewRo: null,
         sampleBaseUrl: '{{ url('/resume-builder/sample') }}',
         createBaseUrl: '{{ url('/resume-builder/create') }}',
 
+        init() {
+            this.$watch('previewModalOpen', (open) => {
+                document.body.classList.toggle('overflow-hidden', open);
+                if (open) {
+                    this.$nextTick(() => {
+                        this.bindPreviewObserver();
+                        this.fitPreview();
+                    });
+                }
+            });
+        },
+
         openSampleModal(id, name, lang = 'ko') {
+            const isDifferent = (this.activeTemplateId !== id || this.sampleLang !== lang);
             this.activeTemplateId = id;
             this.activeTemplateName = name;
             this.sampleLang = lang;
-            this.iframeLoading = true;
             this.previewModalOpen = true;
+            this.iframeLoading = isDifferent;
+            this.zoomMode = 'fit';
+            this.$nextTick(() => this.fitPreview());
+            setTimeout(() => { this.iframeLoading = false; }, 800);
         },
         switchModalTemplate(id, name) {
             if (this.activeTemplateId !== id) {
                 this.activeTemplateId = id;
                 this.activeTemplateName = name;
                 this.iframeLoading = true;
+                setTimeout(() => { this.iframeLoading = false; }, 800);
             }
         },
         setSampleLang(lang) {
             if (this.sampleLang !== lang) {
                 this.sampleLang = lang;
                 this.iframeLoading = true;
+                setTimeout(() => { this.iframeLoading = false; }, 800);
             }
         },
-        setZoom(level) {
-            this.zoomLevel = level;
+        setZoom(mode) {
+            this.zoomMode = mode;
+            this.fitPreview();
+        },
+        bindPreviewObserver() {
+            const stage = this.$refs.previewStage;
+            if (!stage || typeof ResizeObserver === 'undefined') return;
+            if (this._previewRo) this._previewRo.disconnect();
+            this._previewRo = new ResizeObserver(() => this.fitPreview());
+            this._previewRo.observe(stage);
+        },
+        fitPreview() {
+            const stage = this.$refs.previewStage;
+            if (!stage) return;
+            const pad = window.innerWidth < 640 ? 16 : 32;
+            const availW = Math.max(160, stage.clientWidth - pad);
+            const fit = availW / this.a4Width;
+            if (this.zoomMode === 'fit') {
+                this.previewScale = Math.min(1, Math.max(0.22, fit));
+            } else {
+                this.previewScale = Number(this.zoomMode) / 100;
+            }
+        },
+        onPreviewLoad() {
+            this.iframeLoading = false;
+            this.syncIframeHeight();
+            this.$nextTick(() => this.fitPreview());
+        },
+        syncIframeHeight() {
+            try {
+                const frame = this.$refs.previewFrame;
+                const doc = frame && (frame.contentDocument || frame.contentWindow.document);
+                if (!doc) return;
+                const h = Math.max(
+                    doc.documentElement ? doc.documentElement.scrollHeight : 0,
+                    doc.body ? doc.body.scrollHeight : 0,
+                    1188
+                );
+                this.iframeHeight = h;
+            } catch (e) {
+                this.iframeHeight = 1400;
+            }
         },
         get currentSampleUrl() {
             return `${this.sampleBaseUrl}/${this.activeTemplateId}?embed=1&lang=${this.sampleLang}`;
@@ -833,122 +937,153 @@
          x-cloak
          @keydown.escape.window="previewModalOpen = false"
          @click.self="previewModalOpen = false"
-         class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-2 sm:p-4 lg:p-6 backdrop-blur-sm">
+         class="resume-preview-overlay">
         
-        <div class="bg-white rounded-2xl max-w-6xl w-full shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
-             style="height: 92vh; max-height: 94vh;">
+        <div class="resume-preview-dialog"
+             role="dialog"
+             aria-modal="true"
+             aria-label="Live A4 resume preview">
             
-            {{-- Clean Professional Header Toolbar --}}
-            <div class="px-5 py-3.5 bg-white text-slate-900 flex items-center justify-between gap-4 shrink-0 border-b border-slate-200">
-                
-                {{-- Left: Template Title & Language Switcher --}}
-                <div class="flex items-center gap-3 shrink-0">
-                    <div>
-                        <h3 class="font-bold text-sm sm:text-base text-slate-900 tracking-tight" x-text="activeTemplateName"></h3>
-                        <span class="text-[11px] text-slate-500 hidden sm:inline">Official Recruiter-Approved Format</span>
+            {{-- DESKTOP TOOLBAR (lg and up) --}}
+            <div class="hidden lg:flex flex-col shrink-0 border-b border-slate-200 bg-white min-w-0">
+                <div class="px-4 xl:px-5 py-2.5 flex items-center justify-between gap-3 min-w-0">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="min-w-0">
+                            <h3 class="font-bold text-sm text-slate-900 tracking-tight truncate" x-text="activeTemplateName"></h3>
+                            <span class="text-[11px] text-slate-500 hidden xl:block">Official Recruiter-Approved Format</span>
+                        </div>
+                        <div class="inline-flex p-0.5 rounded-lg bg-slate-100 border border-slate-200 text-xs font-semibold shrink-0">
+                            <button type="button" @click="setSampleLang('ko')"
+                                    :class="sampleLang === 'ko' ? 'bg-white text-slate-900 font-bold shadow-xs' : 'text-slate-500 hover:text-slate-900'"
+                                    class="px-2.5 py-1 rounded-md transition cursor-pointer">🇰🇷 한국어</button>
+                            <button type="button" @click="setSampleLang('en')"
+                                    :class="sampleLang === 'en' ? 'bg-white text-slate-900 font-bold shadow-xs' : 'text-slate-500 hover:text-slate-900'"
+                                    class="px-2.5 py-1 rounded-md transition cursor-pointer">🌐 English</button>
+                        </div>
                     </div>
-
-                    {{-- Simple Bilingual Toggle --}}
-                    <div class="inline-flex p-0.5 rounded-lg bg-slate-100 border border-slate-200 text-xs font-semibold ml-2">
-                        <button type="button" @click="setSampleLang('ko')"
-                                :class="sampleLang === 'ko' ? 'bg-white text-slate-900 font-bold shadow-xs' : 'text-slate-500 hover:text-slate-900'"
-                                class="px-2.5 py-1 rounded-md transition cursor-pointer flex items-center gap-1">
-                            <span>🇰🇷</span>
-                            <span>한국어</span>
-                        </button>
-                        <button type="button" @click="setSampleLang('en')"
-                                :class="sampleLang === 'en' ? 'bg-white text-slate-900 font-bold shadow-xs' : 'text-slate-500 hover:text-slate-900'"
-                                class="px-2.5 py-1 rounded-md transition cursor-pointer flex items-center gap-1">
-                            <span>🌐</span>
-                            <span>English</span>
-                        </button>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <div class="inline-flex p-0.5 rounded-lg bg-slate-100 border border-slate-200 text-[11px] font-semibold">
+                            <button type="button" @click="setZoom('fit')"
+                                    :class="zoomMode === 'fit' ? 'bg-white text-slate-900 font-bold shadow-xs' : 'text-slate-500'"
+                                    class="px-2 py-1 rounded-md transition cursor-pointer">Fit</button>
+                            <button type="button" @click="setZoom(100)"
+                                    :class="zoomMode === 100 ? 'bg-white text-slate-900 font-bold shadow-xs' : 'text-slate-500'"
+                                    class="px-2 py-1 rounded-md transition cursor-pointer">100%</button>
+                        </div>
+                        <a :href="currentFullUrl" target="_blank" title="Open full page in new tab"
+                           class="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition flex items-center justify-center">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                            </svg>
+                        </a>
+                        <a :href="currentCreateUrl"
+                           class="px-3 xl:px-4 py-2 rounded-xl bg-slate-900 hover:bg-amber-500 hover:text-slate-950 text-white text-xs font-bold uppercase tracking-wider transition shadow-sm whitespace-nowrap">
+                            Use This Template →
+                        </a>
+                        <button @click="previewModalOpen = false" title="Close (Esc)"
+                                class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition flex items-center justify-center font-bold cursor-pointer">✕</button>
                     </div>
                 </div>
-
-                {{-- Center: Clean Minimal Template Tabs --}}
-                <div class="hidden lg:flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-semibold border border-slate-200">
+                <div class="px-4 xl:px-5 pb-2.5 flex items-center gap-1 overflow-x-auto no-scrollbar text-xs font-semibold">
                     <button type="button" @click="switchModalTemplate('korean_standard', 'Korean Standard (이력서)')"
-                            :class="activeTemplateId === 'korean_standard' ? 'bg-white text-slate-950 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900'"
-                            class="px-3 py-1.5 rounded-lg transition cursor-pointer">
-                        Korean Standard
-                    </button>
+                            :class="activeTemplateId === 'korean_standard' ? 'bg-slate-900 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:text-slate-900'"
+                            class="px-3 py-1.5 rounded-lg transition cursor-pointer whitespace-nowrap shrink-0">Korean Standard</button>
                     <button type="button" @click="switchModalTemplate('modern', 'Modern Professional')"
-                            :class="activeTemplateId === 'modern' ? 'bg-white text-slate-950 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900'"
-                            class="px-3 py-1.5 rounded-lg transition cursor-pointer">
-                        Modern ATS
-                    </button>
+                            :class="activeTemplateId === 'modern' ? 'bg-slate-900 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:text-slate-900'"
+                            class="px-3 py-1.5 rounded-lg transition cursor-pointer whitespace-nowrap shrink-0">Modern ATS</button>
                     <button type="button" @click="switchModalTemplate('classic', 'Executive Classic ATS')"
-                            :class="activeTemplateId === 'classic' ? 'bg-white text-slate-950 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900'"
-                            class="px-3 py-1.5 rounded-lg transition cursor-pointer">
-                        Classic ATS
-                    </button>
+                            :class="activeTemplateId === 'classic' ? 'bg-slate-900 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:text-slate-900'"
+                            class="px-3 py-1.5 rounded-lg transition cursor-pointer whitespace-nowrap shrink-0">Classic ATS</button>
                     <button type="button" @click="switchModalTemplate('creative', 'Creative & Impact')"
-                            :class="activeTemplateId === 'creative' ? 'bg-white text-slate-950 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900'"
-                            class="px-3 py-1.5 rounded-lg transition cursor-pointer">
-                        Creative
-                    </button>
-                </div>
-
-                {{-- Right: CTA Button & Close --}}
-                <div class="flex items-center gap-2.5 shrink-0">
-                    {{-- Open in Full Page Link --}}
-                    <a :href="currentFullUrl" target="_blank"
-                       title="Open full page in new tab"
-                       class="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition border border-transparent hover:border-slate-200 flex items-center justify-center">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                        </svg>
-                    </a>
-
-                    {{-- Primary Action --}}
-                    <a :href="currentCreateUrl"
-                       class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-amber-500 hover:text-slate-950 text-white text-xs font-bold uppercase tracking-wider transition shadow-sm flex items-center gap-1.5">
-                        <span>Use This Template</span>
-                        <span>→</span>
-                    </a>
-
-                    {{-- Close Button --}}
-                    <button @click="previewModalOpen = false"
-                            title="Close (Esc)"
-                            class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition flex items-center justify-center font-bold text-base">
-                        ✕
-                    </button>
+                            :class="activeTemplateId === 'creative' ? 'bg-slate-900 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:text-slate-900'"
+                            class="px-3 py-1.5 rounded-lg transition cursor-pointer whitespace-nowrap shrink-0">Creative</button>
                 </div>
             </div>
 
-            {{-- Mobile Template Switcher (on small screens) --}}
-            <div class="lg:hidden px-3 py-2 bg-slate-50 border-b border-slate-200 flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs font-semibold">
+            {{-- MOBILE & TABLET TOOLBAR (< lg) --}}
+            <div class="flex lg:hidden flex-col bg-white border-b border-slate-200 shrink-0">
+                <div class="px-3 py-2 flex items-center justify-between gap-2">
+                    <div class="min-w-0 flex-1 pr-1">
+                        <h3 class="font-extrabold text-xs sm:text-sm text-slate-900 truncate" x-text="activeTemplateName"></h3>
+                        <span class="text-[10px] text-slate-500 block truncate">A4 preview · pinch or scroll</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <a :href="currentFullUrl" target="_blank"
+                           title="Open in new tab"
+                           class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition min-w-[36px] min-h-[36px] flex items-center justify-center">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                            </svg>
+                        </a>
+                        <button @click="previewModalOpen = false"
+                                class="w-9 h-9 rounded-lg bg-slate-100 text-slate-600 hover:text-slate-950 flex items-center justify-center font-bold text-sm cursor-pointer">
+                            ✕
+                        </button>
+                    </div>
+                </div>
+
+                <div class="px-3 pb-2 flex flex-wrap items-center justify-between gap-2">
+                    <div class="inline-flex p-0.5 rounded-lg bg-slate-100 border border-slate-200 text-[11px] font-semibold">
+                        <button type="button" @click="setSampleLang('ko')"
+                                :class="sampleLang === 'ko' ? 'bg-white text-slate-950 font-bold shadow-xs' : 'text-slate-600'"
+                                class="px-2 py-1 rounded transition">
+                            🇰🇷 한국어
+                        </button>
+                        <button type="button" @click="setSampleLang('en')"
+                                :class="sampleLang === 'en' ? 'bg-white text-slate-950 font-bold shadow-xs' : 'text-slate-600'"
+                                class="px-2 py-1 rounded transition">
+                            🌐 EN
+                        </button>
+                    </div>
+
+                    <div class="inline-flex p-0.5 rounded-lg bg-slate-100 border border-slate-200 text-[10px] font-semibold">
+                        <button type="button" @click="setZoom('fit')"
+                                :class="zoomMode === 'fit' ? 'bg-white text-slate-950 font-bold' : 'text-slate-500'"
+                                class="px-2 py-1 rounded transition">Fit</button>
+                        <button type="button" @click="setZoom(100)"
+                                :class="zoomMode === 100 ? 'bg-white text-slate-950 font-bold' : 'text-slate-500'"
+                                class="px-2 py-1 rounded transition">100%</button>
+                    </div>
+
+                    <a :href="currentCreateUrl"
+                       class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-amber-500 hover:text-slate-950 text-white text-[11px] font-bold uppercase tracking-wider transition shadow-sm flex items-center gap-1 shrink-0">
+                        <span>Use</span>
+                        <span>→</span>
+                    </a>
+                </div>
+            </div>
+
+            {{-- Mobile Template Switcher Tabs (scrollable horizontal pills) --}}
+            <div class="lg:hidden px-3 py-1.5 bg-slate-100 border-b border-slate-200 flex items-center gap-1.5 overflow-x-auto no-scrollbar text-[11px] font-semibold shrink-0">
                 <button type="button" @click="switchModalTemplate('korean_standard', 'Korean Standard (이력서)')"
-                        :class="activeTemplateId === 'korean_standard' ? 'bg-slate-900 text-white font-bold' : 'text-slate-600 bg-white border border-slate-200'"
-                        class="px-3 py-1 rounded-lg transition whitespace-nowrap shrink-0">
+                        :class="activeTemplateId === 'korean_standard' ? 'bg-slate-900 text-white font-bold shadow-xs' : 'text-slate-600 bg-white border border-slate-200'"
+                        class="px-2.5 py-1 rounded-md transition whitespace-nowrap shrink-0">
                     Korean Standard
                 </button>
                 <button type="button" @click="switchModalTemplate('modern', 'Modern Professional')"
-                        :class="activeTemplateId === 'modern' ? 'bg-slate-900 text-white font-bold' : 'text-slate-600 bg-white border border-slate-200'"
-                        class="px-3 py-1 rounded-lg transition whitespace-nowrap shrink-0">
+                        :class="activeTemplateId === 'modern' ? 'bg-slate-900 text-white font-bold shadow-xs' : 'text-slate-600 bg-white border border-slate-200'"
+                        class="px-2.5 py-1 rounded-md transition whitespace-nowrap shrink-0">
                     Modern ATS
                 </button>
                 <button type="button" @click="switchModalTemplate('classic', 'Executive Classic ATS')"
-                        :class="activeTemplateId === 'classic' ? 'bg-slate-900 text-white font-bold' : 'text-slate-600 bg-white border border-slate-200'"
-                        class="px-3 py-1 rounded-lg transition whitespace-nowrap shrink-0">
+                        :class="activeTemplateId === 'classic' ? 'bg-slate-900 text-white font-bold shadow-xs' : 'text-slate-600 bg-white border border-slate-200'"
+                        class="px-2.5 py-1 rounded-md transition whitespace-nowrap shrink-0">
                     Classic ATS
                 </button>
                 <button type="button" @click="switchModalTemplate('creative', 'Creative & Impact')"
-                        :class="activeTemplateId === 'creative' ? 'bg-slate-900 text-white font-bold' : 'text-slate-600 bg-white border border-slate-200'"
-                        class="px-3 py-1 rounded-lg transition whitespace-nowrap shrink-0">
+                        :class="activeTemplateId === 'creative' ? 'bg-slate-900 text-white font-bold shadow-xs' : 'text-slate-600 bg-white border border-slate-200'"
+                        class="px-2.5 py-1 rounded-md transition whitespace-nowrap shrink-0">
                     Creative
                 </button>
             </div>
 
-            {{-- Clean Light Canvas --}}
-            <div class="flex-1 bg-slate-100 overflow-auto relative flex flex-col items-center justify-start p-0">
-                
-                {{-- Smooth Loading Spinner --}}
+            {{-- Scaled A4 canvas --}}
+            <div class="flex-1 bg-slate-200/80 relative min-h-0 overflow-hidden">
                 <div x-show="iframeLoading"
                      x-transition:leave="transition ease-in duration-150"
                      x-transition:leave-start="opacity-100"
                      x-transition:leave-end="opacity-0"
-                     class="absolute inset-0 flex flex-col items-center justify-center bg-slate-100/80 z-20 backdrop-blur-xs">
+                     class="absolute inset-0 flex flex-col items-center justify-center bg-slate-100/80 z-20">
                     <div class="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold shadow-md">
                         <svg class="animate-spin w-4 h-4 text-slate-700" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -958,12 +1093,22 @@
                     </div>
                 </div>
 
-                {{-- Full Document Iframe --}}
-                <div class="w-full h-full flex-1 flex items-start justify-center overflow-auto" style="min-height: 0;">
-                    <iframe :src="currentSampleUrl"
-                            @load="iframeLoading = false"
-                            class="w-full h-full border-0 bg-transparent block"
-                            style="width: 100%; height: 100%; border: none;"></iframe>
+                <div x-ref="previewStage"
+                     class="w-full h-full overflow-auto preview-scroll"
+                     @iframe-loaded.window="onPreviewLoad()">
+                    <div class="flex justify-center py-3 sm:py-4"
+                         :style="`width: max(100%, ${a4Width * previewScale + 24}px);`">
+                        <div class="shrink-0"
+                             :style="`width: ${a4Width * previewScale}px; height: ${iframeHeight * previewScale}px;`">
+                            <iframe x-ref="previewFrame"
+                                    :src="currentSampleUrl"
+                                    @load="onPreviewLoad()"
+                                    title="A4 resume preview"
+                                    scrolling="no"
+                                    class="border-0 bg-white shadow-xl block origin-top-left pointer-events-none sm:pointer-events-auto"
+                                    :style="`width: ${a4Width}px; height: ${iframeHeight}px; transform: scale(${previewScale}); transform-origin: top left; overflow: hidden;`"></iframe>
+                        </div>
+                    </div>
                 </div>
             </div>
 

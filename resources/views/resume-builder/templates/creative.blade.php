@@ -56,16 +56,15 @@
             letter-spacing: 2px;
             color: rgba(220, 38, 38, 0.24);
         }
-            letter-spacing: 2px;
-            color: rgba(130, 100, 220, 0.22);
-        }
 
         /* High-Impact Creative Header Banner */
         .top-banner {
+            background-color: #0F1C3F;
             background: linear-gradient(135deg, #091124 0%, #0F1C3F 65%, #182C5E 100%);
             color: #ffffff;
             padding: 26px 32px 22px 32px;
             border-bottom: 3.5px solid #F59E0B;
+            overflow: hidden;
         }
         .banner-table {
             width: 100%;
@@ -99,11 +98,17 @@
             font-size: 8.5pt;
             color: #CBD5E1;
             line-height: 1.6;
+            max-width: 100%;
         }
         .contact-item {
             display: inline-block;
             margin-right: 14px;
+            margin-bottom: 2px;
             white-space: nowrap;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            vertical-align: bottom;
         }
         .contact-icon {
             color: #F59E0B;
@@ -116,6 +121,8 @@
             border-radius: 10px;
             border: 2.5px solid #F59E0B;
             object-fit: cover;
+            display: block;
+            margin-left: auto;
             box-shadow: 0 8px 18px rgba(0,0,0,0.35);
         }
 
@@ -450,6 +457,7 @@
             }
         }
 
+        @if(empty($isEmbed))
         /* Mobile & Tablet Responsive View */
         @media screen and (max-width: 768px) {
             body {
@@ -507,6 +515,39 @@
                 font-size: 10pt !important;
             }
         }
+        @endif
+
+        @if(!empty($isEmbed))
+        @media screen {
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #e2e8f0 !important;
+                overflow-x: hidden !important;
+            }
+            .page {
+                width: 840px !important;
+                max-width: 840px !important;
+                margin: 0 auto !important;
+                border-radius: 0 !important;
+                overflow: hidden !important;
+            }
+            .top-banner {
+                background-color: #0F1C3F !important;
+                background: linear-gradient(135deg, #091124 0%, #0F1C3F 65%, #182C5E 100%) !important;
+                color: #ffffff !important;
+            }
+            .name { color: #ffffff !important; }
+            .layout-table {
+                width: 100% !important;
+                table-layout: fixed !important;
+            }
+            .col-sidebar, .col-main {
+                overflow-wrap: anywhere;
+                word-break: break-word;
+            }
+        }
+        @endif
 
         @page {
             size: A4 portrait;
@@ -808,7 +849,7 @@
                         </div>
                     </td>
                     @if(!empty($pInfo['photo_url']))
-                        <td style="width: 95px; vertical-align: middle; text-align: right; padding-left: 16px;">
+                        <td style="width: 104px; max-width: 104px; vertical-align: middle; text-align: right; padding-left: 12px;">
                             <img src="{{ $pInfo['photo_url'] }}" class="photo-frame" alt="Candidate Photo">
                         </td>
                     @endif
