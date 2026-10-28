@@ -350,6 +350,12 @@
                 z-index: 99999 !important;
             }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .kr-page-break {
+                border-top: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                page-break-before: always !important;
+            }
         }
 
         @if(!empty($forPdf))
@@ -372,6 +378,12 @@
         }
         .watermark {
             display: none !important;
+        }
+        .kr-page-break {
+            page-break-before: always !important;
+            border-top: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
         @endif
     </style>
@@ -843,39 +855,16 @@
             </div>
         @endif
 
-        {{-- FORMAL DECLARATION & APPLICANT SIGNATURE (PAGE 1) --}}
-        <div class="pledge-box" style="margin-top: 14px; padding-top: 10px; border-top: 1px solid #94a3b8; page-break-inside: avoid;">
-            <div class="pledge-text" style="font-size: 8.5pt; font-weight: 600; color: #334155; margin-bottom: 8px;">
-                {{ $isKo ? '위의 모든 기재사항은 사실과 다름없음을 확인합니다.' : 'I hereby certify that all information stated above is true and correct.' }}
-            </div>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 6px;">
-                <tr>
-                    <td style="text-align: left; vertical-align: middle; border: none; font-size: 8.5pt; color: #475569; width: 45%;">
-                        <strong>{{ $isKo ? '작성일자 :' : 'Date :' }}</strong>
-                        <span style="margin-left: 6px;">{{ $personal['declaration_date'] ?? date($isKo ? 'Y년 m월 d일' : 'F d, Y') }}</span>
-                    </td>
-                    <td style="text-align: right; vertical-align: middle; border: none; font-size: 8.5pt; width: 55%;">
-                        <strong>{{ $isKo ? '지원자(작성자) :' : 'Applicant Signature :' }}</strong>
-                        <span style="display: inline-block; border-bottom: 1px solid #000; min-width: 120px; text-align: center; font-weight: 700; color: #0f172a; padding: 0 10px; margin: 0 4px;">
-                            {{ $personal['signature_name'] ?? ($personal['full_name'] ?? ($isKo ? '성명' : 'Candidate Name')) }}
-                        </span>
-                        <span style="font-size: 8pt; color: #64748b;">{{ $isKo ? '(인 / 서명)' : '(Signed)' }}</span>
-                    </td>
-                </tr>
-            </table>
-        </div>
-
         @php
             $hasSelfIntro = !empty($selfIntro['growth']) || !empty($selfIntro['personality']) || !empty($selfIntro['strengths']) || !empty($selfIntro['motivation']) || !empty($selfIntro['motivation_and_aspirations']);
         @endphp
 
         {{-- 6. KOREAN SELF-INTRODUCTION / COVER LETTER (PAGE 2 - ONLY IF PROVIDED) --}}
         @if($hasSelfIntro)
-            <div style="page-break-before: always; margin-top: 18px;"></div>
+            <div class="kr-page-break" style="page-break-before: always; margin-top: 24px; padding-top: 18px; border-top: 2px dashed #cbd5e1;"></div>
 
             <div class="section-header" style="margin-top: 10px; margin-bottom: 12px; font-size: 10.5pt;">
-                <div><span class="sec-num">★</span> {{ $isKo ? '자 기 소 개 서 (Personal Statement)' : 'Personal Statement' }}</div>
-                <span style="font-size: 8pt; color: #64748b; font-weight: normal;">{{ $isKo ? '지원자: ' . ($personal['full_name'] ?? '성명') : 'Candidate: ' . ($personal['full_name'] ?? 'Candidate') }}</span>
+                <div><span class="sec-num">6.</span> {{ $isKo ? '자 기 소 개 서 (Personal Statement)' : 'Personal Statement' }}</div>
             </div>
 
             <div class="doc-title-wrap" style="margin-top: 8px; margin-bottom: 14px;">
@@ -915,6 +904,32 @@
                 </div>
             @endif
         @endif
+
+        {{-- 7. FORMAL DECLARATION & APPLICANT SIGNATURE (FINAL STEP 7 - AT THE VERY BOTTOM OF RESUME) --}}
+        <div class="section-header" style="margin-top: 20px; margin-bottom: 6px;">
+            <div><span class="sec-num">7.</span> {{ $isKo ? '사실 확인 및 서약 (Declaration & Signature)' : 'Declaration & Signature' }}</div>
+        </div>
+
+        <div class="pledge-box" style="margin-top: 6px; padding-top: 12px; border-top: 1px solid #94a3b8; page-break-inside: avoid;">
+            <div class="pledge-text" style="font-size: 9pt; font-weight: 700; color: #1e293b; margin-bottom: 8px; text-align: center;">
+                {{ $isKo ? '위의 모든 기재사항은 사실과 다름없음을 확인합니다.' : 'I hereby certify that all information stated above is true and correct.' }}
+            </div>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 8px;">
+                <tr>
+                    <td style="text-align: left; vertical-align: middle; border: none; font-size: 8.5pt; color: #475569; width: 45%;">
+                        <strong>{{ $isKo ? '작성일자 :' : 'Date :' }}</strong>
+                        <span style="margin-left: 6px;">{{ $personal['declaration_date'] ?? date($isKo ? 'Y년 m월 d일' : 'F d, Y') }}</span>
+                    </td>
+                    <td style="text-align: right; vertical-align: middle; border: none; font-size: 8.5pt; width: 55%;">
+                        <strong>{{ $isKo ? '지원자(작성자) :' : 'Applicant Signature :' }}</strong>
+                        <span style="display: inline-block; border-bottom: 1px solid #000; min-width: 120px; text-align: center; font-weight: 700; color: #0f172a; padding: 0 10px; margin: 0 4px;">
+                            {{ $personal['signature_name'] ?? ($personal['full_name'] ?? ($isKo ? '성명' : 'Candidate Name')) }}
+                        </span>
+                        <span style="font-size: 8pt; color: #64748b;">{{ $isKo ? '(인 / 서명)' : '(Signed)' }}</span>
+                    </td>
+                </tr>
+            </table>
+        </div>
 
         </div>
         </div>
