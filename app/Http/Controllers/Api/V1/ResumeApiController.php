@@ -112,15 +112,67 @@ class ResumeApiController extends Controller
     {
         $setting = ResumeSetting::config();
 
+        // Watermark verification mode ('both', 'instant', 'manual')
+        $verificationMode = $setting->verification_mode ?: 'both';
+        $allowInstant = in_array($verificationMode, ['both', 'instant']);
+        $allowManual = in_array($verificationMode, ['both', 'manual']);
+
+        $modeLabels = [
+            'both'    => 'Both (Instant Share & Screenshot Review)',
+            'instant' => '1-Click Instant Share',
+            'manual'  => 'Manual Screenshot Review Only',
+        ];
+
+        // Language Mode ('both', 'en', 'ko')
+        $langMode = $setting->language_mode ?: 'both';
+        $languages = [];
+        if ($langMode === 'en') {
+            $languages = [
+                ['code' => 'en', 'label' => 'English', 'is_default' => true],
+            ];
+        } elseif ($langMode === 'ko') {
+            $languages = [
+                ['code' => 'ko', 'label' => '한국어 (Korean)', 'is_default' => true],
+            ];
+        } else {
+            // 'both'
+            $languages = [
+                ['code' => 'en', 'label' => 'English', 'is_default' => true],
+                ['code' => 'ko', 'label' => '한국어 (Korean)', 'is_default' => false],
+            ];
+        }
+
+        $langModeLabels = [
+            'both' => 'Both English and Korean (Bilingual)',
+            'en'   => 'English Only',
+            'ko'   => 'Korean Only (한국어 전용)',
+        ];
+
         return $this->successResponse([
-            'watermark_enabled' => (bool) $setting->watermark_enabled,
-            'watermark_text' => $setting->watermark_text ?: 'REIAC COMMUNITY',
-            'share_channels' => ['kakao', 'whatsapp', 'linkedin', 'facebook', 'twitter', 'link_copy'],
-            'max_photo_size_mb' => 5,
-            'supported_languages' => [
-                ['code' => 'en', 'label' => 'English'],
-                ['code' => 'ko', 'label' => '한국어 (Korean)'],
-            ],
+            // Watermark & Verification Configuration
+            'watermark_enabled'       => (bool) $setting->watermark_enabled,
+            'watermark_text'          => $setting->watermark_text ?: 'REIAC COMMUNITY • reiac.org',
+            'verification_mode'       => $verificationMode,
+            'verification_mode_label' => $modeLabels[$verificationMode] ?? $verificationMode,
+            'allow_instant_share'     => $allowInstant,
+            'allow_manual_screenshot' => $allowManual,
+            'reshare_target_url'      => $setting->reshare_target_url ?: 'https://community.reiac.org/resume-builder',
+            'reshare_content'         => $setting->reshare_content ?: 'Building my professional CV with AI on REIAC Community! 🚀 Try it out: https://community.reiac.org/resume-builder #REIACCommunity #CareerGrowth',
+            'reshare_guidelines'      => $setting->reshare_guidelines ?: "1. Share our official launch post or platform link on your LinkedIn / WhatsApp Status / Instagram Story.\n2. Add hashtag #REIACCommunity.\n3. Keep the post visible for at least 24 hours.",
+            'share_channels'          => ['kakao', 'whatsapp', 'linkedin', 'facebook', 'twitter', 'link_copy'],
+
+            // Language Settings (Single vs Both)
+            'language_mode'           => $langMode,
+            'language_mode_label'     => $langModeLabels[$langMode] ?? $langMode,
+            'default_language'        => $langMode === 'ko' ? 'ko' : 'en',
+            'supported_languages'     => $languages,
+
+            // Media & Upload Limits
+            'max_photo_size_mb'       => 5,
+
+            // AI Features
+            'ai_polish_enabled'       => !empty($setting->openai_api_key),
+            'ai_model'                => $setting->openai_model ?: 'gpt-4o-mini',
         ], 'Resume configuration retrieved.');
     }
 

@@ -21,6 +21,7 @@
         watermarkEnabled: @js((bool)$setting->watermark_enabled),
         watermarkText: @js($setting->watermark_text),
         verificationMode: @js($setting->verification_mode),
+        languageMode: @js($setting->language_mode ?: 'both'),
         showApiKey: false
      }">
 
@@ -66,6 +67,19 @@
                         Manual Screenshot Review
                     @else
                         Both (Instant + Screenshot)
+                    @endif
+                </span>
+            </div>
+
+            <div class="px-3.5 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5">
+                <span>🌐 Lang:</span>
+                <span class="text-slate-900 font-black">
+                    @if($setting->language_mode === 'en')
+                        English Only
+                    @elseif($setting->language_mode === 'ko')
+                        Korean Only
+                    @else
+                        Bilingual (Both EN + KR)
                     @endif
                 </span>
             </div>
@@ -553,6 +567,45 @@
                                 <div>
                                     <div class="text-xs font-black text-slate-900">📸 Manual Review Only</div>
                                     <p class="text-[11px] text-slate-500 mt-1">Students must upload screenshot proof. Watermark unlocks only after admin approves.</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    {{-- Language Mode Selection (Both vs Single) --}}
+                    <div class="pt-3 border-t border-slate-100">
+                        <label class="block text-xs font-black uppercase tracking-wider text-slate-700 mb-2">Resume Language Support (Single vs Both)</label>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            {{-- Lang: Both --}}
+                            <label class="p-4 rounded-xl border cursor-pointer transition flex items-start gap-3"
+                                   :class="languageMode === 'both' ? 'border-indigo-600 bg-indigo-50/50 ring-1 ring-indigo-600' : 'border-slate-200 hover:bg-slate-50'">
+                                <input type="radio" name="language_mode" value="both" x-model="languageMode" class="mt-0.5 text-indigo-600">
+                                <div>
+                                    <div class="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                                        <span>🌐 Bilingual (Both EN + 한국어)</span>
+                                        <span class="px-1.5 py-0.2 rounded text-[9px] bg-indigo-100 text-indigo-800 font-bold">Recommended</span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-500 mt-1">Students can create resumes in English or Korean, and switch anytime.</p>
+                                </div>
+                            </label>
+
+                            {{-- Lang: EN only --}}
+                            <label class="p-4 rounded-xl border cursor-pointer transition flex items-start gap-3"
+                                   :class="languageMode === 'en' ? 'border-indigo-600 bg-indigo-50/50 ring-1 ring-indigo-600' : 'border-slate-200 hover:bg-slate-50'">
+                                <input type="radio" name="language_mode" value="en" x-model="languageMode" class="mt-0.5 text-indigo-600">
+                                <div>
+                                    <div class="text-xs font-black text-slate-900">🇺🇸 English Only (Single)</div>
+                                    <p class="text-[11px] text-slate-500 mt-1">Only English templates and input fields enabled for international candidates.</p>
+                                </div>
+                            </label>
+
+                            {{-- Lang: KO only --}}
+                            <label class="p-4 rounded-xl border cursor-pointer transition flex items-start gap-3"
+                                   :class="languageMode === 'ko' ? 'border-indigo-600 bg-indigo-50/50 ring-1 ring-indigo-600' : 'border-slate-200 hover:bg-slate-50'">
+                                <input type="radio" name="language_mode" value="ko" x-model="languageMode" class="mt-0.5 text-indigo-600">
+                                <div>
+                                    <div class="text-xs font-black text-slate-900">🇰🇷 Korean Only (Single)</div>
+                                    <p class="text-[11px] text-slate-500 mt-1">Only Korean standard application forms (입사지원서) enabled.</p>
                                 </div>
                             </label>
                         </div>

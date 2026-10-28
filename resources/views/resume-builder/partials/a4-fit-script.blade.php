@@ -1,5 +1,5 @@
 {{-- Shared A4 fit-to-screen scaler for standalone /preview pages (not embed, not PDF). --}}
-@if(empty($forPdf) && empty($isEmbed))
+@if(empty($forPdf))
 <style>
     html { overflow-x: hidden; }
     .a4-canvas-container {

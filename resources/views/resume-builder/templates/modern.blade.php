@@ -417,7 +417,7 @@
     @php $isKo = ($resume->language ?? 'en') === 'ko'; @endphp
 
     <div class="a4-canvas-container" id="a4CanvasContainer">
-        @if(!$forPdf && empty($isEmbed))
+        @if(!$forPdf)
         <div class="a4-zoom-bar no-print" id="a4ZoomBar">
             <div class="a4-zoom-group">
                 <button type="button" id="a4FitBtn" class="a4-zoom-pill is-active" onclick="setA4ScaleMode('fit')">Fit</button>

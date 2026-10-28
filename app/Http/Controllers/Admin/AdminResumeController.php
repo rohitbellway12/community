@@ -148,6 +148,7 @@ class AdminResumeController extends Controller
             'watermark_text' => 'required|string|max:190',
             'watermark_enabled' => 'nullable|boolean',
             'verification_mode' => 'required|in:both,instant,manual',
+            'language_mode' => 'nullable|in:both,en,ko',
             'reshare_guidelines' => 'nullable|string|max:3000',
             'reshare_content' => 'nullable|string|max:1000',
             'reshare_target_url' => 'nullable|url|max:255',
