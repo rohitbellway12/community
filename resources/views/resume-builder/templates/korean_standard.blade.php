@@ -315,25 +315,45 @@
             margin: 0;
         }
 
+        @page {
+            size: A4 portrait;
+            margin: 8mm 8mm 8mm 8mm;
+        }
+
         @media print {
             .web-preview-bar, .a4-zoom-bar, .no-print {
                 display: none !important;
             }
-            .a4-canvas-container { padding: 0 !important; height: auto !important; width: 100% !important; }
+            .a4-canvas-container, .a4-sheet-wrap {
+                padding: 0 !important;
+                margin: 0 !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
+                width: 100% !important;
+                display: block !important;
+            }
             html, body {
                 background: #ffffff !important;
                 padding: 0 !important;
                 margin: 0 !important;
                 width: 100% !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
+                overflow: visible !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
-            .page {
+            .page, #resumePage {
                 box-shadow: none !important;
-                padding: 16px 24px !important;
+                padding: 12px 18px !important;
                 max-width: 100% !important;
                 min-width: 0 !important;
                 width: 100% !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
                 border: none !important;
                 margin: 0 !important;
                 transform: none !important;
@@ -348,6 +368,7 @@
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
                 z-index: 99999 !important;
+                pointer-events: none !important;
             }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .kr-page-break {
@@ -355,6 +376,19 @@
                 margin: 0 !important;
                 padding: 0 !important;
                 page-break-before: always !important;
+                break-before: page !important;
+            }
+            .pledge-box {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            table.kr-table tr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            .essay-block {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
             }
         }
 

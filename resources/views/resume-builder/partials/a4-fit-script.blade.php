@@ -77,17 +77,45 @@
         letter-spacing: 0.02em;
     }
     @media print {
-        .a4-sheet-wrap {
+        @page {
+            size: A4 portrait;
+            margin: 8mm 8mm 8mm 8mm;
+        }
+        html, body {
+            background: #ffffff !important;
+            padding: 0 !important;
+            margin: 0 !important;
             width: 100% !important;
             height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: visible !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
-        #resumePage {
+        .a4-canvas-container, .a4-sheet-wrap {
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            display: block !important;
+        }
+        #resumePage, .page {
             transform: none !important;
             width: 100% !important;
             min-width: 0 !important;
             max-width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
             box-shadow: none !important;
             border: none !important;
+            margin: 0 !important;
+        }
+        .a4-zoom-bar, .web-preview-bar, .no-print {
+            display: none !important;
         }
     }
 </style>
@@ -146,6 +174,25 @@
         } else if (ev.data.type === 'RESCALE_A4') {
             applyA4Scaling();
         }
+    });
+
+    window.addEventListener('beforeprint', function () {
+        var page = document.getElementById('resumePage');
+        var wrap = document.getElementById('a4SheetWrap');
+        if (page) {
+            page.style.transform = 'none';
+            page.style.minHeight = '0';
+            page.style.height = 'auto';
+            page.style.margin = '0';
+        }
+        if (wrap) {
+            wrap.style.width = '100%';
+            wrap.style.height = 'auto';
+            wrap.style.minHeight = '0';
+        }
+    });
+    window.addEventListener('afterprint', function () {
+        applyA4Scaling();
     });
 
     window.addEventListener('resize', applyA4Scaling);

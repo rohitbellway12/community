@@ -549,26 +549,50 @@
             margin: 0;
         }
 
+        @page {
+            size: A4 portrait;
+            margin: 8mm 8mm 8mm 8mm;
+        }
+
         @media print {
             .web-preview-bar, .a4-zoom-bar, .no-print { display: none !important; }
-            .a4-canvas-container { padding: 0 !important; height: auto !important; width: 100% !important; }
+            .a4-canvas-container, .a4-sheet-wrap {
+                padding: 0 !important;
+                margin: 0 !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
+                width: 100% !important;
+                display: block !important;
+            }
             html, body {
                 background: #ffffff !important;
                 padding: 0 !important;
                 margin: 0 !important;
                 width: 100% !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
+                overflow: visible !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
-            .page {
+            .page, #resumePage {
                 box-shadow: none !important;
                 border-radius: 0 !important;
                 border: none !important;
                 width: 100% !important;
                 min-width: 0 !important;
                 max-width: 100% !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
                 margin: 0 !important;
                 transform: none !important;
+            }
+            .exp-card, .edu-card, .project-card {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
             }
             .top-banner {
                 padding: 26px 32px 22px 32px !important;
