@@ -141,8 +141,11 @@
                             <label class="block text-xs font-semibold text-slate-700 mb-1.5">Model</label>
                             <select name="openai_model"
                                     class="w-full text-xs bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-slate-900 focus:outline-none focus:border-slate-400 transition">
+                                <option value="gpt-6-luna" {{ old('openai_model', $setting->openai_model) === 'gpt-6-luna' ? 'selected' : '' }}>
+                                    gpt-6-luna (Client Recommended - Ultra Fast &amp; High Intelligence)
+                                </option>
                                 <option value="gpt-4o-mini" {{ old('openai_model', $setting->openai_model) === 'gpt-4o-mini' ? 'selected' : '' }}>
-                                    gpt-4o-mini (Recommended - Fast &amp; cost-efficient)
+                                    gpt-4o-mini (Fast &amp; cost-efficient)
                                 </option>
                                 <option value="gpt-4o" {{ old('openai_model', $setting->openai_model) === 'gpt-4o' ? 'selected' : '' }}>
                                     gpt-4o (High capability flagship)
@@ -151,7 +154,7 @@
                                     gpt-3.5-turbo (Legacy)
                                 </option>
                             </select>
-                            <p class="text-[11px] text-slate-500 mt-1"><code>gpt-4o-mini</code> provides the best response times and costs less than $0.0001 per resume polish.</p>
+                            <p class="text-[11px] text-slate-500 mt-1"><code>gpt-6-luna</code> is verified active with your API key.</p>
                         </div>
                     </div>
                 </div>

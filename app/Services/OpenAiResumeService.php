@@ -26,18 +26,13 @@ class OpenAiResumeService
                 try {
                     $roleContext = $targetRole ? "Targeting the role: {$targetRole}." : "";
                     $systemPrompt = "You are a professional executive resume writer. Polish and elevate the candidate's summary/objective. Make it concise, professional, grammatically flawless, and impactful. STRICT RULE: Rely ONLY on the facts provided; NEVER invent qualifications, experience, degrees, or achievements. Return ONLY the polished paragraph.";
+                    $userPrompt = "{$roleContext}\n\nCandidate's draft:\n{$rawSummary}";
+
+                    $payload = $this->buildPayload($systemPrompt, $userPrompt, 250, 0.5);
 
                     $response = Http::withToken($apiKey)
                         ->timeout(15)
-                        ->post('https://api.openai.com/v1/chat/completions', [
-                            'model' => $this->getModel(),
-                            'messages' => [
-                                ['role' => 'system', 'content' => $systemPrompt],
-                                ['role' => 'user', 'content' => "{$roleContext}\n\nCandidate's draft:\n{$rawSummary}"],
-                            ],
-                            'temperature' => 0.5,
-                            'max_tokens' => 250,
-                        ]);
+                        ->post('https://api.openai.com/v1/chat/completions', $payload);
 
                     if ($response->successful()) {
                         $content = $response->json('choices.0.message.content');
@@ -74,18 +69,13 @@ class OpenAiResumeService
                 try {
                     $context = trim(($jobTitle ? "Role: {$jobTitle}. " : "") . ($company ? "Company: {$company}." : ""));
                     $systemPrompt = "You are an expert corporate resume writer. Convert the provided notes into 3 to 4 impactful, professional resume bullet points. Begin each bullet point with a powerful past-tense action verb (e.g. Developed, Orchestrated, Optimized, Designed, Spearheaded). STRICT RULE: Do NOT invent fake metrics, projects, or accomplishments. Return each bullet point on a separate line without numbers or prefixes.";
+                    $userPrompt = "{$context}\n\nCandidate's notes:\n{$rawNotes}";
+
+                    $payload = $this->buildPayload($systemPrompt, $userPrompt, 300, 0.5);
 
                     $response = Http::withToken($apiKey)
                         ->timeout(15)
-                        ->post('https://api.openai.com/v1/chat/completions', [
-                            'model' => $this->getModel(),
-                            'messages' => [
-                                ['role' => 'system', 'content' => $systemPrompt],
-                                ['role' => 'user', 'content' => "{$context}\n\nCandidate's notes:\n{$rawNotes}"],
-                            ],
-                            'temperature' => 0.5,
-                            'max_tokens' => 300,
-                        ]);
+                        ->post('https://api.openai.com/v1/chat/completions', $payload);
 
                     if ($response->successful()) {
                         $content = $response->json('choices.0.message.content');
@@ -130,17 +120,14 @@ class OpenAiResumeService
             $apiKey = $this->getApiKey();
             if ($apiKey) {
                 try {
+                    $systemPrompt = 'Provide a JSON list of 8 to 12 top industry skills (both hard & soft) relevant for the specified job title. Return ONLY valid JSON array of strings.';
+                    $userPrompt = "Job Title: {$jobTitle}";
+
+                    $payload = $this->buildPayload($systemPrompt, $userPrompt, 200, 0.4);
+
                     $response = Http::withToken($apiKey)
                         ->timeout(12)
-                        ->post('https://api.openai.com/v1/chat/completions', [
-                            'model' => $this->getModel(),
-                            'messages' => [
-                                ['role' => 'system', 'content' => 'Provide a JSON list of 8 to 12 top industry skills (both hard & soft) relevant for the specified job title. Return ONLY valid JSON array of strings.'],
-                                ['role' => 'user', 'content' => "Job Title: {$jobTitle}"],
-                            ],
-                            'temperature' => 0.4,
-                            'max_tokens' => 200,
-                        ]);
+                        ->post('https://api.openai.com/v1/chat/completions', $payload);
 
                     if ($response->successful()) {
                         $content = trim($response->json('choices.0.message.content'));
@@ -180,7 +167,35 @@ class OpenAiResumeService
      */
     protected function getModel(): string
     {
-        return ResumeSetting::config()->openai_model ?: 'gpt-4o-mini';
+        return ResumeSetting::config()->openai_model ?: 'gpt-6-luna';
+    }
+
+    /**
+     * Build appropriate payload based on model capabilities.
+     * GPT-6 Luna and modern reasoning models require max_completion_tokens
+     * and do not support custom temperature (default 1).
+     */
+    protected function buildPayload(string $systemPrompt, string $userPrompt, int $maxTokens = 250, float $temperature = 0.5): array
+    {
+        $model = $this->getModel();
+        $isLunaOrReasoning = str_contains($model, 'luna') || str_starts_with($model, 'o1') || str_starts_with($model, 'o3') || str_starts_with($model, 'gpt-6');
+
+        $payload = [
+            'model' => $model,
+            'messages' => [
+                ['role' => 'system', 'content' => $systemPrompt],
+                ['role' => 'user', 'content' => $userPrompt],
+            ],
+        ];
+
+        if ($isLunaOrReasoning) {
+            $payload['max_completion_tokens'] = $maxTokens;
+        } else {
+            $payload['temperature'] = $temperature;
+            $payload['max_tokens'] = $maxTokens;
+        }
+
+        return $payload;
     }
 
     /**

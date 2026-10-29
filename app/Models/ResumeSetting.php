@@ -27,7 +27,7 @@ class ResumeSetting extends Model
         return cache()->rememberForever('resume_settings_config', function () {
             return static::firstOrCreate([], [
                 'openai_api_key'     => env('OPENAI_API_KEY'),
-                'openai_model'       => 'gpt-4o-mini',
+                'openai_model'       => 'gpt-6-luna',
                 'watermark_text'     => 'REIAC COMMUNITY • reiac.org',
                 'watermark_enabled'  => true,
                 'verification_mode'  => 'both',

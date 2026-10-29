@@ -687,8 +687,11 @@
                             <label class="block text-xs font-bold text-slate-700 mb-1.5">Model</label>
                             <select name="openai_model"
                                     class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 focus:bg-white focus:outline-none focus:border-slate-400">
+                                <option value="gpt-6-luna" {{ old('openai_model', $setting->openai_model) === 'gpt-6-luna' ? 'selected' : '' }}>
+                                    gpt-6-luna (Client Choice - Ultra Fast &amp; High Intelligence)
+                                </option>
                                 <option value="gpt-4o-mini" {{ old('openai_model', $setting->openai_model) === 'gpt-4o-mini' ? 'selected' : '' }}>
-                                    gpt-4o-mini (Recommended - Super fast &amp; cheap)
+                                    gpt-4o-mini (Fast &amp; cheap)
                                 </option>
                                 <option value="gpt-4o" {{ old('openai_model', $setting->openai_model) === 'gpt-4o' ? 'selected' : '' }}>
                                     gpt-4o (Flagship)
