@@ -20,41 +20,7 @@
 <body class="min-h-screen bg-[#f3f4f6] font-sans text-slate-800 antialiased selection:bg-amber-500 selection:text-white pb-20 lg:pb-0">
 
     {{-- TOPBAR --}}
-    <header class="bg-[#0b1329] text-white sticky top-0 z-50">
-        <div class="max-w-[1520px] mx-auto px-4 lg:px-6 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-4 lg:gap-12">
-                {{-- Hamburger for Mobile Sidebar --}}
-                <button @click="mobileMenuOpen = !mobileMenuOpen" class="lg:hidden text-slate-300 hover:text-white focus:outline-none">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                </button>
-                <div class="text-xl lg:text-2xl font-black tracking-wider text-white">REIAC Community</div>
-                <nav class="hidden lg:flex items-center gap-7 text-[13px] font-medium text-slate-300">
-                    <a href="#" class="hover:text-white transition">Home</a>
-                    <a href="#" class="hover:text-white transition">About Us</a>
-                    <a href="#" class="hover:text-white transition flex items-center gap-1">Services <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg></a>
-                    <a href="#" class="hover:text-white transition">For Students</a>
-                    <a href="#" class="text-white font-semibold border-b-2 border-amber-400 pb-1 mt-1">Community</a>
-                    <a href="#" class="hover:text-white transition">F-2-7 Points Calculator</a>
-                    <a href="#" class="hover:text-white transition">Contact Us</a>
-                </nav>
-            </div>
-            <div class="flex items-center gap-3 lg:gap-4">
-                <button class="hidden lg:flex w-9 h-9 rounded-full bg-[#1e293b] items-center justify-center text-slate-300 hover:text-white transition">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                </button>
-                <div class="relative">
-                    <button class="w-9 h-9 rounded-full bg-[#1e293b] flex items-center justify-center text-slate-300 hover:text-white transition">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                    </button>
-                    <span class="absolute -top-1 -right-1 bg-amber-400 text-slate-950 font-bold text-[10px] w-4 h-4 rounded-full flex items-center justify-center border-2 border-[#0b1329]">12</span>
-                </div>
-                <div class="hidden lg:flex relative items-center pl-1">
-                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces" alt="User" class="w-9 h-9 rounded-full object-cover ring-2 ring-amber-400">
-                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[#0b1329]"></span>
-                </div>
-            </div>
-        </div>
-    </header>
+    <x-community.topbar />
 
     {{-- MOBILE SIDEBAR OVERLAY --}}
     <div x-show="mobileMenuOpen" class="fixed inset-0 z-50 lg:hidden flex">

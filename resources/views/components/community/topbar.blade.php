@@ -250,20 +250,48 @@
                 {{-- DESKTOP NAVIGATION --}}
                 <nav class="hidden lg:flex items-center gap-5 xl:gap-7 text-[13px] font-medium text-slate-300">
 
-                    {{-- Home --}}
+                    {{-- Community Feed --}}
                     <a
-                        href="https://www.reiaconsultancy.com/"
-                        class="hover:text-white transition whitespace-nowrap"
+                        href="{{ route('community.index') }}"
+                        class="hover:text-white transition whitespace-nowrap py-1 relative {{ request()->routeIs('community.index') || request()->routeIs('community.posts.*') ? 'text-white font-semibold' : '' }}"
                     >
-                        Home
+                        Community
+                        @if(request()->routeIs('community.index') || request()->routeIs('community.posts.*'))
+                            <span class="absolute left-0 right-0 -bottom-1 h-0.5 bg-amber-400 rounded-full"></span>
+                        @endif
                     </a>
 
-                    {{-- About Us --}}
+                    {{-- AI Resume Builder --}}
                     <a
-                        href="https://www.reiaconsultancy.com/about-us"
-                        class="hover:text-white transition whitespace-nowrap"
+                        href="{{ route('resume-builder.index') }}"
+                        class="hover:text-white transition whitespace-nowrap py-1 relative flex items-center gap-1.5 {{ request()->routeIs('resume-builder.*') ? 'text-white font-semibold' : '' }}"
                     >
-                        About Us
+                        <span>AI Resume Builder</span>
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 uppercase tracking-wider shadow-2xs">
+                            AI
+                        </span>
+                        @if(request()->routeIs('resume-builder.*'))
+                            <span class="absolute left-0 right-0 -bottom-1 h-0.5 bg-amber-400 rounded-full"></span>
+                        @endif
+                    </a>
+
+                    {{-- Online Tests --}}
+                    @php
+                        $hasActiveTest = \App\Models\Test::where('status', 'published')->get()->first(function($t) { return $t->isOpen(); });
+                    @endphp
+                    <a
+                        href="{{ route('tests.student.index') }}"
+                        class="hover:text-white transition whitespace-nowrap py-1 relative flex items-center gap-1.5 {{ request()->is('*tests/student*') ? 'text-white font-semibold' : '' }}"
+                    >
+                        <span>Online Tests</span>
+                        @if($hasActiveTest)
+                            <span class="inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-full bg-emerald-400 text-slate-950 uppercase tracking-wider">
+                                <span class="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping"></span> Live
+                            </span>
+                        @endif
+                        @if(request()->is('*tests/student*'))
+                            <span class="absolute left-0 right-0 -bottom-1 h-0.5 bg-amber-400 rounded-full"></span>
+                        @endif
                     </a>
 
                     {{-- Services --}}
@@ -275,7 +303,7 @@
                             type="button"
                             @click="servicesOpen = !servicesOpen"
                             @click.outside="servicesOpen = false"
-                            class="flex items-center gap-1 text-[13px] font-medium text-slate-300 hover:text-white transition"
+                            class="flex items-center gap-1 text-[13px] font-medium text-slate-300 hover:text-white transition py-1 relative {{ request()->routeIs('services.*') ? 'text-white font-semibold' : '' }}"
                             :class="{ 'text-white': servicesOpen }"
                         >
                             <span>Services</span>
@@ -294,6 +322,9 @@
                                     d="M6 9l6 6 6-6"
                                 />
                             </svg>
+                            @if(request()->routeIs('services.*'))
+                                <span class="absolute left-0 right-0 -bottom-1 h-0.5 bg-amber-400 rounded-full"></span>
+                            @endif
                         </button>
 
                         <div
@@ -305,20 +336,11 @@
                             x-transition:leave="transition ease-in duration-100"
                             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
                             x-transition:leave-end="opacity-0 -translate-y-2 scale-95"
-                        <div
-                            x-show="servicesOpen"
-                            x-cloak
-                            x-transition:enter="transition ease-out duration-150"
-                            x-transition:enter-start="opacity-0 -translate-y-2 scale-95"
-                            x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-                            x-transition:leave="transition ease-in duration-100"
-                            x-transition:leave-start="opacity-100 translate-y-0 scale-100"
-                            x-transition:leave-end="opacity-0 -translate-y-2 scale-95"
-                            class="absolute left-1/2 -translate-x-1/2 top-full mt-6 w-[240px] bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50 py-1"
+                            class="absolute left-1/2 -translate-x-1/2 top-full mt-3 w-[250px] bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50 py-1"
                             style="display: none;"
                         >
                             @php
-                                $topbarServiceCategories = \App\Models\ServiceCategory::where('is_active', true)->ordered()->take(5)->get();
+                                $topbarServiceCategories = \App\Models\ServiceCategory::where('is_active', true)->ordered()->take(6)->get();
                             @endphp
                             @forelse($topbarServiceCategories as $tsc)
                                 <a
@@ -348,46 +370,26 @@
                         </div>
                     </div>
 
-                    {{-- For Students --}}
+                    {{-- Groups --}}
                     <a
-                        href="https://www.reiaconsultancy.com/apply"
-                        class="hover:text-white transition whitespace-nowrap"
+                        href="{{ route('community.groups.index') }}"
+                        class="hover:text-white transition whitespace-nowrap py-1 relative {{ request()->routeIs('community.groups.*') || request()->is('groups*') ? 'text-white font-semibold' : '' }}"
                     >
-                        For Students
+                        Groups
+                        @if(request()->routeIs('community.groups.*') || request()->is('groups*'))
+                            <span class="absolute left-0 right-0 -bottom-1 h-0.5 bg-amber-400 rounded-full"></span>
+                        @endif
                     </a>
 
-                    {{-- Community --}}
+                    {{-- Guidelines --}}
                     <a
-                        href="{{ route('community.index') }}"
-                        class="text-white font-semibold relative whitespace-nowrap py-1 {{ request()->routeIs('community.index') ? '' : '' }}"
+                        href="{{ route('community.guidelines') }}"
+                        class="hover:text-white transition whitespace-nowrap py-1 relative {{ request()->routeIs('community.guidelines') ? 'text-white font-semibold' : '' }}"
                     >
-                        Community
-
-                        <span class="absolute left-0 right-0 -bottom-1 h-0.5 bg-amber-400 rounded-full"></span>
-                    </a>
-
-                    {{-- Notices --}}
-                    <a
-                        href="https://www.reiaconsultancy.com/notices"
-                        class="hover:text-white transition whitespace-nowrap"
-                    >
-                        Notices
-                    </a>
-
-                    {{-- F-2-7 Calculator --}}
-                    <a
-                        href="https://www.reiaconsultancy.com/visa-calculator"
-                        class="hover:text-white transition whitespace-nowrap"
-                    >
-                        F-2-7 Points Calculator
-                    </a>
-
-                    {{-- Contact --}}
-                    <a
-                        href="https://www.reiaconsultancy.com/contact-us"
-                        class="hover:text-white transition whitespace-nowrap"
-                    >
-                        Contact Us
+                        Guidelines
+                        @if(request()->routeIs('community.guidelines'))
+                            <span class="absolute left-0 right-0 -bottom-1 h-0.5 bg-amber-400 rounded-full"></span>
+                        @endif
                     </a>
                 </nav>
             </div>
@@ -1251,22 +1253,55 @@
     >
         <nav class="max-w-[1520px] mx-auto px-4 sm:px-6 py-4 space-y-1">
 
-            {{-- Home --}}
+            {{-- Community Feed --}}
             <a
-                href="https://www.reiaconsultancy.com/"
+                href="{{ route('community.index') }}"
                 @click="mobileMenuOpen = false"
-                class="flex items-center px-3 py-3 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition"
+                class="flex items-center px-3 py-3 rounded-xl text-sm font-semibold transition {{ request()->routeIs('community.index') || request()->routeIs('community.posts.*') ? 'text-white bg-white/10' : 'text-slate-300 hover:text-white hover:bg-white/5' }}"
             >
-                Home
+                @if(request()->routeIs('community.index') || request()->routeIs('community.posts.*'))
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-3"></span>
+                @endif
+                <span>Community Feed</span>
             </a>
 
-            {{-- About Us --}}
+            {{-- AI Resume Builder --}}
             <a
-                href="https://www.reiaconsultancy.com/about-us"
+                href="{{ route('resume-builder.index') }}"
                 @click="mobileMenuOpen = false"
-                class="flex items-center px-3 py-3 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition"
+                class="flex items-center justify-between px-3 py-3 rounded-xl text-sm font-medium transition {{ request()->routeIs('resume-builder.*') ? 'text-white bg-white/10' : 'text-slate-300 hover:text-white hover:bg-white/5' }}"
             >
-                About Us
+                <div class="flex items-center gap-2.5">
+                    @if(request()->routeIs('resume-builder.*'))
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                    @endif
+                    <span>AI Resume Builder</span>
+                </div>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 uppercase tracking-wider">
+                    ✨ AI
+                </span>
+            </a>
+
+            {{-- Online Tests --}}
+            @php
+                $hasActiveTestMobile = \App\Models\Test::where('status', 'published')->get()->first(function($t) { return $t->isOpen(); });
+            @endphp
+            <a
+                href="{{ route('tests.student.index') }}"
+                @click="mobileMenuOpen = false"
+                class="flex items-center justify-between px-3 py-3 rounded-xl text-sm font-medium transition {{ request()->is('*tests/student*') ? 'text-white bg-white/10' : 'text-slate-300 hover:text-white hover:bg-white/5' }}"
+            >
+                <div class="flex items-center gap-2.5">
+                    @if(request()->is('*tests/student*'))
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                    @endif
+                    <span>Online Tests</span>
+                </div>
+                @if($hasActiveTestMobile)
+                    <span class="inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded-full bg-emerald-400 text-slate-950 uppercase tracking-wider">
+                        Live
+                    </span>
+                @endif
             </a>
 
             {{-- Services --}}
@@ -1301,87 +1336,67 @@
                     x-transition
                     class="ml-3 mt-1 pl-3 border-l border-white/10 space-y-1"
                 >
+                    @php
+                        $mobileServiceCategories = \App\Models\ServiceCategory::where('is_active', true)->ordered()->take(6)->get();
+                    @endphp
+                    @forelse($mobileServiceCategories as $msc)
+                        <a
+                            href="{{ route('services.index', ['category' => $msc->slug]) }}"
+                            @click="mobileMenuOpen = false"
+                            class="block px-3 py-2 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-white/5 transition"
+                        >
+                            {{ $msc->name }}
+                        </a>
+                    @empty
+                        <a
+                            href="{{ route('services.index') }}"
+                            @click="mobileMenuOpen = false"
+                            class="block px-3 py-2 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-white/5 transition"
+                        >
+                            Consultancy Services
+                        </a>
+                    @endforelse
                     <a
-                        href="https://www.reiaconsultancy.com/services/university-admissions"
+                        href="{{ route('services.index') }}"
                         @click="mobileMenuOpen = false"
-                        class="block px-3 py-2.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-white/5 transition"
+                        class="block px-3 py-2 rounded-lg text-xs font-bold text-amber-400 hover:text-amber-300 transition"
                     >
-                        University Admissions
-                    </a>
-
-                    <a
-                        href="https://www.reiaconsultancy.com/services/visa-documentation"
-                        @click="mobileMenuOpen = false"
-                        class="block px-3 py-2.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-white/5 transition"
-                    >
-                        Visa & Documentation
-                    </a>
-
-                    <a
-                        href="https://www.reiaconsultancy.com/services/institutional-partnerships"
-                        @click="mobileMenuOpen = false"
-                        class="block px-3 py-2.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-white/5 transition"
-                    >
-                        Institutional Partnerships
-                    </a>
-
-                    <a
-                        href="https://www.reiaconsultancy.com/services/career-counseling"
-                        @click="mobileMenuOpen = false"
-                        class="block px-3 py-2.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-white/5 transition"
-                    >
-                        Career Counseling
+                        Browse All Services &rarr;
                     </a>
                 </div>
             </div>
 
-            {{-- For Students --}}
+            {{-- Groups --}}
             <a
-                href="https://www.reiaconsultancy.com/apply"
+                href="{{ route('community.groups.index') }}"
                 @click="mobileMenuOpen = false"
-                class="flex items-center px-3 py-3 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition"
+                class="flex items-center px-3 py-3 rounded-xl text-sm font-medium transition {{ request()->routeIs('community.groups.*') || request()->is('groups*') ? 'text-white bg-white/10' : 'text-slate-300 hover:text-white hover:bg-white/5' }}"
             >
-                For Students
+                @if(request()->routeIs('community.groups.*') || request()->is('groups*'))
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-3"></span>
+                @endif
+                <span>Groups</span>
             </a>
 
-            {{-- Community --}}
+            {{-- Guidelines --}}
             <a
-                href="{{ route('community.index') }}"
+                href="{{ route('community.guidelines') }}"
                 @click="mobileMenuOpen = false"
-                class="flex items-center px-3 py-3 rounded-xl text-sm font-semibold text-white bg-white/10"
+                class="flex items-center px-3 py-3 rounded-xl text-sm font-medium transition {{ request()->routeIs('community.guidelines') ? 'text-white bg-white/10' : 'text-slate-300 hover:text-white hover:bg-white/5' }}"
             >
-                <span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-3"></span>
-                Community
+                @if(request()->routeIs('community.guidelines'))
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-3"></span>
+                @endif
+                <span>Guidelines</span>
             </a>
 
 
 
-            {{-- Notices --}}
-            <a
-                href="https://www.reiaconsultancy.com/notices"
-                @click="mobileMenuOpen = false"
-                class="flex items-center px-3 py-3 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition"
-            >
-                Notices
-            </a>
 
-            {{-- F-2-7 Points Calculator --}}
-            <a
-                href="https://www.reiaconsultancy.com/visa-calculator"
-                @click="mobileMenuOpen = false"
-                class="flex items-center px-3 py-3 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition"
-            >
-                F-2-7 Points Calculator
-            </a>
 
-            {{-- Contact Us --}}
-            <a
-                href="https://www.reiaconsultancy.com/contact-us"
-                @click="mobileMenuOpen = false"
-                class="flex items-center px-3 py-3 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 transition"
-            >
-                Contact Us
-            </a>
+
+
+
 
             {{-- MOBILE AUTH --}}
             @auth

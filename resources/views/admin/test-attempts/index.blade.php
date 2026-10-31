@@ -3,7 +3,7 @@
 @section('title', 'Test Submissions')
 
 @section('content')
-<div class="p-6 space-y-6 max-w-[1400px] w-full mx-auto"
+<div class="w-full space-y-6"
      x-data="{
          testId: '{{ request('test_id') }}',
          levelId: '{{ request('level_id') }}',

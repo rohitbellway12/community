@@ -3,7 +3,7 @@
 @section('title', 'AI Resume Builder & Watermark Control')
 
 @section('content')
-<div class="p-6 space-y-6 max-w-[1400px] w-full mx-auto"
+<div class="space-y-5 sm:space-y-6 w-full"
      x-data="{
         currentTab: @js($activeTab ?? 'resumes'),
         proofModalOpen: false,

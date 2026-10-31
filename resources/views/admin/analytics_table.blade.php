@@ -3,7 +3,7 @@
 @section('title', 'Analytics Data Table')
 
 @section('content')
-<div class="p-6 space-y-6 max-w-[1400px] w-full mx-auto" x-data="analyticsTablePage(@js($analytics))">
+<div class="w-full space-y-6" x-data="analyticsTablePage(@js($analytics))">
     
     {{-- TOP NAVIGATION & BREADCRUMB --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

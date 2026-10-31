@@ -71,6 +71,34 @@
         .swal2-styled.swal2-cancel:hover {
             transform: translateY(-1px) !important;
         }
+
+        /* Completely hide scrollbars on sidebar while allowing smooth scroll */
+        aside nav::-webkit-scrollbar {
+            display: none !important;
+            width: 0px !important;
+            height: 0px !important;
+            background: transparent !important;
+        }
+        aside nav {
+            -ms-overflow-style: none !important;
+            scrollbar-width: none !important;
+        }
+
+        /* Sleek modern scrollbar for main content */
+        main::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        main::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        main::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        main::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
     </style>
 </head>
 
@@ -146,7 +174,7 @@
         ============================================================= --}}
         <aside
             :class="mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-            class="fixed inset-y-0 left-0 z-50 w-80 bg-reiac-navy text-white flex flex-col
+            class="fixed inset-y-0 left-0 z-50 w-72 bg-reiac-navy text-white flex flex-col
                    transition-transform duration-300 ease-in-out
                    lg:translate-x-0 shrink-0"
         >
@@ -231,7 +259,7 @@
             {{-- ========================================================
                  SIDEBAR NAVIGATION
             ========================================================= --}}
-            <nav class="flex-1 overflow-y-auto px-4 py-5 space-y-2">
+            <nav class="flex-1 overflow-y-auto px-3.5 sm:px-4 py-5 space-y-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
 
                 {{-- ====================================================
                      1. MAIN / DASHBOARD
@@ -1075,7 +1103,7 @@
         ============================================================= --}}
         <div
             class="flex-1 flex flex-col min-w-0 overflow-hidden
-                   @if($isAdmin) lg:pl-80 @endif"
+                   @if($isAdmin) lg:pl-72 @endif"
         >
 
             {{-- ========================================================
@@ -1339,7 +1367,7 @@
                         <svg class="w-3.5 h-3.5 text-slate-500 group-hover:text-amber-600 transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
                         </svg>
-                        <span>View Website</span>
+                        <span class="hidden sm:inline">View Website</span>
                         <svg class="w-3 h-3 text-slate-400 group-hover:text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
@@ -1447,8 +1475,8 @@
                  DYNAMIC CONTENT
             ========================================================= --}}
             <main
-                class="flex-1 overflow-y-auto
-                       p-4 sm:p-6 lg:p-8"
+                class="flex-1 overflow-y-auto min-w-0
+                       p-3 sm:p-4 lg:p-6"
             >
                 @yield('content')
             </main>

@@ -41,7 +41,7 @@
             this.editModalOpen = false;
         }
     }"
-    class="p-6 space-y-6 max-w-[1400px] w-full mx-auto"
+    class="space-y-5 sm:space-y-6 w-full"
     @keydown.escape.window="closeAllModals()"
 >
 

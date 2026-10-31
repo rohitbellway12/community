@@ -3,7 +3,7 @@
 @section('title', 'AI Resume Builder Settings')
 
 @section('content')
-<div class="p-6 max-w-5xl mx-auto space-y-6" x-data="{
+<div class="w-full space-y-6" x-data="{
     activeTab: 'ai',
     watermarkText: '{{ addslashes($setting->watermark_text ?: 'REIAC COMMUNITY • reiac.org') }}',
     watermarkEnabled: {{ $setting->watermark_enabled ? 'true' : 'false' }},

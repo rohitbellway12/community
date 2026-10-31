@@ -5,7 +5,7 @@
 @section('content')
 
 <div
-    class="p-6 space-y-6 max-w-[1400px] w-full mx-auto"
+    class="w-full space-y-6"
     x-data="{
         addModalOpen: false,
         editModalOpen: false,

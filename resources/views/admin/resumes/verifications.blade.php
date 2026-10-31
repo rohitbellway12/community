@@ -3,7 +3,7 @@
 @section('title', 'Social Reshare Verifications')
 
 @section('content')
-<div class="p-6 max-w-6xl mx-auto space-y-6" x-data="{
+<div class="w-full space-y-6" x-data="{
     proofModalOpen: false,
     proofImageUrl: '',
     rejectModalOpen: false,

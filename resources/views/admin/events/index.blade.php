@@ -3,7 +3,7 @@
 @section('title', 'Events & Contest Management')
 
 @section('content')
-<div class="p-6 space-y-6 max-w-[1400px] w-full mx-auto" x-data="eventManagement()">
+<div class="w-full space-y-6" x-data="eventManagement()">
 
     {{-- ALERT MESSAGES --}}
     @if(session('success'))

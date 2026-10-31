@@ -36,7 +36,7 @@
             }
         }
     }" 
-    class="p-6 space-y-6 max-w-[1400px] w-full mx-auto">
+    class="space-y-5 sm:space-y-6 w-full">
 
     {{-- FLASH MESSAGES --}}
     @if(session('success'))
@@ -73,7 +73,7 @@
     </div>
 
     {{-- SUMMARY STAT CARDS --}}
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+    <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
         {{-- 1. All Members --}}
         <a href="{{ route('admin.users') }}"
            class="bg-white p-4 rounded-2xl border transition shadow-xs {{ !request('status') && !request('platform') ? 'border-reiac-navy ring-2 ring-reiac-navy/10' : 'border-slate-200 hover:border-slate-300' }}">

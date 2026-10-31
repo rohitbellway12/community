@@ -3,7 +3,7 @@
 @section('title', 'Campaign Analytics - ' . $campaign->campaign_name)
 
 @section('content')
-<div class="p-6 space-y-6 max-w-[1400px] w-full mx-auto" x-data="{
+<div class="w-full space-y-6" x-data="{
     activeTab: '{{ $totalRegistrations > 0 ? 'registrations' : ($totalInstalls > 0 ? 'installs' : 'clicks') }}',
     copiedLink: false,
     copyUrl() {

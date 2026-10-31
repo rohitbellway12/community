@@ -30,7 +30,7 @@
             this.detailModalOpen = false;
         }
     }"
-    class="p-6 space-y-6 max-w-[1400px] w-full mx-auto font-sans text-slate-800"
+    class="w-full space-y-6 font-sans text-slate-800"
     @keydown.escape.window="closeDetailModal()"
 >
 

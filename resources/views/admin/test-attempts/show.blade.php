@@ -3,7 +3,7 @@
 @section('title', 'Submission Detail')
 
 @section('content')
-<div class="p-6 space-y-6 max-w-[1400px] w-full mx-auto">
+<div class="w-full space-y-6">
 
     {{-- BACK --}}
     <div class="flex items-center justify-between">

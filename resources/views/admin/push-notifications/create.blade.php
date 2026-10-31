@@ -3,7 +3,7 @@
 @section('title', 'Compose Push Notification')
 
 @section('content')
-<div class="p-6 space-y-6 max-w-[1400px] w-full mx-auto" x-data="pushNotificationComposer()">
+<div class="w-full space-y-6" x-data="pushNotificationComposer()">
 
     {{-- ALERT MESSAGES / ERRORS --}}
     @if($errors->any())

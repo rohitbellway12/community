@@ -3,7 +3,7 @@
 @section('title', 'Leaderboard - ' . $event->title)
 
 @section('content')
-<div class="p-6 space-y-6 max-w-[1400px] w-full mx-auto">
+<div class="w-full space-y-6">
 
     {{-- TOP NAVIGATION / HEADER --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

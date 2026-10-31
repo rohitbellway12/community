@@ -3,7 +3,7 @@
 @section('title', 'Admin Dashboard')
 
 @section('content')
-<div class="p-6 space-y-6 max-w-[1400px] w-full mx-auto">
+<div class="space-y-5 sm:space-y-6 w-full">
     
     {{-- PENDING MODERATION ALERT BANNER --}}
     @if($pendingReportsCount > 0)
@@ -45,7 +45,7 @@
     </div>
 
     {{-- STATS CARDS (OVERALL) --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+    <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
             <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Members</div>
             <div class="text-2xl font-extrabold text-slate-900 mt-1.5">{{ number_format($totalMembers) }}</div>
@@ -86,7 +86,7 @@
     </div>
 
     {{-- TODAY'S ACTIVITY HIGHLIGHT CARDS --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5 sm:gap-4">
         {{-- Today Registrations --}}
         <div class="bg-gradient-to-br from-emerald-50/70 via-white to-white p-5 rounded-2xl border border-emerald-100/90 shadow-xs flex items-center justify-between">
             <div>
@@ -348,18 +348,18 @@
     </div>
 
     {{-- GRID FOR DISCUSSIONS, TOP CONTRIBUTORS & NEW MEMBERS --}}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-5 sm:gap-6">
         
         {{-- RECENT POSTS TABLE (2 cols on large screen) --}}
-        <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-xs p-5 flex flex-col justify-between">
+        <div class="xl:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-xs p-4 sm:p-5 flex flex-col justify-between">
             <div>
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="font-bold text-slate-900 text-sm">Recent Community Discussions</h2>
                     <a href="{{ route('admin.posts') }}" class="text-xs font-bold text-amber-600 hover:underline">View All →</a>
                 </div>
 
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs">
+                <div class="overflow-x-auto -mx-1">
+                    <table class="w-full text-left text-xs min-w-[500px]">
                         <thead class="bg-slate-50 text-slate-400 uppercase font-bold tracking-wider">
                             <tr>
                                 <th class="p-3 rounded-l-xl">Title / Post</th>

@@ -3,7 +3,7 @@
 @section('title', 'Service Categories Management')
 
 @section('content')
-<div class="p-6 space-y-6 max-w-[1400px] w-full mx-auto" x-data="categoryManagement()">
+<div class="w-full space-y-6" x-data="categoryManagement()">
 
     {{-- ALERT MESSAGES --}}
     @if(session('success'))
