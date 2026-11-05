@@ -20,15 +20,22 @@ class AdminAnalyticsSettingController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'google_analytics_id' => ['nullable', 'string', 'max:50'],
-            'is_enabled'          => ['nullable'],
-            'play_store_url'      => ['nullable', 'url', 'max:500'],
-            'app_store_url'       => ['nullable', 'url', 'max:500'],
-            'custom_head_scripts' => ['nullable', 'string'],
-            'custom_body_scripts' => ['nullable', 'string'],
+            'google_analytics_id'    => ['nullable', 'string', 'max:50'],
+            'is_enabled'             => ['nullable'],
+            'ecommerce_enabled'      => ['nullable'],
+            'ecommerce_url'          => ['nullable', 'url', 'max:500'],
+            'ecommerce_button_label' => ['nullable', 'string', 'max:100'],
+            'play_store_url'         => ['nullable', 'url', 'max:500'],
+            'app_store_url'          => ['nullable', 'url', 'max:500'],
+            'custom_head_scripts'    => ['nullable', 'string'],
+            'custom_body_scripts'    => ['nullable', 'string'],
         ]);
 
         $validated['is_enabled'] = $request->boolean('is_enabled');
+        $validated['ecommerce_enabled'] = $request->boolean('ecommerce_enabled');
+        if (empty($validated['ecommerce_button_label'])) {
+            $validated['ecommerce_button_label'] = 'Shop';
+        }
         
         // Clean GA ID if user entered full script or whitespace
         if (!empty($validated['google_analytics_id'])) {

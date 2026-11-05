@@ -186,6 +186,8 @@
             ->values()
             ->toArray();
     }
+
+    $topbarWebsiteSetting = \App\Models\AnalyticsSetting::config();
 @endphp
 
 <header
@@ -391,6 +393,25 @@
                             <span class="absolute left-0 right-0 -bottom-1 h-0.5 bg-amber-400 rounded-full"></span>
                         @endif
                     </a>
+
+                    {{-- E-Commerce Button (Configured from Admin Settings) --}}
+                    @if($topbarWebsiteSetting->ecommerce_enabled && !empty($topbarWebsiteSetting->ecommerce_url))
+                        <a
+                            href="{{ $topbarWebsiteSetting->ecommerce_url }}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold transition shadow-xs hover:shadow-md hover:scale-[1.02] border border-purple-400/40 shrink-0"
+                            title="Visit E-Commerce Store"
+                        >
+                            <svg class="w-3.5 h-3.5 text-purple-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                            </svg>
+                            <span>{{ $topbarWebsiteSetting->ecommerce_button_label ?: 'Shop' }}</span>
+                            <svg class="w-3 h-3 text-purple-300 opacity-80" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                        </a>
+                    @endif
                 </nav>
             </div>
 
@@ -1389,6 +1410,27 @@
                 @endif
                 <span>Guidelines</span>
             </a>
+
+            {{-- E-Commerce Link (Mobile Menu) --}}
+            @if($topbarWebsiteSetting->ecommerce_enabled && !empty($topbarWebsiteSetting->ecommerce_url))
+                <a
+                    href="{{ $topbarWebsiteSetting->ecommerce_url }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    @click="mobileMenuOpen = false"
+                    class="flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-purple-900/60 to-indigo-900/60 border border-purple-500/40 text-purple-200 hover:text-white transition"
+                >
+                    <div class="flex items-center gap-2.5">
+                        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                        </svg>
+                        <span>{{ $topbarWebsiteSetting->ecommerce_button_label ?: 'Shop' }}</span>
+                    </div>
+                    <span class="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-purple-500/30 text-purple-200 uppercase tracking-wider">
+                        Store ↗
+                    </span>
+                </a>
+            @endif
 
 
 

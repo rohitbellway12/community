@@ -166,6 +166,120 @@
                         </p>
                     </div>
 
+                    {{-- ========================================================
+                         E-COMMERCE MODULE CONFIGURATION
+                    ======================================================== --}}
+                    <div class="pt-6 border-t border-slate-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-lg shadow-xs">
+                                    🛍️
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                                        E-Commerce Module &amp; Store Button
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                                            Community Shop
+                                        </span>
+                                    </h3>
+                                    <p class="text-xs text-slate-500">Enable or disable the E-Commerce store button on Website navigation &amp; Mobile App.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Ecommerce Toggle Switch Container --}}
+                        <div class="p-4 rounded-xl bg-purple-50/50 border border-purple-200/80 mb-4">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div class="space-y-0.5 pr-2">
+                                    <label class="text-sm font-bold text-slate-900">
+                                        Show E-Commerce Button
+                                    </label>
+                                    <p class="text-xs text-slate-500">
+                                        Jab yeh ON hoga aur URL bhara hoga, tabhi website ke navbar aur app par E-Commerce button dikhayi dega.
+                                    </p>
+                                </div>
+
+                                {{-- Clear, high-visibility radio pills (OFF / ON) --}}
+                                @php
+                                    $isEcomOn = (bool) old('ecommerce_enabled', $setting->ecommerce_enabled);
+                                @endphp
+                                <div class="inline-flex items-center p-1 bg-white rounded-xl border border-slate-300 shadow-xs shrink-0 self-start sm:self-center" id="ecom_toggle_group">
+                                    <label id="lbl_ecom_off" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition select-none {{ !$isEcomOn ? 'bg-slate-800 text-white shadow-xs' : 'text-slate-500 hover:text-slate-800' }}">
+                                        <input
+                                            type="radio"
+                                            name="ecommerce_enabled"
+                                            value="0"
+                                            class="sr-only"
+                                            {{ !$isEcomOn ? 'checked' : '' }}
+                                            onchange="
+                                                document.getElementById('lbl_ecom_off').className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition select-none bg-slate-800 text-white shadow-xs';
+                                                document.getElementById('lbl_ecom_on').className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition select-none text-slate-500 hover:text-purple-700';
+                                            "
+                                        >
+                                        <span class="w-2 h-2 rounded-full {{ !$isEcomOn ? 'bg-rose-400' : 'bg-slate-300' }}"></span>
+                                        <span>OFF</span>
+                                    </label>
+
+                                    <label id="lbl_ecom_on" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition select-none {{ $isEcomOn ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-500 hover:text-purple-700' }}">
+                                        <input
+                                            type="radio"
+                                            name="ecommerce_enabled"
+                                            value="1"
+                                            class="sr-only"
+                                            {{ $isEcomOn ? 'checked' : '' }}
+                                            onchange="
+                                                document.getElementById('lbl_ecom_on').className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition select-none bg-purple-600 text-white shadow-xs';
+                                                document.getElementById('lbl_ecom_off').className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition select-none text-slate-500 hover:text-slate-800';
+                                            "
+                                        >
+                                        <span class="w-2 h-2 rounded-full {{ $isEcomOn ? 'bg-emerald-300 animate-pulse' : 'bg-slate-300' }}"></span>
+                                        <span>ON</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Ecommerce Inputs Grid --}}
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            {{-- Button Label --}}
+                            <div class="sm:col-span-1">
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                                    Button Text / Label
+                                </label>
+                                <div class="flex rounded-xl shadow-xs overflow-hidden border border-slate-300 focus-within:border-purple-500 focus-within:ring-2 focus-within:ring-purple-500/20 bg-white transition">
+                                    <input
+                                        type="text"
+                                        name="ecommerce_button_label"
+                                        value="{{ old('ecommerce_button_label', $setting->ecommerce_button_label ?: 'Shop') }}"
+                                        placeholder="e.g. Shop / E-Commerce"
+                                        class="w-full text-sm px-4 py-2.5 border-0 bg-transparent focus:outline-none focus:ring-0 font-medium text-slate-800 placeholder:text-slate-400"
+                                    >
+                                </div>
+                                <p class="text-[11px] text-slate-400 mt-1">Default: Shop</p>
+                            </div>
+
+                            {{-- Store URL --}}
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                                    E-Commerce Store URL (Redirect Link)
+                                </label>
+                                <div class="flex rounded-xl shadow-xs overflow-hidden border border-slate-300 focus-within:border-purple-500 focus-within:ring-2 focus-within:ring-purple-500/20 bg-white transition">
+                                    <span class="inline-flex items-center gap-1 px-3 bg-slate-50 border-r border-slate-200 text-xs font-bold text-slate-500 select-none">
+                                        🔗 URL
+                                    </span>
+                                    <input
+                                        type="url"
+                                        name="ecommerce_url"
+                                        value="{{ old('ecommerce_url', $setting->ecommerce_url) }}"
+                                        placeholder="https://store.reiaconsultancy.com"
+                                        class="w-full text-sm px-4 py-2.5 border-0 bg-transparent focus:outline-none focus:ring-0 font-medium text-slate-800 placeholder:text-slate-400"
+                                    >
+                                </div>
+                                <p class="text-[11px] text-slate-400 mt-1">User is link par click karke redirect hoga.</p>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
                 {{-- Card Footer with Save Button --}}

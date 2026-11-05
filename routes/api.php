@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\CountryController;
 use App\Http\Controllers\Api\V1\DeviceController;
 use App\Http\Controllers\Api\V1\DeviceTokenController;
 use App\Http\Controllers\Api\V1\DocumentController;
+use App\Http\Controllers\Api\V1\EcommerceSettingController;
 use App\Http\Controllers\Api\V1\EventController;
 use App\Http\Controllers\Api\V1\FollowController;
 use App\Http\Controllers\Api\V1\GroupController;
@@ -45,6 +46,7 @@ Route::prefix('v1')->group(function () {
     Route::get('categories', [CategoryController::class, 'index'])->name('api.v1.categories.index');
     Route::get('tags', [TagController::class, 'index'])->name('api.v1.tags.index');
     Route::get('banners', [BannerController::class, 'index'])->name('api.v1.banners.index');
+    Route::get('ecommerce-button', [EcommerceSettingController::class, 'show'])->name('api.v1.ecommerce-button');
     Route::get('guidelines', [GuidelineController::class, 'index'])->name('api.v1.guidelines.index');
     Route::get('leaderboard', [UserProfileController::class, 'topContributors'])->name('api.v1.leaderboard');
 

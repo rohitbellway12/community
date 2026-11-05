@@ -9,6 +9,9 @@ class AnalyticsSetting extends Model
     protected $fillable = [
         'google_analytics_id',
         'is_enabled',
+        'ecommerce_enabled',
+        'ecommerce_url',
+        'ecommerce_button_label',
         'play_store_url',
         'app_store_url',
         'custom_head_scripts',
@@ -16,19 +19,23 @@ class AnalyticsSetting extends Model
     ];
 
     protected $casts = [
-        'is_enabled' => 'boolean',
+        'is_enabled'        => 'boolean',
+        'ecommerce_enabled' => 'boolean',
     ];
 
     public static function config(): self
     {
         return cache()->rememberForever('analytics_settings_config', function () {
             return static::firstOrCreate([], [
-                'google_analytics_id' => null,
-                'is_enabled'          => false,
-                'play_store_url'      => null,
-                'app_store_url'       => null,
-                'custom_head_scripts' => null,
-                'custom_body_scripts' => null,
+                'google_analytics_id'    => null,
+                'is_enabled'             => false,
+                'ecommerce_enabled'      => false,
+                'ecommerce_url'          => null,
+                'ecommerce_button_label' => 'Shop',
+                'play_store_url'         => null,
+                'app_store_url'          => null,
+                'custom_head_scripts'    => null,
+                'custom_body_scripts'    => null,
             ]);
         });
     }
