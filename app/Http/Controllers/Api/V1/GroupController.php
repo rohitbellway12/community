@@ -662,8 +662,16 @@ class GroupController extends Controller
             return $this->errorResponse('Only active group members can view group posts.', 403);
         }
 
-        $posts = $group->posts()
-            ->where('status', PostStatus::PUBLISHED->value)
+        $blockedUserIds = $user ? $user->getBlockedUserIds() : [];
+
+        $postsQuery = $group->posts()
+            ->where('status', PostStatus::PUBLISHED->value);
+
+        if (!empty($blockedUserIds)) {
+            $postsQuery->whereNotIn('user_id', $blockedUserIds);
+        }
+
+        $posts = $postsQuery
             ->with([
                 'user.profile.country',
                 'category',

@@ -95,7 +95,9 @@ class AdminReportController extends Controller
     public function banUser(Report $report): RedirectResponse
     {
         $content = $report->reportable;
-        $user = $content?->user;
+        $user = ($content instanceof User)
+            ? $content
+            : ($content?->user ?? $content?->owner);
 
         if (!$user) {
             return back()->with('error', 'Author could not be found.');

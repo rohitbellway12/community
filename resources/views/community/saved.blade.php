@@ -162,6 +162,56 @@
                              saved: true,
                              showFullContent: false,
                              mediaIndex: 0,
+                             menuOpen: false,
+                             postReportOpen: false,
+                             reportReason: 'Spam',
+                             reportDescription: '',
+                             reportLoading: false,
+                             reportSuccessMsg: '',
+                             reportErrorMsg: '',
+                             openReportModal() {
+                                 this.menuOpen = false;
+                                 this.reportReason = 'Spam';
+                                 this.reportDescription = '';
+                                 this.reportSuccessMsg = '';
+                                 this.reportErrorMsg = '';
+                                 this.postReportOpen = true;
+                             },
+                             closeReportModal() {
+                                 this.postReportOpen = false;
+                             },
+                             async submitReport() {
+                                 this.reportLoading = true;
+                                 this.reportErrorMsg = '';
+                                 this.reportSuccessMsg = '';
+                                 try {
+                                     const response = await fetch('{{ route('community.reports.store') }}', {
+                                         method: 'POST',
+                                         headers: {
+                                             'Content-Type': 'application/json',
+                                             'Accept': 'application/json',
+                                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                         },
+                                         body: JSON.stringify({
+                                             type: 'post',
+                                             id: {{ (int) $post->id }},
+                                             reason: this.reportReason,
+                                             description: this.reportDescription
+                                         })
+                                     });
+                                     const data = await response.json();
+                                     if (response.ok && data.success) {
+                                         this.reportSuccessMsg = data.message || 'Report submitted successfully.';
+                                         setTimeout(() => { this.closeReportModal(); }, 1800);
+                                     } else {
+                                         this.reportErrorMsg = data.message || 'Unable to submit report.';
+                                     }
+                                 } catch (err) {
+                                     this.reportErrorMsg = 'Network error. Please try again.';
+                                 } finally {
+                                     this.reportLoading = false;
+                                 }
+                             },
                              prevMedia(count) {
                                  this.mediaIndex = (this.mediaIndex - 1 + count) % count;
                              },
@@ -220,12 +270,50 @@
                                 </div>
                             </div>
 
-                            @if($post->category)
-                                <a href="{{ route('community.index', ['category' => $post->category->slug]) }}"
-                                   class="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition">
-                                    {{ $post->category->name }}
-                                </a>
-                            @endif
+                            <div class="flex items-center gap-2">
+                                @if($post->category)
+                                    <a href="{{ route('community.index', ['category' => $post->category->slug]) }}"
+                                       class="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition">
+                                        {{ $post->category->name }}
+                                    </a>
+                                @endif
+
+                                {{-- 3-DOT MENU --}}
+                                <div class="relative" @click.outside="menuOpen = false">
+                                    <button type="button" @click.stop="menuOpen = !menuOpen"
+                                        class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+                                        aria-label="Post options">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4z" />
+                                        </svg>
+                                    </button>
+
+                                    <div x-show="menuOpen" x-cloak x-transition
+                                        class="absolute right-0 top-9 z-40 w-36 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
+                                        @if(auth()->check() && (int)auth()->id() === (int)$post->user_id)
+                                            <span class="block px-3 py-1.5 text-[10px] text-slate-400">Your post</span>
+                                        @else
+                                            @auth
+                                                <button type="button" @click="openReportModal()"
+                                                    class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 text-left">
+                                                    <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                                                    </svg>
+                                                    Report post
+                                                </button>
+                                            @else
+                                                <a href="{{ route('login') }}"
+                                                    class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 text-left">
+                                                    <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                                                    </svg>
+                                                    Report post
+                                                </a>
+                                            @endauth
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         {{-- Title & Content --}}
@@ -369,6 +457,79 @@
                                 </a>
                             </div>
                         </div>
+
+                        {{-- REPORT MODAL --}}
+                        <template x-teleport="body">
+                            <div x-show="postReportOpen" x-cloak x-transition.opacity
+                                class="fixed inset-0 z-[220] flex items-center justify-center p-4">
+                                <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-xs"
+                                    @click="closeReportModal()"></div>
+
+                                <div x-show="postReportOpen" x-transition @click.stop
+                                    class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 z-10">
+                                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-8 h-8 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-sm font-bold">🚩</span>
+                                            <div>
+                                                <h3 class="text-sm font-bold text-slate-900">Report this post</h3>
+                                                <p class="text-[11px] text-slate-500">Help us keep the community safe and clean</p>
+                                            </div>
+                                        </div>
+                                        <button type="button" @click="closeReportModal()"
+                                            class="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
+                                    </div>
+
+                                    <div x-show="reportSuccessMsg" x-cloak
+                                        class="mt-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-xl flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                        <span x-text="reportSuccessMsg"></span>
+                                    </div>
+
+                                    <div x-show="reportErrorMsg" x-cloak
+                                        class="mt-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        <span x-text="reportErrorMsg"></span>
+                                    </div>
+
+                                    <div x-show="!reportSuccessMsg" class="mt-4 space-y-3.5">
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Reason for reporting</label>
+                                            <select x-model="reportReason"
+                                                class="w-full text-xs rounded-xl border-slate-200 focus:border-rose-500 focus:ring-rose-500 bg-slate-50 p-2.5">
+                                                <option value="Spam">Spam / Advertising</option>
+                                                <option value="Harassment">Harassment / Hate Speech</option>
+                                                <option value="Inappropriate Content">Inappropriate Content</option>
+                                                <option value="Misinformation">Misinformation / False Claim</option>
+                                                <option value="Violence / Self-Harm">Violence or Threat</option>
+                                                <option value="Other">Other</option>
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Additional details (optional)</label>
+                                            <textarea x-model="reportDescription" rows="3" maxlength="1000"
+                                                placeholder="Provide details that will help our moderation team review this..."
+                                                class="w-full text-xs rounded-xl border-slate-200 focus:border-rose-500 focus:ring-rose-500 bg-slate-50 p-2.5 resize-none"></textarea>
+                                        </div>
+
+                                        <div class="flex items-center justify-end gap-2 pt-2">
+                                            <button type="button" @click="closeReportModal()"
+                                                class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold">
+                                                Cancel
+                                            </button>
+                                            <button type="button" @click="submitReport()" :disabled="reportLoading"
+                                                class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5">
+                                                <span x-show="!reportLoading">Submit Report</span>
+                                                <span x-show="reportLoading" class="inline-flex items-center gap-1">
+                                                    <svg class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                                                    Sending...
+                                                </span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
 
                     </div>
                 @empty

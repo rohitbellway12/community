@@ -706,6 +706,15 @@
                         postEditOpen: false,
                         postDeleteConfirm: false,
                         postActionLoading: false,
+                        postReportOpen: false,
+                        reportType: 'post',
+                        reportTargetId: {{ (int) $post->id }},
+                        reportTitle: 'Report this post',
+                        reportReason: 'Spam',
+                        reportDescription: '',
+                        reportLoading: false,
+                        reportSuccessMsg: '',
+                        reportErrorMsg: '',
                         postTitle: @js($post->title),
                         postContent: @js($post->content),
                         postCategoryId: @js($post->category_id),
@@ -801,8 +810,95 @@
                         },
                     
                         openPostMenu() {
-                            if (!this.isPostOwner()) return;
                             this.postMenuOpen = !this.postMenuOpen;
+                        },
+
+                        openReportModal() {
+                            this.postMenuOpen = false;
+                            this.reportType = 'post';
+                            this.reportTargetId = {{ (int) $post->id }};
+                            this.reportTitle = 'Report this post';
+                            this.reportReason = 'Spam';
+                            this.reportDescription = '';
+                            this.reportSuccessMsg = '';
+                            this.reportErrorMsg = '';
+                            this.postReportOpen = true;
+                        },
+
+                        openCommentReportModal(item) {
+                            this.openCommentMenuId = null;
+                            this.reportType = 'comment';
+                            this.reportTargetId = Number(item.id);
+                            this.reportTitle = 'Report this comment';
+                            this.reportReason = 'Spam';
+                            this.reportDescription = '';
+                            this.reportSuccessMsg = '';
+                            this.reportErrorMsg = '';
+                            this.postReportOpen = true;
+                        },
+
+                        closeReportModal() {
+                            this.postReportOpen = false;
+                        },
+
+                        async blockAuthor(userId, userName) {
+                            this.postMenuOpen = false;
+                            this.openCommentMenuId = null;
+                            if (!userId) return;
+                            if (!confirm(`Block ${userName}? You will no longer see their posts and comments.`)) return;
+                            try {
+                                const res = await fetch(`{{ url('/users') }}/${userId}/block`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Accept': 'application/json',
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                    }
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                    window.location.reload();
+                                } else {
+                                    alert(data.message || 'Failed to block user.');
+                                }
+                            } catch (e) {
+                                alert('Network error. Please try again.');
+                            }
+                        },
+
+                        async submitReport() {
+                            this.reportLoading = true;
+                            this.reportErrorMsg = '';
+                            this.reportSuccessMsg = '';
+                            try {
+                                const response = await fetch('{{ route('community.reports.store') }}', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Accept': 'application/json',
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                    },
+                                    body: JSON.stringify({
+                                        type: this.reportType,
+                                        id: this.reportTargetId,
+                                        reason: this.reportReason,
+                                        description: this.reportDescription
+                                    })
+                                });
+                                const data = await response.json();
+                                if (response.ok && data.success) {
+                                    this.reportSuccessMsg = data.message || 'Report submitted successfully.';
+                                    setTimeout(() => {
+                                        this.closeReportModal();
+                                    }, 1800);
+                                } else {
+                                    this.reportErrorMsg = data.message || 'Unable to submit report.';
+                                }
+                            } catch (err) {
+                                this.reportErrorMsg = 'Network error. Please try again.';
+                            } finally {
+                                this.reportLoading = false;
+                            }
                         },
                     
                         toggleEditTag(id) {
@@ -1582,20 +1678,20 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                                 @endif
                             </div>
 
-                            @if ($isOwnPost)
-                                <div class="relative" @click.outside="postMenuOpen = false">
-                                    <button type="button" @click.stop="openPostMenu()"
-                                        class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition focus:outline-none focus:ring-2 focus:ring-slate-200"
-                                        aria-label="Post options">
-                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                            <path
-                                                d="M10 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4z" />
-                                        </svg>
-                                    </button>
+                            <div class="relative" @click.outside="postMenuOpen = false">
+                                <button type="button" @click.stop="openPostMenu()"
+                                    class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition focus:outline-none focus:ring-2 focus:ring-slate-200"
+                                    aria-label="Post options">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path
+                                            d="M10 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4z" />
+                                    </svg>
+                                </button>
 
-                                    <div x-show="postMenuOpen" x-cloak x-transition
-                                        class="absolute right-0 top-9 z-40 w-36 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl"
-                                        @click.stop>
+                                <div x-show="postMenuOpen" x-cloak x-transition
+                                    class="absolute right-0 top-9 z-40 w-36 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl"
+                                    @click.stop>
+                                    @if ($isOwnPost)
                                         <button type="button" @click="startEditPost()"
                                             class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 text-left">
                                             <svg class="w-3.5 h-3.5 text-slate-500" fill="none"
@@ -1614,9 +1710,34 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                                             </svg>
                                             Delete post
                                         </button>
-                                    </div>
+                                    @else
+                                        @auth
+                                            <button type="button" @click="blockAuthor({{ (int) $post->user_id }}, '{{ addslashes($post->user->name ?? 'this user') }}')"
+                                                class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 text-left">
+                                                <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                                </svg>
+                                                Block user
+                                            </button>
+                                            <button type="button" @click="openReportModal()"
+                                                class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 text-left">
+                                                <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                                                </svg>
+                                                Report post
+                                            </button>
+                                        @else
+                                            <a href="{{ route('login') }}"
+                                                class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 text-left">
+                                                <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                                                </svg>
+                                                Report post
+                                            </a>
+                                        @endauth
+                                    @endif
                                 </div>
-                            @endif
+                            </div>
 
                         </div>
                     </div>
@@ -1890,8 +2011,7 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                                                 </template>
 
                                                 {{-- 3 DOT MENU --}}
-                                                <template
-                                                    x-if="isCommentOwner(comment) && editingCommentId !== Number(comment.id)">
+                                                <template x-if="editingCommentId !== Number(comment.id)">
                                                     <div class="absolute top-1.5 right-1.5">
                                                         <button type="button"
                                                             @click.stop="openCommentMenuId = openCommentMenuId === Number(comment.id) ? null : Number(comment.id)"
@@ -1906,30 +2026,50 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                                                         </button>
                                                         <div x-show="openCommentMenuId === Number(comment.id)" x-cloak
                                                             x-transition @click.outside="openCommentMenuId = null"
-                                                            class="absolute right-0 top-7 z-40 w-28 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl p-1">
-                                                            <button type="button"
-                                                                @click="openCommentMenuId = null; startEditComment(comment)"
-                                                                class="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[10px] font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900">
-                                                                <svg class="w-3.5 h-3.5" fill="none"
-                                                                    stroke="currentColor" stroke-width="1.8"
-                                                                    viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round"
-                                                                        stroke-linejoin="round"
-                                                                        d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L8 18l-4 1 1-4 11.5-11.5z" />
-                                                                </svg> Edit
-                                                            </button>
-                                                            <button type="button"
-                                                                @click="requestDeleteComment(comment)"
-                                                                :disabled="commentActionLoading"
-                                                                class="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[10px] font-semibold text-red-600 hover:bg-red-50 disabled:opacity-40">
-                                                                <svg class="w-3.5 h-3.5" fill="none"
-                                                                    stroke="currentColor" stroke-width="1.8"
-                                                                    viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round"
-                                                                        stroke-linejoin="round"
-                                                                        d="M4 7h16m-10 4v6m4-6v6M9 7V4h6v3m-8 0l1 13h8l1-13" />
-                                                                </svg> Delete
-                                                            </button>
+                                                            class="absolute right-0 top-7 z-40 w-32 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl p-1">
+                                                            <template x-if="isCommentOwner(comment)">
+                                                                <div>
+                                                                    <button type="button"
+                                                                        @click="openCommentMenuId = null; startEditComment(comment)"
+                                                                        class="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[10px] font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900">
+                                                                        <svg class="w-3.5 h-3.5" fill="none"
+                                                                            stroke="currentColor" stroke-width="1.8"
+                                                                            viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round"
+                                                                                stroke-linejoin="round"
+                                                                                d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L8 18l-4 1 1-4 11.5-11.5z" />
+                                                                        </svg> Edit
+                                                                    </button>
+                                                                    <button type="button"
+                                                                        @click="requestDeleteComment(comment)"
+                                                                        :disabled="commentActionLoading"
+                                                                        class="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[10px] font-semibold text-red-600 hover:bg-red-50 disabled:opacity-40">
+                                                                        <svg class="w-3.5 h-3.5" fill="none"
+                                                                            stroke="currentColor" stroke-width="1.8"
+                                                                            viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round"
+                                                                                stroke-linejoin="round"
+                                                                                d="M4 7h16m-10 4v6m4-6v6M9 7V4h6v3m-8 0l1 13h8l1-13" />
+                                                                        </svg> Delete
+                                                                    </button>
+                                                                </div>
+                                                            </template>
+                                                            <template x-if="!isCommentOwner(comment)">
+                                                                <div>
+                                                                    <button type="button"
+                                                                        @click="blockAuthor(comment.user_id || comment.user?.id, comment.user?.name || 'this user')"
+                                                                        class="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[10px] font-semibold text-slate-700 hover:bg-slate-50">
+                                                                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                                                                        Block user
+                                                                    </button>
+                                                                    <button type="button"
+                                                                        @click="openCommentReportModal(comment)"
+                                                                        class="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[10px] font-semibold text-rose-600 hover:bg-rose-50">
+                                                                        <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" /></svg>
+                                                                        Report comment
+                                                                    </button>
+                                                                </div>
+                                                            </template>
                                                         </div>
                                                     </div>
                                                 </template>
@@ -2005,7 +2145,7 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
 
                                                             {{-- 3 DOT MENU --}}
                                                             <template
-                                                                x-if="isCommentOwner(reply) && editingCommentId !== Number(reply.id)">
+                                                                x-if="editingCommentId !== Number(reply.id)">
                                                                 <div class="absolute top-1 right-1">
                                                                     <button type="button"
                                                                         @click.stop="openCommentMenuId = openCommentMenuId === Number(reply.id) ? null : Number(reply.id)"
@@ -2024,7 +2164,9 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                                                                     <div x-show="openCommentMenuId === Number(reply.id)"
                                                                         x-cloak x-transition
                                                                         @click.outside="openCommentMenuId = null"
-                                                                        class="absolute right-0 top-7 z-40 w-28 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl p-1">
+                                                                        class="absolute right-0 top-7 z-40 w-32 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl p-1">
+                                                                        <template x-if="isCommentOwner(reply)">
+                                                                            <div>
                                                                         <button type="button"
                                                                             @click="openCommentMenuId = null; startEditComment(reply)"
                                                                             class="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[10px] font-semibold text-slate-600 hover:bg-slate-50">
@@ -2051,6 +2193,24 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                                                                             </svg> Delete
                                                                         </button>
                                                                     </div>
+                                                                </template>
+                                                                <template x-if="!isCommentOwner(reply)">
+                                                                    <div>
+                                                                        <button type="button"
+                                                                            @click="blockAuthor(reply.user_id || reply.user?.id, reply.user?.name || 'this user')"
+                                                                            class="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[10px] font-semibold text-slate-700 hover:bg-slate-50">
+                                                                            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                                                                            Block user
+                                                                        </button>
+                                                                        <button type="button"
+                                                                            @click="openCommentReportModal(reply)"
+                                                                            class="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[10px] font-semibold text-rose-600 hover:bg-rose-50">
+                                                                            <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" /></svg>
+                                                                            Report reply
+                                                                        </button>
+                                                                    </div>
+                                                                </template>
+                                                            </div>
                                                                 </div>
                                                             </template>
                                                         </div>
@@ -2394,6 +2554,71 @@ window.dispatchEvent(new CustomEvent('open-login-modal'));
                                 </div>
                             </div>
 
+                        </template>
+
+                        {{-- POST REPORT MODAL --}}
+                        <template x-teleport="body">
+                            <div x-show="postReportOpen" x-cloak x-transition.opacity
+                                class="fixed inset-0 z-[120] flex items-center justify-center p-4">
+                                <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-xs"
+                                    @click="closeReportModal()"></div>
+
+                                <div x-show="postReportOpen" x-transition @click.stop
+                                    class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 z-10">
+                                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-8 h-8 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-sm font-bold">🚩</span>
+                                            <div>
+                                                <h3 class="text-sm font-bold text-slate-900" x-text="reportTitle">Report</h3>
+                                                <p class="text-[11px] text-slate-500">Help us keep the community safe & respectful.</p>
+                                            </div>
+                                        </div>
+                                        <button type="button" @click="closeReportModal()" class="text-slate-400 hover:text-slate-600 font-bold p-1">✕</button>
+                                    </div>
+
+                                    <div x-show="reportSuccessMsg" class="my-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                        <span x-text="reportSuccessMsg"></span>
+                                    </div>
+
+                                    <div x-show="reportErrorMsg" class="my-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <span x-text="reportErrorMsg"></span>
+                                    </div>
+
+                                    <form x-show="!reportSuccessMsg" @submit.prevent="submitReport()" class="mt-4 space-y-4">
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-700 mb-1.5">Reason for report <span class="text-rose-500">*</span></label>
+                                            <select x-model="reportReason" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-400">
+                                                <option value="Spam">Spam or misleading promotional content</option>
+                                                <option value="Hate Speech">Hate speech or abusive language</option>
+                                                <option value="Inappropriate Content">Inappropriate / adult content</option>
+                                                <option value="False Information">False information or scam</option>
+                                                <option value="Harassment">Harassment or bullying</option>
+                                                <option value="Other">Other policy violation</option>
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-700 mb-1.5">Details (Optional)</label>
+                                            <textarea x-model="reportDescription" rows="3" placeholder="Provide extra context to help our moderation team..."
+                                                class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-400"></textarea>
+                                        </div>
+
+                                        <div class="flex items-center justify-end gap-2 pt-2">
+                                            <button type="button" @click="closeReportModal()" :disabled="reportLoading"
+                                                class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">
+                                                Cancel
+                                            </button>
+                                            <button type="submit" :disabled="reportLoading"
+                                                class="px-5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs transition flex items-center gap-1.5 disabled:opacity-50">
+                                                <span x-show="!reportLoading">Submit Report</span>
+                                                <span x-show="reportLoading">Submitting...</span>
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
                         </template>
                         {{-- DELETE CONFIRMATION MODAL --}}
                         <div x-show="deleteConfirmComment" x-cloak x-transition.opacity

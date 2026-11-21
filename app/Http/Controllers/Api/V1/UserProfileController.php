@@ -53,6 +53,12 @@ class UserProfileController extends Controller
         $viewer = $request->user('sanctum');
         $isSelf = $viewer && (int) $viewer->id === (int) $user->id;
 
+        if ($viewer && !$isSelf) {
+            if ($viewer->isBlocking($user) || $viewer->isBlockedBy($user)) {
+                return $this->errorResponse('This profile is not accessible.', 404);
+            }
+        }
+
         $postsCount = $user->posts()
             ->where('status', PostStatus::PUBLISHED->value)
             ->whereNull('deleted_at')
@@ -140,6 +146,12 @@ class UserProfileController extends Controller
 
         $viewer = $request->user('sanctum');
         $isSelf = $viewer && (int) $viewer->id === (int) $user->id;
+
+        if ($viewer && !$isSelf) {
+            if ($viewer->isBlocking($user) || $viewer->isBlockedBy($user)) {
+                return $this->errorResponse('This profile is not accessible.', 404);
+            }
+        }
 
         $postsQuery = Post::query()
             ->where('user_id', $user->id)

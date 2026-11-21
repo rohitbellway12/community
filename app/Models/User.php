@@ -250,6 +250,67 @@ public function following()
 }
 
     /**
+     * Users who are blocked by this user.
+     */
+    public function blockedUsers()
+    {
+        return $this->belongsToMany(
+            User::class,
+            'blocked_users',
+            'blocker_id',
+            'blocked_id'
+        )->withTimestamps();
+    }
+
+    /**
+     * Users who have blocked this user.
+     */
+    public function blockedByUsers()
+    {
+        return $this->belongsToMany(
+            User::class,
+            'blocked_users',
+            'blocked_id',
+            'blocker_id'
+        )->withTimestamps();
+    }
+
+    /**
+     * Get all user IDs involved in a block relationship with this user (both directions).
+     *
+     * @return int[]
+     */
+    public function getBlockedUserIds(): array
+    {
+        $blocked = BlockedUser::where('blocker_id', $this->id)->pluck('blocked_id')->all();
+        $blockedBy = BlockedUser::where('blocked_id', $this->id)->pluck('blocker_id')->all();
+
+        return array_values(array_unique(array_map('intval', array_merge($blocked, $blockedBy))));
+    }
+
+    /**
+     * Check if this user is blocking target user.
+     */
+    public function isBlocking($user): bool
+    {
+        $targetId = $user instanceof User ? $user->id : (int) $user;
+        return BlockedUser::where('blocker_id', $this->id)
+            ->where('blocked_id', $targetId)
+            ->exists();
+    }
+
+    /**
+     * Check if this user is blocked by target user.
+     */
+    public function isBlockedBy($user): bool
+    {
+        $targetId = $user instanceof User ? $user->id : (int) $user;
+        return BlockedUser::where('blocker_id', $targetId)
+            ->where('blocked_id', $this->id)
+            ->exists();
+    }
+
+    /**
      * User statistics.
      */
     public function stats()

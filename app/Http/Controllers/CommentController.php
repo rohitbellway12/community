@@ -17,6 +17,24 @@ class CommentController extends Controller
         ]);
 
         $user = Auth::user();
+        $blockedUserIds = $user ? $user->getBlockedUserIds() : [];
+
+        if (in_array((int) $post->user_id, $blockedUserIds, true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot comment on this discussion.',
+            ], 403);
+        }
+
+        if ($request->filled('parent_id')) {
+            $parentComment = Comment::find($request->input('parent_id'));
+            if ($parentComment && in_array((int) $parentComment->user_id, $blockedUserIds, true)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You cannot reply to this comment.',
+                ], 403);
+            }
+        }
 
         $post->loadMissing('group');
         $isPrivate = $post->visibility === 'private'

@@ -76,6 +76,11 @@ public function index(Request $request)
     $postsQuery = Post::query()
         ->where('status', 'published');
 
+    $blockedUserIds = $user ? $user->getBlockedUserIds() : [];
+    if (!empty($blockedUserIds)) {
+        $postsQuery->whereNotIn('user_id', $blockedUserIds);
+    }
+
     if ($activeGroup) {
         $postsQuery->where('group_id', $activeGroup->id);
         if ($activeGroup->visibility === 'private') {
@@ -127,15 +132,19 @@ public function index(Request $request)
                     $query->where('user_id', $user->id);
                 }
             },
-            'comments' => function ($query) {
+            'comments' => function ($query) use ($blockedUserIds) {
                 $query
                     ->whereNull('parent_id')
+                    ->when(!empty($blockedUserIds), fn ($q) => $q->whereNotIn('user_id', $blockedUserIds))
                     ->latest()
                     ->take(4)
                     ->with([
                         'user.profile',
-                        'replies' => function ($replyQuery) {
-                            $replyQuery->oldest()->with('user.profile');
+                        'replies' => function ($replyQuery) use ($blockedUserIds) {
+                            $replyQuery
+                                ->when(!empty($blockedUserIds), fn ($rq) => $rq->whereNotIn('user_id', $blockedUserIds))
+                                ->oldest()
+                                ->with('user.profile');
                         },
                     ]);
             },
@@ -574,6 +583,13 @@ public function index(Request $request)
      */
     public function show(Request $request, Post $post)
     {
+        $currentUser = Auth::user();
+        $blockedUserIds = $currentUser ? $currentUser->getBlockedUserIds() : [];
+
+        if ($currentUser && in_array((int) $post->user_id, $blockedUserIds, true)) {
+            abort(404, 'This discussion is unavailable.');
+        }
+
         $post->loadMissing('group');
         $isPrivate = $post->visibility === 'private'
             || ($post->group && $post->group->visibility === 'private');
@@ -583,7 +599,6 @@ public function index(Request $request)
                 return redirect()->guest(route('login'))->with('error', 'Please log in to view this private discussion.');
             }
 
-            $currentUser = Auth::user();
             $canView = (int) $post->user_id === (int) $currentUser->id
                 || ($post->group && (int) $post->group->owner_id === (int) $currentUser->id)
                 || ($post->group && $post->group->users()->where('users.id', $currentUser->id)->wherePivot('status', 'active')->exists())
@@ -601,15 +616,19 @@ public function index(Request $request)
             'category',
             'tags',
             'media',
-            'comments' => function ($query) {
+            'comments' => function ($query) use ($blockedUserIds) {
                 $query
                     ->whereNull('parent_id')
+                    ->when(!empty($blockedUserIds), fn ($q) => $q->whereNotIn('user_id', $blockedUserIds))
                     ->latest()
                     ->take(4)
                     ->with([
                         'user.profile',
-                        'replies' => function ($replyQuery) {
-                            $replyQuery->oldest()->with('user.profile');
+                        'replies' => function ($replyQuery) use ($blockedUserIds) {
+                            $replyQuery
+                                ->when(!empty($blockedUserIds), fn ($rq) => $rq->whereNotIn('user_id', $blockedUserIds))
+                                ->oldest()
+                                ->with('user.profile');
                         },
                     ]);
             },
@@ -624,6 +643,7 @@ public function index(Request $request)
         $relatedPosts = Post::query()
             ->where('status', 'published')
             ->where('visibility', 'public')
+            ->when(!empty($blockedUserIds), fn ($q) => $q->whereNotIn('user_id', $blockedUserIds))
             ->where(function ($gq) {
                 $gq->whereNull('group_id')
                    ->orWhereHas('group', function ($g) {
@@ -853,6 +873,53 @@ public function index(Request $request)
         return response()->json([
             'success' => true,
             'saved' => $isSaved,
+        ]);
+    }
+
+    /**
+     * Report an abusive or inappropriate post from community web frontend.
+     */
+    public function report(Request $request, Post $post)
+    {
+        $validated = $request->validate([
+            'reason'      => ['required', 'string', 'max:100'],
+            'description' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $user = $request->user();
+
+        if ((int) $post->user_id === (int) $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot report your own post.',
+            ], 422);
+        }
+
+        $alreadyReported = \App\Models\Report::where('reporter_id', $user->id)
+            ->where('reportable_type', Post::class)
+            ->where('reportable_id', $post->id)
+            ->whereIn('status', [\App\Enums\ReportStatus::PENDING->value, \App\Enums\ReportStatus::REVIEWING->value])
+            ->exists();
+
+        if ($alreadyReported) {
+            return response()->json([
+                'success' => true,
+                'message' => 'You have already reported this post. Our moderation team is reviewing it.',
+            ]);
+        }
+
+        \App\Models\Report::create([
+            'reporter_id'     => $user->id,
+            'reportable_type' => Post::class,
+            'reportable_id'   => $post->id,
+            'reason'          => trim($validated['reason']),
+            'description'     => isset($validated['description']) ? trim($validated['description']) : null,
+            'status'          => \App\Enums\ReportStatus::PENDING,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Report submitted successfully. Thank you for keeping our community safe.',
         ]);
     }
 

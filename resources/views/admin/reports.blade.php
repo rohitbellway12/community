@@ -130,9 +130,28 @@
                     @forelse($reports as $report)
                         @php
                             $content = $report->reportable;
-                            $author = $content?->user;
+                            $author = ($content instanceof \App\Models\User) ? $content : ($content?->user ?? $content?->owner ?? null);
                             $contentType = class_basename($report->reportable_type);
-                            $contentTitle = $contentType === 'Post' ? ($content?->title ?? 'Untitled Post') : ($content?->content ?? 'Comment deleted');
+
+                            if ($contentType === 'Post') {
+                                $contentTitle = $content?->title ?? 'Untitled Post';
+                            } elseif ($contentType === 'Comment') {
+                                $contentTitle = $content?->content ?? 'Comment deleted';
+                            } elseif ($contentType === 'User') {
+                                $contentTitle = $content ? ($content->name . ' (@' . ($content->username ?? 'user') . ')') : 'Deleted User';
+                            } elseif ($contentType === 'Group') {
+                                $contentTitle = $content ? ($content->name . ' (Community Group)') : 'Deleted Group';
+                            } else {
+                                $contentTitle = $content?->name ?? $content?->title ?? 'Deleted item';
+                            }
+
+                            $badgeClass = match($contentType) {
+                                'Post' => 'bg-blue-50 text-blue-700 border border-blue-200',
+                                'Comment' => 'bg-purple-50 text-purple-700 border border-purple-200',
+                                'User' => 'bg-amber-50 text-amber-700 border border-amber-200',
+                                'Group' => 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+                                default => 'bg-slate-50 text-slate-700 border border-slate-200',
+                            };
                         @endphp
                         <tr class="hover:bg-slate-50/60 transition">
                             {{-- ID & Date --}}
@@ -144,7 +163,7 @@
                             {{-- Flagged Content Snippet --}}
                             <td class="py-3 px-4 max-w-xs">
                                 <div class="flex items-center gap-1.5 mb-1">
-                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-bold {{ $contentType === 'Post' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-purple-50 text-purple-700 border border-purple-200' }}">
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-bold {{ $badgeClass }}">
                                         {{ $contentType }}
                                     </span>
                                     @if(!$content)

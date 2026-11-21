@@ -14,13 +14,13 @@ trait ApiResponse
      * @param int $code
      * @return JsonResponse
      */
-    protected function successResponse($data = null, ?string $message = null, int $code = 200): JsonResponse
+    protected function successResponse($data = null, ?string $message = null, int $code = 200, array $extra = []): JsonResponse
     {
-        $response = [
+        $response = array_merge([
             'success' => true,
             'message' => $message,
             'data'    => $data,
-        ];
+        ], $extra);
 
         return response()->json($response, $code);
     }

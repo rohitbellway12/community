@@ -734,6 +734,128 @@ curl -X DELETE http://localhost/community/api/v1/users/3/follower/remove \
 ---
 
 # ==========================================
+# 🚫 BLOCK & UNBLOCK USERS
+# ==========================================
+
+## 40.1 Block User
+**POST** `/users/{user_id}/block`  
+**Auth:** ✅ Bearer Token Required  
+*Blocks the target user. Automatically breaks mutual follows and hides their posts and comments completely from feed, groups, searches and discussions.*
+
+### Curl:
+```bash
+curl -X POST http://localhost/community/api/v1/users/2/block \
+  -H "Authorization: Bearer <YOUR_TOKEN>" \
+  -H "Accept: application/json"
+```
+
+### Response (200 OK):
+```json
+{
+  "success": true,
+  "message": "User has been blocked successfully.",
+  "data": {
+    "blocked": true,
+    "user_id": 2
+  }
+}
+```
+
+---
+
+## 40.2 Unblock User
+**POST** `/users/{user_id}/unblock`  
+*(Or **DELETE** `/users/{user_id}/block`)*  
+**Auth:** ✅ Bearer Token Required  
+
+### Curl:
+```bash
+curl -X POST http://localhost/community/api/v1/users/2/unblock \
+  -H "Authorization: Bearer <YOUR_TOKEN>" \
+  -H "Accept: application/json"
+```
+
+### Response (200 OK):
+```json
+{
+  "success": true,
+  "message": "User has been unblocked successfully.",
+  "data": {
+    "blocked": false,
+    "user_id": 2
+  }
+}
+```
+
+---
+
+## 40.3 Get Blocked Users List
+**GET** `/users/blocked`  
+**Auth:** ✅ Bearer Token Required  
+*Returns a paginated list of all users you have blocked.*
+
+### Curl:
+```bash
+curl -X GET "http://localhost/community/api/v1/users/blocked?page=1" \
+  -H "Authorization: Bearer <YOUR_TOKEN>" \
+  -H "Accept: application/json"
+```
+
+### Response (200 OK):
+```json
+{
+  "success": true,
+  "message": "Blocked users retrieved successfully.",
+  "data": [
+    {
+      "id": 2,
+      "name": "User Name",
+      "email": "user@example.com",
+      "profile": {
+        "username": "username",
+        "avatar": "https://...",
+        "bio": "..."
+      }
+    }
+  ],
+  "meta": {
+    "pagination": {
+      "current_page": 1,
+      "last_page": 1,
+      "per_page": 20,
+      "total": 1
+    }
+  }
+}
+```
+
+---
+
+## 40.4 Check Block Status
+**GET** `/users/{user_id}/block/status`  
+**Auth:** ✅ Bearer Token Required  
+
+### Curl:
+```bash
+curl -X GET http://localhost/community/api/v1/users/2/block/status \
+  -H "Authorization: Bearer <YOUR_TOKEN>" \
+  -H "Accept: application/json"
+```
+
+### Response (200 OK):
+```json
+{
+  "success": true,
+  "data": {
+    "is_blocking": true,
+    "is_blocked_by": false
+  }
+}
+```
+
+---
+
+# ==========================================
 # 👤 PROFILE & ACTIVITY
 # ==========================================
 
@@ -800,22 +922,33 @@ curl -X GET http://localhost/community/api/v1/user/activity \
 **POST** /reports
 **Auth:** ✅ Bearer Token Required
 
+Report abusive, spam, or inappropriate content. Supported types: `post`, `comment`, `user`, `group`.
+
 ### Body (JSON):
 ```json
 {
-    "reportable_type": "App\\Models\\Post",
-    "reportable_id": 1,
+    "type": "post",
+    "id": 1,
     "reason": "Spam",
-    "description": "This post contains spam content"
+    "description": "This content violates community guidelines"
 }
 ```
+
+### Supported `type` values:
+| Type | `id` refers to | Description |
+| :--- | :--- | :--- |
+| `post` | Post ID | Flag a discussion or post |
+| `comment` | Comment ID | Flag an abusive or spam comment |
+| `user` | User ID | Flag a fake or abusive user profile |
+| `group` | Group ID | Flag a scam, illegal, or spam community group |
 
 ### Curl:
 ```bash
 curl -X POST http://localhost/community/api/v1/reports \
   -H "Authorization: Bearer <YOUR_TOKEN>" \
   -H "Content-Type: application/json" \
-  -d '{"reportable_type":"App\\Models\\Post","reportable_id":1,"reason":"Spam","description":"This is spam"}'
+  -H "Accept: application/json" \
+  -d '{"type":"post","id":1,"reason":"Spam","description":"This is spam"}'
 ```
 
 ---

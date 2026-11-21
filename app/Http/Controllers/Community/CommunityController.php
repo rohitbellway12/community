@@ -144,11 +144,13 @@ class CommunityController extends Controller
     {
         $user = $request->user();
         $user->load('profile');
+        $blockedUserIds = $user ? $user->getBlockedUserIds() : [];
 
         $posts = Post::query()
             ->whereHas('savedBy', function ($query) use ($user) {
                 $query->where('user_id', $user->id);
             })
+            ->when(!empty($blockedUserIds), fn ($q) => $q->whereNotIn('user_id', $blockedUserIds))
             ->with([
                 'user.profile',
                 'category',
@@ -464,17 +466,26 @@ class CommunityController extends Controller
         $skip = (int) ($validated['skip'] ?? 0);
         $take = 4;
 
-        // Total count of top-level comments
-        $totalTopLevel = $post->comments()
-            ->whereNull('parent_id')
-            ->count();
+        $viewer = Auth::user();
+        $blockedUserIds = $viewer ? $viewer->getBlockedUserIds() : [];
 
-        $comments = $post->comments()
-            ->whereNull('parent_id')
+        $commentsQuery = $post->comments()
+            ->whereNull('parent_id');
+
+        if (!empty($blockedUserIds)) {
+            $commentsQuery->whereNotIn('user_id', $blockedUserIds);
+        }
+
+        // Total count of top-level comments
+        $totalTopLevel = (clone $commentsQuery)->count();
+
+        $comments = $commentsQuery
             ->with([
                 'user.profile',
-                'replies' => function ($q) {
-                    $q->oldest()->with('user.profile');
+                'replies' => function ($q) use ($blockedUserIds) {
+                    $q->when(!empty($blockedUserIds), fn ($rq) => $rq->whereNotIn('user_id', $blockedUserIds))
+                        ->oldest()
+                        ->with('user.profile');
                 },
             ])
             ->latest()
@@ -616,6 +627,95 @@ class CommunityController extends Controller
             'already_shared' => false,
             'shares_count' => $post->shares()->count(),
             'url' => route('community.posts.show', $post),
+        ]);
+    }
+
+    /**
+     * Universal Report handler for Community Web (Post, Comment, User, Group).
+     */
+    public function storeReport(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'type'        => ['required', 'string', 'in:post,comment,user,group'],
+            'id'          => ['required', 'integer'],
+            'reason'      => ['required', 'string', 'max:100'],
+            'description' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $map = [
+            'post'    => \App\Models\Post::class,
+            'comment' => \App\Models\Comment::class,
+            'user'    => \App\Models\User::class,
+            'group'   => \App\Models\Group::class,
+        ];
+
+        $modelClass = $map[$validated['type']];
+        $target = $modelClass::find($validated['id']);
+
+        if (!$target) {
+            return response()->json([
+                'success' => false,
+                'message' => ucfirst($validated['type']) . ' not found.',
+            ], 404);
+        }
+
+        $user = $request->user();
+
+        // Prevent reporting oneself or own content
+        if ($validated['type'] === 'user' && (int) $target->id === (int) $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot report yourself.',
+            ], 422);
+        }
+
+        if ($validated['type'] === 'post' && (int) $target->user_id === (int) $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot report your own post.',
+            ], 422);
+        }
+
+        if ($validated['type'] === 'comment' && (int) $target->user_id === (int) $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot report your own comment.',
+            ], 422);
+        }
+
+        if ($validated['type'] === 'group' && (int) ($target->owner_id ?? 0) === (int) $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot report your own group.',
+            ], 422);
+        }
+
+        // Duplicate check
+        $alreadyReported = \App\Models\Report::where('reporter_id', $user->id)
+            ->where('reportable_type', $modelClass)
+            ->where('reportable_id', $target->id)
+            ->whereIn('status', [\App\Enums\ReportStatus::PENDING->value, \App\Enums\ReportStatus::REVIEWING->value])
+            ->exists();
+
+        if ($alreadyReported) {
+            return response()->json([
+                'success' => true,
+                'message' => 'You have already reported this item. Our moderation team is reviewing it.',
+            ]);
+        }
+
+        \App\Models\Report::create([
+            'reporter_id'     => $user->id,
+            'reportable_type' => $modelClass,
+            'reportable_id'   => $target->id,
+            'reason'          => trim($validated['reason']),
+            'description'     => isset($validated['description']) ? trim($validated['description']) : null,
+            'status'          => \App\Enums\ReportStatus::PENDING,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Report submitted successfully. Thank you for keeping our community safe.',
         ]);
     }
 }

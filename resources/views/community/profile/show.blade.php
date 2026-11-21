@@ -57,18 +57,25 @@
     $username = $profile->username;
 
     $activeTab = request()->query('tab', 'posts');
-    if (!in_array($activeTab, ['posts', 'comments', 'followers', 'following', 'tests'])) {
+    if (!in_array($activeTab, ['posts', 'comments', 'followers', 'following', 'tests', 'blocked'])) {
         $activeTab = 'posts';
     }
 
-    $followersCount = Follow::where('following_id', $user->id)->count();
-    $followingCount = Follow::where('follower_id', $user->id)->count();
+    $blockedUserIds = auth()->check() ? auth()->user()->getBlockedUserIds() : [];
+
+    $followersCount = Follow::where('following_id', $user->id)
+        ->when(!empty($blockedUserIds), fn($q) => $q->whereNotIn('follower_id', $blockedUserIds))
+        ->count();
+    $followingCount = Follow::where('follower_id', $user->id)
+        ->when(!empty($blockedUserIds), fn($q) => $q->whereNotIn('following_id', $blockedUserIds))
+        ->count();
 
     $followers = collect();
     $following = collect();
 
     if ($activeTab === 'followers') {
         $followers = Follow::where('following_id', $user->id)
+            ->when(!empty($blockedUserIds), fn($q) => $q->whereNotIn('follower_id', $blockedUserIds))
             ->with(['follower.profile'])
             ->latest()
             ->paginate(12, ['*'], 'followers_page')
@@ -77,6 +84,7 @@
 
     if ($activeTab === 'following') {
         $following = Follow::where('follower_id', $user->id)
+            ->when(!empty($blockedUserIds), fn($q) => $q->whereNotIn('following_id', $blockedUserIds))
             ->with(['following.profile'])
             ->latest()
             ->paginate(12, ['*'], 'following_page')
@@ -452,6 +460,219 @@
                                             <span x-text="following ? 'Following' : 'Follow'"></span>
                                         </button>
                                     </div>
+
+                                    @php
+                                        $isBlocked = auth()->check() && auth()->user()->isBlocking($user);
+                                    @endphp
+
+                                    {{-- USER OPTIONS / REPORT MENU --}}
+                                    <div
+                                        x-data="{
+                                            menuOpen: false,
+                                            isBlocked: {{ $isBlocked ? 'true' : 'false' }},
+                                            blockLoading: false,
+                                            reportModalOpen: false,
+                                            reportReason: 'Fake Account',
+                                            reportDescription: '',
+                                            reportLoading: false,
+                                            reportSuccessMsg: '',
+                                            reportErrorMsg: '',
+                                            async toggleBlock() {
+                                                if (this.blockLoading) return;
+                                                const promptMsg = this.isBlocked ? 'Unblock this user?' : 'Block this user? You will no longer see their posts and comments.';
+                                                if (!confirm(promptMsg)) return;
+                                                this.blockLoading = true;
+                                                try {
+                                                    const url = this.isBlocked
+                                                        ? '{{ route('community.users.unblock', $user) }}'
+                                                        : '{{ route('community.users.block', $user) }}';
+                                                    const res = await fetch(url, {
+                                                        method: 'POST',
+                                                        headers: {
+                                                            'Content-Type': 'application/json',
+                                                            'Accept': 'application/json',
+                                                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+                                                        }
+                                                    });
+                                                    const d = await res.json();
+                                                    if (d.success) {
+                                                        this.isBlocked = !this.isBlocked;
+                                                        window.location.reload();
+                                                    } else {
+                                                        alert(d.message || 'Operation failed.');
+                                                    }
+                                                } catch (e) {
+                                                    alert('Network error.');
+                                                } finally {
+                                                    this.blockLoading = false;
+                                                    this.menuOpen = false;
+                                                }
+                                            },
+                                            openReportModal() {
+                                                this.menuOpen = false;
+                                                this.reportModalOpen = true;
+                                                this.reportReason = 'Fake Account';
+                                                this.reportDescription = '';
+                                                this.reportSuccessMsg = '';
+                                                this.reportErrorMsg = '';
+                                            },
+                                            closeReportModal() {
+                                                this.reportModalOpen = false;
+                                            },
+                                            async submitReport() {
+                                                this.reportLoading = true;
+                                                this.reportErrorMsg = '';
+                                                this.reportSuccessMsg = '';
+                                                try {
+                                                    const response = await fetch('{{ route('community.reports.store') }}', {
+                                                        method: 'POST',
+                                                        headers: {
+                                                            'Content-Type': 'application/json',
+                                                            'Accept': 'application/json',
+                                                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+                                                        },
+                                                        body: JSON.stringify({
+                                                            type: 'user',
+                                                            id: {{ (int) $user->id }},
+                                                            reason: this.reportReason,
+                                                            description: this.reportDescription
+                                                        })
+                                                    });
+                                                    const data = await response.json();
+                                                    if (response.ok && data.success) {
+                                                        this.reportSuccessMsg = data.message || 'Report submitted successfully.';
+                                                        setTimeout(() => { this.closeReportModal(); }, 1800);
+                                                    } else {
+                                                        this.reportErrorMsg = data.message || 'Unable to submit report.';
+                                                    }
+                                                } catch (err) {
+                                                    this.reportErrorMsg = 'Network error. Please try again.';
+                                                } finally {
+                                                    this.reportLoading = false;
+                                                }
+                                            }
+                                        }"
+                                        class="relative inline-block"
+                                    >
+                                        <button
+                                            type="button"
+                                            @click.stop="menuOpen = !menuOpen"
+                                            class="w-9 h-9 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition shadow-xs flex items-center justify-center cursor-pointer"
+                                            aria-label="Profile options"
+                                            title="More options"
+                                        >
+                                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4z" />
+                                            </svg>
+                                        </button>
+
+                                        <div
+                                            x-show="menuOpen"
+                                            x-cloak
+                                            x-transition
+                                            @click.outside="menuOpen = false"
+                                            class="absolute right-0 top-11 z-50 w-36 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl space-y-0.5"
+                                        >
+                                            @auth
+                                                <button
+                                                    type="button"
+                                                    @click="toggleBlock()"
+                                                    :disabled="blockLoading"
+                                                    class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 text-left cursor-pointer disabled:opacity-50"
+                                                >
+                                                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                                    </svg>
+                                                    <span x-text="isBlocked ? 'Unblock User' : 'Block User'"></span>
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    @click="openReportModal()"
+                                                    class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 text-left cursor-pointer"
+                                                >
+                                                    <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                                                    </svg>
+                                                    Report User
+                                                </button>
+                                            @else
+                                                <a
+                                                    href="{{ route('login') }}"
+                                                    class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 text-left"
+                                                >
+                                                    <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                                                    </svg>
+                                                    Report User
+                                                </a>
+                                            @endauth
+                                        </div>
+
+                                        {{-- USER REPORT MODAL --}}
+                                        <template x-teleport="body">
+                                            <div x-show="reportModalOpen" x-cloak x-transition.opacity
+                                                class="fixed inset-0 z-[220] flex items-center justify-center p-4">
+                                                <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-xs"
+                                                    @click="closeReportModal()"></div>
+
+                                                <div x-show="reportModalOpen" x-transition @click.stop
+                                                    class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 z-10">
+                                                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="w-8 h-8 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-sm font-bold">🚩</span>
+                                                            <div>
+                                                                <h3 class="text-sm font-bold text-slate-900">Report {{ $user->name }}</h3>
+                                                                <p class="text-[11px] text-slate-500">Report this profile for community guideline violations.</p>
+                                                            </div>
+                                                        </div>
+                                                        <button type="button" @click="closeReportModal()" class="text-slate-400 hover:text-slate-600 font-bold p-1">✕</button>
+                                                    </div>
+
+                                                    <div x-show="reportSuccessMsg" class="my-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+                                                        <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                                        <span x-text="reportSuccessMsg"></span>
+                                                    </div>
+
+                                                    <div x-show="reportErrorMsg" class="my-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-2">
+                                                        <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                        <span x-text="reportErrorMsg"></span>
+                                                    </div>
+
+                                                    <form x-show="!reportSuccessMsg" @submit.prevent="submitReport()" class="mt-4 space-y-4">
+                                                        <div>
+                                                            <label class="block text-xs font-bold text-slate-700 mb-1.5">Reason for report <span class="text-rose-500">*</span></label>
+                                                            <select x-model="reportReason" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-400">
+                                                                <option value="Fake Account">Fake account / Impersonation</option>
+                                                                <option value="Harassment">Harassment or bullying</option>
+                                                                <option value="Spam">Spamming / Advertising</option>
+                                                                <option value="Inappropriate Content">Inappropriate profile details</option>
+                                                                <option value="Other">Other policy violation</option>
+                                                            </select>
+                                                        </div>
+
+                                                        <div>
+                                                            <label class="block text-xs font-bold text-slate-700 mb-1.5">Details (Optional)</label>
+                                                            <textarea x-model="reportDescription" rows="3" placeholder="Explain why you are reporting this account..."
+                                                                class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-400"></textarea>
+                                                        </div>
+
+                                                        <div class="flex items-center justify-end gap-2 pt-2">
+                                                            <button type="button" @click="closeReportModal()" :disabled="reportLoading"
+                                                                class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">
+                                                                Cancel
+                                                            </button>
+                                                            <button type="submit" :disabled="reportLoading"
+                                                                class="px-5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs transition flex items-center gap-1.5 disabled:opacity-50">
+                                                                <span x-show="!reportLoading">Submit Report</span>
+                                                                <span x-show="reportLoading">Submitting...</span>
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
                                 @endif
                             </div>
                         </div>
@@ -696,6 +917,22 @@
                             </div>
                         </div>
 
+                        @if(!empty($isBlocked))
+                            <div class="my-6 p-6 bg-slate-50 border border-slate-200 rounded-2xl text-center shadow-xs">
+                                <div class="w-12 h-12 mx-auto rounded-full bg-slate-200 flex items-center justify-center text-slate-600 mb-3">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                    </svg>
+                                </div>
+                                <h3 class="text-sm font-bold text-slate-900">You blocked {{ $user->name }}</h3>
+                                <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">You won't see their posts, comments, or activities while they are blocked. Unblock them at any time to restore their content.</p>
+                                <button type="button" @click="toggleBlock()" :disabled="blockLoading"
+                                    class="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl shadow-xs transition cursor-pointer">
+                                    <span x-text="blockLoading ? 'Unblocking...' : 'Unblock {{ '@' . ($profile->username ?? $user->username ?? $user->name) }}'"></span>
+                                </button>
+                            </div>
+                        @endif
+
                         <div class="profile-tabs flex items-center gap-8 mt-6 border-b border-slate-200 text-xs sm:text-sm font-bold overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                             <a
                                 href="{{ request()->fullUrlWithQuery(['tab' => 'posts', 'page' => null]) }}"
@@ -731,6 +968,13 @@
                                      class="pb-3 border-b-2 {{ $activeTab === 'tests' ? 'border-amber-500 text-[#0b1329]' : 'border-transparent text-slate-400 hover:text-slate-700' }} transition whitespace-nowrap"
                                  >
                                      Tests<span class="text-slate-400 font-semibold"> {{ $testStats ? ' (' . $testStats['total'] . ')' : '' }}</span>
+                                 </a>
+
+                                 <a
+                                     href="{{ request()->fullUrlWithQuery(['tab' => 'blocked', 'page' => null, 'posts_page' => null, 'comments_page' => null, 'followers_page' => null, 'following_page' => null, 'blocked_page' => null]) }}"
+                                     class="pb-3 border-b-2 {{ $activeTab === 'blocked' ? 'border-amber-500 text-[#0b1329]' : 'border-transparent text-slate-400 hover:text-slate-700' }} transition whitespace-nowrap"
+                                 >
+                                     Blocked Users <span class="text-slate-400 font-semibold">{{ $user->blockedUsers()->count() > 0 ? '(' . $user->blockedUsers()->count() . ')' : '' }}</span>
                                  </a>
                              @endif
                          </div>
@@ -816,6 +1060,16 @@
                                                 postDeleteConfirm: false,
                                                 postActionLoading: false,
 
+                                                postReportOpen: false,
+                                                reportType: 'post',
+                                                reportTargetId: {{ (int) $post->id }},
+                                                reportTitle: 'Report this post',
+                                                reportReason: 'Spam',
+                                                reportDescription: '',
+                                                reportLoading: false,
+                                                reportSuccessMsg: '',
+                                                reportErrorMsg: '',
+
                                                 postTitle: @js($post->title),
                                                 postContent: @js($post->content ?? $post->body ?? ''),
                                                 postCategoryId: @js((string) $post->category_id),
@@ -874,6 +1128,69 @@
                                                     return this.currentUserId !== null &&
                                                         Number(this.currentUserId) === Number(this.postOwnerId);
                                                 },
+
+                                                openReportModal() {
+                                                    this.postMenuOpen = false;
+                                                    this.reportType = 'post';
+                                                    this.reportTargetId = {{ (int) $post->id }};
+                                                    this.reportTitle = 'Report this post';
+                                                    this.reportReason = 'Spam';
+                                                    this.reportDescription = '';
+                                                    this.reportSuccessMsg = '';
+                                                    this.reportErrorMsg = '';
+                                                    this.postReportOpen = true;
+                                                },
+
+                                                openCommentReportModal(item) {
+                                                    this.openCommentMenuId = null;
+                                                    this.reportType = 'comment';
+                                                    this.reportTargetId = Number(item.id);
+                                                    this.reportTitle = 'Report this comment';
+                                                    this.reportReason = 'Spam';
+                                                    this.reportDescription = '';
+                                                    this.reportSuccessMsg = '';
+                                                    this.reportErrorMsg = '';
+                                                    this.postReportOpen = true;
+                                                },
+
+                                                closeReportModal() {
+                                                    this.postReportOpen = false;
+                                                },
+
+                                                async submitReport() {
+                                                    this.reportLoading = true;
+                                                    this.reportErrorMsg = '';
+                                                    this.reportSuccessMsg = '';
+                                                    try {
+                                                        const response = await fetch('{{ route('community.reports.store') }}', {
+                                                            method: 'POST',
+                                                            headers: {
+                                                                 'Content-Type': 'application/json',
+                                                                 'Accept': 'application/json',
+                                                                 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+                                                             },
+                                                             body: JSON.stringify({
+                                                                 type: this.reportType,
+                                                                 id: this.reportTargetId,
+                                                                 reason: this.reportReason,
+                                                                 description: this.reportDescription
+                                                             })
+                                                         });
+                                                         const data = await response.json();
+                                                         if (response.ok && data.success) {
+                                                             this.reportSuccessMsg = data.message || 'Report submitted successfully.';
+                                                             setTimeout(() => {
+                                                                 this.closeReportModal();
+                                                             }, 1800);
+                                                         } else {
+                                                             this.reportErrorMsg = data.message || 'Unable to submit report.';
+                                                         }
+                                                     } catch (err) {
+                                                         this.reportErrorMsg = 'Network error. Please try again.';
+                                                     } finally {
+                                                         this.reportLoading = false;
+                                                     }
+                                                 },
 
                                                 toggleTag(id) {
                                                     id = Number(id);
@@ -1473,59 +1790,72 @@
                                                         </span>
                                                     @endif
 
-                                                    @auth
-                                                        <div class="relative" @click.outside="postMenuOpen = false">
-                                                            {{-- POST ACTIONS / 3-DOT MENU --}}
-                                                            <button type="button"
-                                                                aria-label="Post options"
-                                                                title="Post options"
-                                                                @click.stop="postMenuOpen = !postMenuOpen"
-                                                                class="w-9 h-9 rounded-full flex items-center justify-center
-                                                                       bg-white border border-slate-200 text-slate-500
-                                                                       hover:bg-slate-100 hover:text-slate-900
-                                                                       shadow-sm transition">
-                                                                <span class="flex flex-col items-center justify-center gap-[3px]">
-                                                                    <span class="block w-1 h-1 rounded-full bg-current"></span>
-                                                                    <span class="block w-1 h-1 rounded-full bg-current"></span>
-                                                                    <span class="block w-1 h-1 rounded-full bg-current"></span>
-                                                                </span>
-                                                            </button>
+                                                    <div class="relative" @click.outside="postMenuOpen = false">
+                                                        {{-- POST ACTIONS / 3-DOT MENU --}}
+                                                        <button type="button"
+                                                            aria-label="Post options"
+                                                            title="Post options"
+                                                            @click.stop="postMenuOpen = !postMenuOpen"
+                                                            class="w-9 h-9 rounded-full flex items-center justify-center
+                                                                   bg-white border border-slate-200 text-slate-500
+                                                                   hover:bg-slate-100 hover:text-slate-900
+                                                                   shadow-sm transition">
+                                                            <span class="flex flex-col items-center justify-center gap-[3px]">
+                                                                <span class="block w-1 h-1 rounded-full bg-current"></span>
+                                                                <span class="block w-1 h-1 rounded-full bg-current"></span>
+                                                                <span class="block w-1 h-1 rounded-full bg-current"></span>
+                                                            </span>
+                                                        </button>
 
-                                                            <div x-show="postMenuOpen" x-cloak x-transition
-                                                                class="absolute right-0 top-11 z-[100] w-40 rounded-xl
-                                                                       border border-slate-200 bg-white p-1.5 shadow-2xl">
-                                                                @if($isOwnPost)
-                                                                    <button type="button"
-                                                                        @click="openEditPost()"
-                                                                        class="w-full text-left px-3 py-2.5 rounded-lg text-xs font-semibold
-                                                                               text-slate-700 hover:bg-slate-50 flex items-center gap-2">
-                                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
-                                                                            viewBox="0 0 24 24">
-                                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                                                        </svg>
-                                                                        Edit post
-                                                                    </button>
+                                                        <div x-show="postMenuOpen" x-cloak x-transition
+                                                            class="absolute right-0 top-11 z-[100] w-40 rounded-xl
+                                                                   border border-slate-200 bg-white p-1.5 shadow-2xl">
+                                                            @if($isOwnPost)
+                                                                <button type="button"
+                                                                    @click="openEditPost()"
+                                                                    class="w-full text-left px-3 py-2.5 rounded-lg text-xs font-semibold
+                                                                           text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
+                                                                        viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                                                    </svg>
+                                                                    Edit post
+                                                                </button>
 
+                                                                <button type="button"
+                                                                    @click="postMenuOpen = false; postDeleteConfirm = true"
+                                                                    class="w-full text-left px-3 py-2.5 rounded-lg text-xs font-semibold
+                                                                           text-red-600 hover:bg-red-50 flex items-center gap-2">
+                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
+                                                                        viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                                            d="M3 6h18M8 6V4h8v2m-9 0l1 14h8l1-14M10 11v5m4-5v5"/>
+                                                                    </svg>
+                                                                    Delete post
+                                                                </button>
+                                                            @else
+                                                                @auth
                                                                     <button type="button"
-                                                                        @click="postMenuOpen = false; postDeleteConfirm = true"
-                                                                        class="w-full text-left px-3 py-2.5 rounded-lg text-xs font-semibold
-                                                                               text-red-600 hover:bg-red-50 flex items-center gap-2">
-                                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
-                                                                            viewBox="0 0 24 24">
-                                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                                d="M3 6h18M8 6V4h8v2m-9 0l1 14h8l1-14M10 11v5m4-5v5"/>
+                                                                        @click="openReportModal()"
+                                                                        class="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 text-left">
+                                                                        <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
                                                                         </svg>
-                                                                        Delete post
+                                                                        Report post
                                                                     </button>
                                                                 @else
-                                                                    <div class="px-3 py-2.5 text-[10px] text-slate-400">
-                                                                        You can only edit your own post.
-                                                                    </div>
-                                                                @endif
-                                                            </div>
+                                                                    <a href="{{ route('login') }}"
+                                                                        class="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 text-left">
+                                                                        <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                                                                        </svg>
+                                                                        Report post
+                                                                    </a>
+                                                                @endauth
+                                                            @endif
                                                         </div>
-                                                    @endauth
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -1740,11 +2070,11 @@
                                                                                 x-html="formatPostContent(comment.content)"></p>
                                                                         </template>
 
-                                                                        <template x-if="isCommentOwner(comment) && editingCommentId !== Number(comment.id)">
+                                                                        <template x-if="editingCommentId !== Number(comment.id)">
                                                                             <div class="absolute right-1 top-1">
                                                                                 <button type="button"
                                                                                     @click.stop="openCommentMenuId = openCommentMenuId === Number(comment.id) ? null : Number(comment.id)"
-                                                                                    class="w-7 h-7 rounded-full text-slate-400 hover:bg-white">
+                                                                                    class="w-7 h-7 rounded-full text-slate-400 hover:bg-white flex items-center justify-center">
                                                                                     •••
                                                                                 </button>
 
@@ -1753,17 +2083,41 @@
                                                                                     @click.outside="openCommentMenuId = null"
                                                                                     class="absolute right-0 top-8 z-50 w-28 rounded-xl border border-slate-200 bg-white p-1 shadow-xl">
 
-                                                                                    <button type="button"
-                                                                                        @click="startEditComment(comment)"
-                                                                                        class="w-full text-left px-2.5 py-2 rounded-lg text-[10px] font-semibold hover:bg-slate-50">
-                                                                                        Edit
-                                                                                    </button>
+                                                                                    <template x-if="isCommentOwner(comment)">
+                                                                                        <div>
+                                                                                            <button type="button"
+                                                                                                @click="startEditComment(comment)"
+                                                                                                class="w-full text-left px-2.5 py-2 rounded-lg text-[10px] font-semibold hover:bg-slate-50">
+                                                                                                Edit
+                                                                                            </button>
 
-                                                                                    <button type="button"
-                                                                                        @click="requestDeleteComment(comment)"
-                                                                                        class="w-full text-left px-2.5 py-2 rounded-lg text-[10px] font-semibold text-red-600 hover:bg-red-50">
-                                                                                        Delete
-                                                                                    </button>
+                                                                                            <button type="button"
+                                                                                                @click="requestDeleteComment(comment)"
+                                                                                                class="w-full text-left px-2.5 py-2 rounded-lg text-[10px] font-semibold text-red-600 hover:bg-red-50">
+                                                                                                Delete
+                                                                                            </button>
+                                                                                        </div>
+                                                                                    </template>
+                                                                                    <template x-if="!isCommentOwner(comment)">
+                                                                                        @auth
+                                                                                            <button type="button"
+                                                                                                @click="openCommentReportModal(comment)"
+                                                                                                class="w-full flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-[10px] font-semibold text-rose-600 hover:bg-rose-50 text-left">
+                                                                                                <svg class="w-3 h-3 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                                                                                                </svg>
+                                                                                                Report
+                                                                                            </button>
+                                                                                        @else
+                                                                                            <a href="{{ route('login') }}"
+                                                                                                class="w-full flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-[10px] font-semibold text-rose-600 hover:bg-rose-50 text-left">
+                                                                                                <svg class="w-3 h-3 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                                                                                                </svg>
+                                                                                                Report
+                                                                                            </a>
+                                                                                        @endauth
+                                                                                    </template>
                                                                                 </div>
                                                                             </div>
                                                                         </template>
@@ -1842,7 +2196,7 @@
                                                                                                     x-html="formatPostContent(reply.content)"></p>
                                                                                             </template>
 
-                                                                                            <template x-if="isCommentOwner(reply) && editingCommentId !== Number(reply.id)">
+                                                                                                                           <template x-if="editingCommentId !== Number(reply.id)">
                                                                                                 <div class="absolute right-1 top-1">
                                                                                                     <button type="button"
                                                                                                         @click.stop="openCommentMenuId = openCommentMenuId === Number(reply.id) ? null : Number(reply.id)"
@@ -1859,17 +2213,41 @@
                                                                                                         @click.outside="openCommentMenuId = null"
                                                                                                         class="absolute right-0 top-7 z-50 w-28 rounded-xl border border-slate-200 bg-white p-1 shadow-xl">
 
-                                                                                                        <button type="button"
-                                                                                                            @click="startEditComment(reply)"
-                                                                                                            class="w-full text-left px-2.5 py-2 rounded-lg text-[10px] font-semibold text-slate-600 hover:bg-slate-50">
-                                                                                                            Edit
-                                                                                                        </button>
+                                                                                                        <template x-if="isCommentOwner(reply)">
+                                                                                                            <div>
+                                                                                                                <button type="button"
+                                                                                                                    @click="startEditComment(reply)"
+                                                                                                                    class="w-full text-left px-2.5 py-2 rounded-lg text-[10px] font-semibold text-slate-600 hover:bg-slate-50">
+                                                                                                                    Edit
+                                                                                                                </button>
 
-                                                                                                        <button type="button"
-                                                                                                            @click="requestDeleteComment(reply, true, comment)"
-                                                                                                            class="w-full text-left px-2.5 py-2 rounded-lg text-[10px] font-semibold text-red-600 hover:bg-red-50">
-                                                                                                            Delete
-                                                                                                        </button>
+                                                                                                                <button type="button"
+                                                                                                                    @click="requestDeleteComment(reply, true, comment)"
+                                                                                                                    class="w-full text-left px-2.5 py-2 rounded-lg text-[10px] font-semibold text-red-600 hover:bg-red-50">
+                                                                                                                    Delete
+                                                                                                                </button>
+                                                                                                            </div>
+                                                                                                        </template>
+                                                                                                        <template x-if="!isCommentOwner(reply)">
+                                                                                                            @auth
+                                                                                                                <button type="button"
+                                                                                                                    @click="openCommentReportModal(reply)"
+                                                                                                                    class="w-full flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-[10px] font-semibold text-rose-600 hover:bg-rose-50 text-left">
+                                                                                                                    <svg class="w-3 h-3 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                                                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                                                                                                                    </svg>
+                                                                                                                    Report
+                                                                                                                </button>
+                                                                                                            @else
+                                                                                                                <a href="{{ route('login') }}"
+                                                                                                                    class="w-full flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-[10px] font-semibold text-rose-600 hover:bg-rose-50 text-left">
+                                                                                                                    <svg class="w-3 h-3 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                                                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                                                                                                                    </svg>
+                                                                                                                    Report
+                                                                                                                </a>
+                                                                                                            @endauth
+                                                                                                        </template>
                                                                                                     </div>
                                                                                                 </div>
                                                                                             </template>
@@ -2265,6 +2643,79 @@
                                                 </div>
                                             </template>
 
+                                            {{-- POST / COMMENT REPORT MODAL --}}
+                                            <template x-teleport="body">
+                                                <div x-show="postReportOpen" x-cloak x-transition.opacity
+                                                    class="fixed inset-0 z-[220] flex items-center justify-center p-4">
+                                                    <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-xs"
+                                                        @click="closeReportModal()"></div>
+
+                                                    <div x-show="postReportOpen" x-transition @click.stop
+                                                        class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 z-10">
+                                                        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                                                            <div class="flex items-center gap-2">
+                                                                <span class="w-8 h-8 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-sm font-bold">🚩</span>
+                                                                <div>
+                                                                    <h3 class="text-sm font-bold text-slate-900" x-text="reportTitle">Report Content</h3>
+                                                                    <p class="text-[11px] text-slate-500">Help us keep the community safe and clean</p>
+                                                                </div>
+                                                            </div>
+                                                            <button type="button" @click="closeReportModal()"
+                                                                class="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
+                                                        </div>
+
+                                                        <div x-show="reportSuccessMsg" x-cloak
+                                                            class="mt-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-xl flex items-center gap-2">
+                                                            <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                                            <span x-text="reportSuccessMsg"></span>
+                                                        </div>
+
+                                                        <div x-show="reportErrorMsg" x-cloak
+                                                            class="mt-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2">
+                                                            <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                            <span x-text="reportErrorMsg"></span>
+                                                        </div>
+
+                                                        <div x-show="!reportSuccessMsg" class="mt-4 space-y-3.5">
+                                                            <div>
+                                                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Reason for reporting</label>
+                                                                <select x-model="reportReason"
+                                                                    class="w-full text-xs rounded-xl border-slate-200 focus:border-rose-500 focus:ring-rose-500 bg-slate-50 p-2.5">
+                                                                    <option value="Spam">Spam / Advertising</option>
+                                                                    <option value="Harassment">Harassment / Hate Speech</option>
+                                                                    <option value="Inappropriate Content">Inappropriate Content</option>
+                                                                    <option value="Misinformation">Misinformation / False Claim</option>
+                                                                    <option value="Violence / Self-Harm">Violence or Threat</option>
+                                                                    <option value="Other">Other</option>
+                                                                </select>
+                                                            </div>
+
+                                                            <div>
+                                                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Additional details (optional)</label>
+                                                                <textarea x-model="reportDescription" rows="3" maxlength="1000"
+                                                                    placeholder="Provide details that will help our moderation team review this..."
+                                                                    class="w-full text-xs rounded-xl border-slate-200 focus:border-rose-500 focus:ring-rose-500 bg-slate-50 p-2.5 resize-none"></textarea>
+                                                            </div>
+
+                                                            <div class="flex items-center justify-end gap-2 pt-2">
+                                                                <button type="button" @click="closeReportModal()"
+                                                                    class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold">
+                                                                    Cancel
+                                                                </button>
+                                                                <button type="button" @click="submitReport()" :disabled="reportLoading"
+                                                                    class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5">
+                                                                    <span x-show="!reportLoading">Submit Report</span>
+                                                                    <span x-show="reportLoading" class="inline-flex items-center gap-1">
+                                                                        <svg class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                                                                        Sending...
+                                                                    </span>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </template>
+
                                         </div>
                             @empty
                                 <div class="py-16 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
@@ -2298,9 +2749,62 @@
                                             $isReply = $comment->parent_id && $comment->parent;
                                             $parentUser = $comment->parent?->user;
                                             $parentUserName = $parentUser?->name ?? 'User';
+                                            $isOwnComment = auth()->check() && (int) auth()->id() === (int) $comment->user_id;
                                         @endphp
 
-                                        <div class="bg-white rounded-2xl p-5 border border-slate-200/70 shadow-xs hover:border-slate-300 transition space-y-3">
+                                        <div class="bg-white rounded-2xl p-5 border border-slate-200/70 shadow-xs hover:border-slate-300 transition space-y-3 relative"
+                                            x-data="{
+                                                menuOpen: false,
+                                                reportModalOpen: false,
+                                                reportReason: 'Spam',
+                                                reportDescription: '',
+                                                reportLoading: false,
+                                                reportSuccessMsg: '',
+                                                reportErrorMsg: '',
+                                                openReportModal() {
+                                                    this.menuOpen = false;
+                                                    this.reportModalOpen = true;
+                                                    this.reportReason = 'Spam';
+                                                    this.reportDescription = '';
+                                                    this.reportSuccessMsg = '';
+                                                    this.reportErrorMsg = '';
+                                                },
+                                                closeReportModal() {
+                                                    this.reportModalOpen = false;
+                                                },
+                                                async submitReport() {
+                                                    this.reportLoading = true;
+                                                    this.reportErrorMsg = '';
+                                                    this.reportSuccessMsg = '';
+                                                    try {
+                                                        const response = await fetch('{{ route('community.reports.store') }}', {
+                                                            method: 'POST',
+                                                            headers: {
+                                                                'Content-Type': 'application/json',
+                                                                'Accept': 'application/json',
+                                                                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+                                                            },
+                                                            body: JSON.stringify({
+                                                                type: 'comment',
+                                                                id: {{ (int) $comment->id }},
+                                                                reason: this.reportReason,
+                                                                description: this.reportDescription
+                                                            })
+                                                        });
+                                                        const data = await response.json();
+                                                        if (response.ok && data.success) {
+                                                            this.reportSuccessMsg = data.message || 'Report submitted successfully.';
+                                                            setTimeout(() => { this.closeReportModal(); }, 1800);
+                                                        } else {
+                                                            this.reportErrorMsg = data.message || 'Unable to submit report.';
+                                                        }
+                                                    } catch (err) {
+                                                        this.reportErrorMsg = 'Network error. Please try again.';
+                                                    } finally {
+                                                        this.reportLoading = false;
+                                                    }
+                                                }
+                                            }">
                                             {{-- Context Header (Reply / Comment target) --}}
                                             <div class="flex items-start justify-between gap-3 text-xs">
                                                 <div class="flex items-center gap-2 flex-wrap min-w-0">
@@ -2336,9 +2840,48 @@
                                                     @endif
                                                 </div>
 
-                                                <span class="text-[11px] text-slate-400 whitespace-nowrap shrink-0">
-                                                    {{ $comment->created_at?->diffForHumans() }}
-                                                </span>
+                                                <div class="flex items-center gap-2 shrink-0">
+                                                    <span class="text-[11px] text-slate-400 whitespace-nowrap shrink-0">
+                                                        {{ $comment->created_at?->diffForHumans() }}
+                                                    </span>
+
+                                                    {{-- 3-DOT MENU --}}
+                                                    <div class="relative" @click.outside="menuOpen = false">
+                                                        <button type="button"
+                                                            @click.stop="menuOpen = !menuOpen"
+                                                            class="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+                                                            aria-label="Comment options">
+                                                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4z" />
+                                                            </svg>
+                                                        </button>
+
+                                                        <div x-show="menuOpen" x-cloak x-transition
+                                                            class="absolute right-0 top-8 z-40 w-32 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
+                                                            @if(!$isOwnComment)
+                                                                @auth
+                                                                    <button type="button" @click="openReportModal()"
+                                                                        class="w-full flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 text-left">
+                                                                        <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                                                                        </svg>
+                                                                        Report
+                                                                    </button>
+                                                                @else
+                                                                    <a href="{{ route('login') }}"
+                                                                        class="w-full flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 text-left">
+                                                                        <svg class="w-3.5 h-3.5 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                                                                        </svg>
+                                                                        Report
+                                                                    </a>
+                                                                @endauth
+                                                            @else
+                                                                <span class="block px-2.5 py-1.5 text-[10px] text-slate-400">Your comment</span>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
 
                                             {{-- Comment Content --}}
@@ -2371,6 +2914,79 @@
                                                     </a>
                                                 </div>
                                             @endif
+
+                                            {{-- REPORT MODAL FOR TAB=COMMENTS --}}
+                                            <template x-teleport="body">
+                                                <div x-show="reportModalOpen" x-cloak x-transition.opacity
+                                                    class="fixed inset-0 z-[220] flex items-center justify-center p-4">
+                                                    <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-xs"
+                                                        @click="closeReportModal()"></div>
+
+                                                    <div x-show="reportModalOpen" x-transition @click.stop
+                                                        class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 z-10">
+                                                        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                                                            <div class="flex items-center gap-2">
+                                                                <span class="w-8 h-8 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-sm font-bold">🚩</span>
+                                                                <div>
+                                                                    <h3 class="text-sm font-bold text-slate-900">Report Comment</h3>
+                                                                    <p class="text-[11px] text-slate-500">Help us keep the community safe and clean</p>
+                                                                </div>
+                                                            </div>
+                                                            <button type="button" @click="closeReportModal()"
+                                                                class="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
+                                                        </div>
+
+                                                        <div x-show="reportSuccessMsg" x-cloak
+                                                            class="mt-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-xl flex items-center gap-2">
+                                                            <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                                            <span x-text="reportSuccessMsg"></span>
+                                                        </div>
+
+                                                        <div x-show="reportErrorMsg" x-cloak
+                                                            class="mt-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2">
+                                                            <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                            <span x-text="reportErrorMsg"></span>
+                                                        </div>
+
+                                                        <div x-show="!reportSuccessMsg" class="mt-4 space-y-3.5">
+                                                            <div>
+                                                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Reason for reporting</label>
+                                                                <select x-model="reportReason"
+                                                                    class="w-full text-xs rounded-xl border-slate-200 focus:border-rose-500 focus:ring-rose-500 bg-slate-50 p-2.5">
+                                                                    <option value="Spam">Spam / Advertising</option>
+                                                                    <option value="Harassment">Harassment / Hate Speech</option>
+                                                                    <option value="Inappropriate Content">Inappropriate Content</option>
+                                                                    <option value="Misinformation">Misinformation / False Claim</option>
+                                                                    <option value="Violence / Self-Harm">Violence or Threat</option>
+                                                                    <option value="Other">Other</option>
+                                                                </select>
+                                                            </div>
+
+                                                            <div>
+                                                                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Additional details (optional)</label>
+                                                                <textarea x-model="reportDescription" rows="3" maxlength="1000"
+                                                                    placeholder="Provide details that will help our moderation team review this..."
+                                                                    class="w-full text-xs rounded-xl border-slate-200 focus:border-rose-500 focus:ring-rose-500 bg-slate-50 p-2.5 resize-none"></textarea>
+                                                            </div>
+
+                                                            <div class="flex items-center justify-end gap-2 pt-2">
+                                                                <button type="button" @click="closeReportModal()"
+                                                                    class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold">
+                                                                    Cancel
+                                                                </button>
+                                                                <button type="button" @click="submitReport()" :disabled="reportLoading"
+                                                                    class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold disabled:opacity-50 flex items-center gap-1.5">
+                                                                    <span x-show="!reportLoading">Submit Report</span>
+                                                                    <span x-show="reportLoading" class="inline-flex items-center gap-1">
+                                                                        <svg class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                                                                        Sending...
+                                                                    </span>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </template>
                                         </div>
                                     @empty
                                         <div class="py-16 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
@@ -2821,6 +3437,61 @@
                                             </div>
                                         @endif
                                     </div>
+                                @elseif($activeTab === 'blocked' && $isOwnProfile)
+                                    <div class="bg-slate-50/60 rounded-2xl border border-slate-200/70 p-4 sm:p-5">
+                                        <div class="flex items-center justify-between gap-3 mb-4">
+                                            <div>
+                                                <h3 class="text-sm font-bold text-slate-900">Blocked Users</h3>
+                                                <p class="text-xs text-slate-500">People you have blocked cannot see your posts or comments, and you will not see theirs.</p>
+                                            </div>
+                                            <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-200 text-slate-700">
+                                                {{ $blockedUsers->total() }} blocked
+                                            </span>
+                                        </div>
+
+                                        @if($blockedUsers->isEmpty())
+                                            <div class="bg-white rounded-2xl border border-dashed border-slate-200 p-10 text-center">
+                                                <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                                </div>
+                                                <h4 class="text-sm font-bold text-slate-800">No Blocked Users</h4>
+                                                <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                                                    You haven't blocked anyone yet.
+                                                </p>
+                                            </div>
+                                        @else
+                                            <div class="bg-white rounded-2xl border border-slate-200/70 divide-y divide-slate-100 overflow-hidden">
+                                                @foreach($blockedUsers as $blocked)
+                                                    @php
+                                                        $bProfile = $blocked->profile;
+                                                        $bAvatar = $bProfile?->avatar
+                                                            ? (str_starts_with($bProfile->avatar, 'http') ? $bProfile->avatar : asset('storage/' . ltrim($bProfile->avatar, '/')))
+                                                            : 'https://ui-avatars.com/api/?name=' . urlencode($blocked->name) . '&background=0c1b33&color=fff';
+                                                    @endphp
+                                                    <div class="p-4 flex items-center justify-between gap-3 hover:bg-slate-50/50 transition" id="blocked-user-row-{{ $blocked->id }}">
+                                                        <div class="flex items-center gap-3 min-w-0">
+                                                            <img src="{{ $bAvatar }}" alt="{{ $blocked->name }}" class="w-10 h-10 rounded-full object-cover shrink-0">
+                                                            <div class="min-w-0">
+                                                                <h4 class="text-xs font-bold text-slate-900 truncate">{{ $blocked->name }}</h4>
+                                                                <span class="text-[11px] text-slate-400 truncate block">{{ '@' . ($bProfile->username ?? $blocked->username ?? 'user') }}</span>
+                                                            </div>
+                                                        </div>
+                                                        <button type="button"
+                                                            onclick="unblockUserFromPage({{ (int) $blocked->id }}, '{{ addslashes($blocked->name) }}')"
+                                                            class="px-3.5 py-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition shrink-0 cursor-pointer">
+                                                            Unblock
+                                                        </button>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+
+                                            @if(method_exists($blockedUsers, 'hasPages') && $blockedUsers->hasPages())
+                                                <div class="mt-4">
+                                                    {{ $blockedUsers->appends(['tab' => 'blocked'])->links() }}
+                                                </div>
+                                            @endif
+                                        @endif
+                                    </div>
                                 @endif
 
     {{-- GLOBAL LOGIN PROMPT MODAL --}}
@@ -2837,6 +3508,30 @@
 
     {{-- DELETE ACCOUNT SWEETALERT --}}
     <script>
+        async function unblockUserFromPage(userId, userName) {
+            if (!confirm(`Unblock ${userName}? You will start seeing their posts and comments again.`)) return;
+            try {
+                const res = await fetch(`{{ url('/users') }}/${userId}/unblock`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content')
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const row = document.getElementById(`blocked-user-row-${userId}`);
+                    if (row) row.remove();
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Failed to unblock.');
+                }
+            } catch (e) {
+                alert('Network error.');
+            }
+        }
+
         function confirmAccountDelete() {
             Swal.fire({
                 title: 'Delete Account?',

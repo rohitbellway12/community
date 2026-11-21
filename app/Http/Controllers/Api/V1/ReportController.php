@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Enums\ReportStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Comment;
+use App\Models\Group;
 use App\Models\Post;
 use App\Models\Report;
 use App\Models\User;
@@ -20,17 +21,18 @@ class ReportController extends Controller
         'post'    => Post::class,
         'comment' => Comment::class,
         'user'    => User::class,
+        'group'   => Group::class,
     ];
 
     /**
-     * Report an abusive or inappropriate post, comment, or user.
+     * Report an abusive or inappropriate post, comment, user, or group.
      *
      * POST /api/v1/reports
      */
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'type'        => ['required', 'string', 'in:post,comment,user'],
+            'type'        => ['required', 'string', 'in:post,comment,user,group'],
             'id'          => ['required', 'integer'],
             'reason'      => ['required', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:1000'],
@@ -48,6 +50,11 @@ class ReportController extends Controller
         // Prevent reporting oneself
         if ($validated['type'] === 'user' && (int) $target->id === (int) $user->id) {
             return $this->errorResponse('You cannot report yourself.', 422);
+        }
+
+        // Prevent reporting own group
+        if ($validated['type'] === 'group' && (int) ($target->owner_id ?? 0) === (int) $user->id) {
+            return $this->errorResponse('You cannot report your own group.', 422);
         }
 
         // Prevent duplicate pending reports by the same user on the same item

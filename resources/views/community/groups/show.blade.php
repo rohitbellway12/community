@@ -94,7 +94,57 @@
         />
 
         {{-- CENTER FEED --}}
-        <section class="space-y-5 min-w-0" x-data="{ activeTab: '{{ request('tab', 'posts') }}' }">
+        <section class="space-y-5 min-w-0" x-data="{
+            activeTab: '{{ request('tab', 'posts') }}',
+            groupReportOpen: false,
+            reportReason: 'Spam',
+            reportDescription: '',
+            reportLoading: false,
+            reportSuccessMsg: '',
+            reportErrorMsg: '',
+            openGroupReportModal() {
+                this.groupReportOpen = true;
+                this.reportReason = 'Spam';
+                this.reportDescription = '';
+                this.reportSuccessMsg = '';
+                this.reportErrorMsg = '';
+            },
+            closeGroupReportModal() {
+                this.groupReportOpen = false;
+            },
+            async submitGroupReport() {
+                this.reportLoading = true;
+                this.reportErrorMsg = '';
+                this.reportSuccessMsg = '';
+                try {
+                    const response = await fetch('{{ route('community.reports.store') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            type: 'group',
+                            id: {{ (int) $group->id }},
+                            reason: this.reportReason,
+                            description: this.reportDescription
+                        })
+                    });
+                    const data = await response.json();
+                    if (response.ok && data.success) {
+                        this.reportSuccessMsg = data.message || 'Report submitted successfully.';
+                        setTimeout(() => { this.closeGroupReportModal(); }, 1800);
+                    } else {
+                        this.reportErrorMsg = data.message || 'Unable to submit report.';
+                    }
+                } catch (err) {
+                    this.reportErrorMsg = 'Network error. Please try again.';
+                } finally {
+                    this.reportLoading = false;
+                }
+            }
+        }">
 
             {{-- GROUP HEADER CARD --}}
             <div class="bg-white p-5 lg:p-6 rounded-2xl shadow-sm border border-slate-200/70 space-y-4">
@@ -117,7 +167,7 @@
                     </div>
 
                     {{-- MEMBERSHIP STATUS / ACTIONS --}}
-                    <div class="shrink-0">
+                    <div class="shrink-0 flex items-center gap-2">
                         @if($user && (int) $group->owner_id === (int) $user->id)
                             <span class="px-3 py-1.5 bg-amber-50 text-amber-800 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 border border-amber-200/80">
                                 👑 You are the Owner
@@ -176,7 +226,90 @@
                                 </a>
                             @endauth
                         @endif
+
+                        @if(!$user || (int) $group->owner_id !== (int) $user->id)
+                            @auth
+                                <button type="button" @click="openGroupReportModal()"
+                                    class="px-2.5 py-1.5 rounded-xl border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 text-xs font-semibold flex items-center gap-1 transition"
+                                    title="Report Group">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" /></svg>
+                                    <span>Report</span>
+                                </button>
+                            @else
+                                <a href="{{ route('login') }}"
+                                    class="px-2.5 py-1.5 rounded-xl border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 text-xs font-semibold flex items-center gap-1 transition"
+                                    title="Report Group">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" /></svg>
+                                    <span>Report</span>
+                                </a>
+                            @endauth
+                        @endif
                     </div>
+                </div>
+
+                {{-- GROUP REPORT MODAL --}}
+                <template x-teleport="body">
+                    <div x-show="groupReportOpen" x-cloak x-transition.opacity
+                        class="fixed inset-0 z-[220] flex items-center justify-center p-4">
+                        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-xs"
+                            @click="closeGroupReportModal()"></div>
+
+                        <div x-show="groupReportOpen" x-transition @click.stop
+                            class="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 z-10">
+                            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-8 h-8 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-sm font-bold">🚩</span>
+                                    <div>
+                                        <h3 class="text-sm font-bold text-slate-900">Report Group</h3>
+                                        <p class="text-[11px] text-slate-500">Report '{{ $group->name }}' for policy violations.</p>
+                                    </div>
+                                </div>
+                                <button type="button" @click="closeGroupReportModal()" class="text-slate-400 hover:text-slate-600 font-bold p-1">✕</button>
+                            </div>
+
+                            <div x-show="reportSuccessMsg" class="my-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+                                <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                <span x-text="reportSuccessMsg"></span>
+                            </div>
+
+                            <div x-show="reportErrorMsg" class="my-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-2">
+                                <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <span x-text="reportErrorMsg"></span>
+                            </div>
+
+                            <form x-show="!reportSuccessMsg" @submit.prevent="submitGroupReport()" class="mt-4 space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Reason for report <span class="text-rose-500">*</span></label>
+                                    <select x-model="reportReason" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-400">
+                                        <option value="Spam">Spam or fraudulent group</option>
+                                        <option value="Hate Speech">Hate speech or abusive environment</option>
+                                        <option value="Inappropriate Content">Inappropriate content or discussions</option>
+                                        <option value="False Information">Misleading or illegal scheme</option>
+                                        <option value="Other">Other policy violation</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Details (Optional)</label>
+                                    <textarea x-model="reportDescription" rows="3" placeholder="Provide extra context to help our moderation team..."
+                                        class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-400"></textarea>
+                                </div>
+
+                                <div class="flex items-center justify-end gap-2 pt-2">
+                                    <button type="button" @click="closeGroupReportModal()" :disabled="reportLoading"
+                                        class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" :disabled="reportLoading"
+                                        class="px-5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs transition flex items-center gap-1.5 disabled:opacity-50">
+                                        <span x-show="!reportLoading">Submit Report</span>
+                                        <span x-show="reportLoading">Submitting...</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </template>
                 </div>
 
                 <p class="text-xs lg:text-sm text-slate-600 leading-relaxed">

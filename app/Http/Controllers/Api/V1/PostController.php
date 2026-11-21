@@ -48,6 +48,13 @@ class PostController extends Controller
             ])
             ->withCount(['likes', 'comments', 'shares']);
 
+        if ($user) {
+            $blockedUserIds = $user->getBlockedUserIds();
+            if (!empty($blockedUserIds)) {
+                $postsQuery->whereNotIn('user_id', $blockedUserIds);
+            }
+        }
+
         if ($groupSlug) {
             $activeGroup = \App\Models\Group::where('slug', $groupSlug)
                 ->orWhere('id', $groupSlug)
@@ -151,6 +158,11 @@ class PostController extends Controller
     public function show(Request $request, Post $post): JsonResponse
     {
         $user = $request->user('sanctum') ?? $request->user();
+        $blockedUserIds = $user ? $user->getBlockedUserIds() : [];
+
+        if ($user && in_array((int) $post->user_id, $blockedUserIds, true)) {
+            return $this->errorResponse('This discussion is unavailable.', 404);
+        }
 
         if (!(new \App\Policies\PostPolicy)->view($user, $post)) {
             return $this->errorResponse('This discussion is private.', 403);
@@ -164,14 +176,18 @@ class PostController extends Controller
             'tags',
             'media',
             'group',
-            'comments' => function ($query) {
+            'comments' => function ($query) use ($blockedUserIds) {
                 $query->whereNull('parent_id')
+                    ->when(!empty($blockedUserIds), fn ($q) => $q->whereNotIn('user_id', $blockedUserIds))
                     ->latest()
                     ->take(4)
                     ->with([
                         'user.profile',
-                        'replies' => function ($replyQuery) {
-                            $replyQuery->oldest()->with('user.profile');
+                        'replies' => function ($replyQuery) use ($blockedUserIds) {
+                            $replyQuery
+                                ->when(!empty($blockedUserIds), fn ($rq) => $rq->whereNotIn('user_id', $blockedUserIds))
+                                ->oldest()
+                                ->with('user.profile');
                         },
                     ]);
             },
@@ -476,13 +492,20 @@ class PostController extends Controller
     public function saved(Request $request): JsonResponse
     {
         $user = $request->user();
+        $blockedUserIds = $user ? $user->getBlockedUserIds() : [];
 
         $perPage = min($request->integer('per_page', 15), 50);
 
-        $posts = Post::query()
+        $postsQuery = Post::query()
             ->whereHas('savedBy', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
-            })
+            });
+
+        if (!empty($blockedUserIds)) {
+            $postsQuery->whereNotIn('user_id', $blockedUserIds);
+        }
+
+        $posts = $postsQuery
             ->with([
                 'user.profile.country',
                 'category',

@@ -207,6 +207,13 @@ Route::group([], function () {
                 ->whereNumber('post')
                 ->name('posts.save');
 
+            Route::post('/posts/{post}/report', [PostController::class, 'report'])
+                ->whereNumber('post')
+                ->name('posts.report');
+
+            Route::post('/reports', [CommunityController::class, 'storeReport'])
+                ->name('reports.store');
+
             // Comments
     
             Route::put('/comments/{comment}', [CommentController::class, 'update'])
@@ -571,6 +578,11 @@ Route::group([], function () {
 
         Route::get('/users/{user}/following', ['App\\Http\\Controllers\\Community\\FollowController', 'following'])
             ->name('users.following');
+
+        Route::post('/users/{user}/block', [\App\Http\Controllers\Community\UserProfileController::class, 'blockUser'])
+            ->name('community.users.block');
+        Route::post('/users/{user}/unblock', [\App\Http\Controllers\Community\UserProfileController::class, 'unblockUser'])
+            ->name('community.users.unblock');
     });
 
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('community.notifications.destroy');

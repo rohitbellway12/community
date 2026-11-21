@@ -26,6 +26,15 @@ class FollowController extends Controller
             );
         }
 
+        if ($authUser->isBlocking($user) || $authUser->isBlockedBy($user)) {
+            return $this->response(
+                request: request(),
+                success: false,
+                message: 'You cannot follow this user.',
+                status: 403
+            );
+        }
+
         $follow = Follow::firstOrCreate([
             'follower_id' => $authUser->id,
             'following_id' => $user->id,
@@ -77,6 +86,15 @@ class FollowController extends Controller
                 success: false,
                 message: 'You cannot follow yourself.',
                 status: 422
+            );
+        }
+
+        if ($authUser->isBlocking($user) || $authUser->isBlockedBy($user)) {
+            return $this->response(
+                request: request(),
+                success: false,
+                message: 'You cannot follow this user.',
+                status: 403
             );
         }
 

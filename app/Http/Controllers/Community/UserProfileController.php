@@ -131,36 +131,54 @@ class UserProfileController extends Controller
 
         $user = $profile->user;
 
+        $viewer = Auth::user();
+        $isBlocked = false;
+        if ($viewer && (int) $viewer->id !== (int) $user->id) {
+            if ($viewer->isBlockedBy($user)) {
+                abort(404, 'This profile is not accessible.');
+            }
+            if ($viewer->isBlocking($user)) {
+                $isBlocked = true;
+            }
+        }
+
+        $blockedUserIds = $viewer ? $viewer->getBlockedUserIds() : [];
+
         /*
         |--------------------------------------------------------------------------
         | User Posts
         |--------------------------------------------------------------------------
         */
 
-        $posts = $user->posts()
-            ->with([
-                'category',
-                'media',
-                'tags',
-                'comments' => function ($query) {
-                    $query->whereNull('parent_id')
-                        ->latest()
-                        ->take(4)
-                        ->with([
-                            'user.profile',
-                            'replies' => function ($rq) {
-                                $rq->oldest()->with('user.profile');
-                            },
-                        ]);
-                },
-            ])
-            ->withCount([
-                'likes',
-                'comments',
-                'shares',
-            ])
-            ->latest()
-            ->paginate(5, ['*'], 'posts_page');
+        $posts = $isBlocked
+            ? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 5, 1, ['path' => request()->url()])
+            : $user->posts()
+                ->with([
+                    'category',
+                    'media',
+                    'tags',
+                    'comments' => function ($query) use ($blockedUserIds) {
+                        $query->whereNull('parent_id')
+                            ->when(!empty($blockedUserIds), fn ($q) => $q->whereNotIn('user_id', $blockedUserIds))
+                            ->latest()
+                            ->take(4)
+                            ->with([
+                                'user.profile',
+                                'replies' => function ($rq) use ($blockedUserIds) {
+                                    $rq->when(!empty($blockedUserIds), fn ($sub) => $sub->whereNotIn('user_id', $blockedUserIds))
+                                        ->oldest()
+                                        ->with('user.profile');
+                                },
+                            ]);
+                    },
+                ])
+                ->withCount([
+                    'likes',
+                    'comments',
+                    'shares',
+                ])
+                ->latest()
+                ->paginate(5, ['*'], 'posts_page');
 
         /*
         |--------------------------------------------------------------------------
@@ -168,16 +186,18 @@ class UserProfileController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $comments = $user->comments()
-            ->with([
-                'post.category',
-                'post.user.profile',
-                'parent.user.profile',
-            ])
-            ->whereNull('comments.deleted_at')
-            ->whereHas('post')
-            ->latest()
-            ->paginate(10, ['*'], 'comments_page');
+        $comments = $isBlocked
+            ? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10, 1, ['path' => request()->url()])
+            : $user->comments()
+                ->with([
+                    'post.category',
+                    'post.user.profile',
+                    'parent.user.profile',
+                ])
+                ->whereNull('comments.deleted_at')
+                ->whereHas('post')
+                ->latest()
+                ->paginate(10, ['*'], 'comments_page');
 
         /*
         |--------------------------------------------------------------------------
@@ -185,9 +205,11 @@ class UserProfileController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $activities = $user->activityLogs()
-            ->latest()
-            ->paginate(10, ['*'], 'activity_page');
+        $activities = $isBlocked
+            ? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10, 1, ['path' => request()->url()])
+            : $user->activityLogs()
+                ->latest()
+                ->paginate(10, ['*'], 'activity_page');
 
         /*
         |--------------------------------------------------------------------------
@@ -272,6 +294,10 @@ class UserProfileController extends Controller
         */
 
         $profileUser = $user;
+        $isOwnProfile = $viewer && (int) $viewer->id === (int) $user->id;
+        $blockedUsers = $isOwnProfile
+            ? $user->blockedUsers()->with('profile')->paginate(15, ['*'], 'blocked_page')
+            : new \Illuminate\Pagination\LengthAwarePaginator([], 0, 15, 1, ['path' => request()->url()]);
 
         return view(
             'community.profile.show',
@@ -279,6 +305,9 @@ class UserProfileController extends Controller
                 'profile',
                 'user',
                 'profileUser',
+                'isOwnProfile',
+                'isBlocked',
+                'blockedUsers',
                 'posts',
                 'comments',
                 'activities',
@@ -478,8 +507,15 @@ class UserProfileController extends Controller
             ->firstOrFail();
 
         $user = $profile->user;
+        $viewer = Auth::user();
+        if ($viewer && $viewer->isBlockedBy($user)) {
+            abort(404, 'This profile is not accessible.');
+        }
+
+        $blockedUserIds = $viewer ? $viewer->getBlockedUserIds() : [];
 
         $followers = $user->followers()
+            ->when(!empty($blockedUserIds), fn ($q) => $q->whereNotIn('users.id', $blockedUserIds))
             ->with('profile')
             ->paginate(15);
 
@@ -503,8 +539,15 @@ class UserProfileController extends Controller
             ->firstOrFail();
 
         $user = $profile->user;
+        $viewer = Auth::user();
+        if ($viewer && $viewer->isBlockedBy($user)) {
+            abort(404, 'This profile is not accessible.');
+        }
+
+        $blockedUserIds = $viewer ? $viewer->getBlockedUserIds() : [];
 
         $following = $user->following()
+            ->when(!empty($blockedUserIds), fn ($q) => $q->whereNotIn('users.id', $blockedUserIds))
             ->with('profile')
             ->paginate(15);
 
@@ -534,5 +577,59 @@ class UserProfileController extends Controller
                 'username' => $profile->username,
             ]
         );
+    }
+
+    /**
+     * Block target user (web endpoint).
+     */
+    public function blockUser(Request $request, User $user): JsonResponse
+    {
+        $currentUser = Auth::user();
+        if (!$currentUser) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        if ($currentUser->id === $user->id) {
+            return response()->json(['success' => false, 'message' => 'You cannot block yourself.'], 422);
+        }
+
+        \App\Models\BlockedUser::firstOrCreate([
+            'blocker_id' => $currentUser->id,
+            'blocked_id' => $user->id,
+        ]);
+
+        // Break follows in both directions
+        \App\Models\Follow::where(function ($q) use ($currentUser, $user) {
+            $q->where('follower_id', $currentUser->id)->where('following_id', $user->id);
+        })->orWhere(function ($q) use ($currentUser, $user) {
+            $q->where('follower_id', $user->id)->where('following_id', $currentUser->id);
+        })->delete();
+
+        return response()->json([
+            'success' => true,
+            'blocked' => true,
+            'message' => 'User blocked successfully.',
+        ]);
+    }
+
+    /**
+     * Unblock target user (web endpoint).
+     */
+    public function unblockUser(Request $request, User $user): JsonResponse
+    {
+        $currentUser = Auth::user();
+        if (!$currentUser) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        \App\Models\BlockedUser::where('blocker_id', $currentUser->id)
+            ->where('blocked_id', $user->id)
+            ->delete();
+
+        return response()->json([
+            'success' => true,
+            'blocked' => false,
+            'message' => 'User unblocked successfully.',
+        ]);
     }
 }

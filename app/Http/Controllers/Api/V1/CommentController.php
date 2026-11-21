@@ -24,14 +24,22 @@ class CommentController extends Controller
     public function index(Request $request, Post $post): JsonResponse
     {
         $user = $request->user('sanctum') ?? $request->user();
+        $blockedUserIds = $user ? $user->getBlockedUserIds() : [];
 
-        $comments = $post->comments()
+        $commentsQuery = $post->comments()
             ->whereNull('parent_id')
-            ->where('status', 'active')
+            ->where('status', 'active');
+
+        if (!empty($blockedUserIds)) {
+            $commentsQuery->whereNotIn('user_id', $blockedUserIds);
+        }
+
+        $comments = $commentsQuery
             ->with([
                 'user.profile',
-                'replies' => function ($q) {
+                'replies' => function ($q) use ($blockedUserIds) {
                     $q->where('status', 'active')
+                        ->when(!empty($blockedUserIds), fn ($rq) => $rq->whereNotIn('user_id', $blockedUserIds))
                         ->oldest()
                         ->take(4)
                         ->with('user.profile');
@@ -69,6 +77,11 @@ class CommentController extends Controller
         ]);
 
         $user = $request->user();
+        $blockedUserIds = $user ? $user->getBlockedUserIds() : [];
+
+        if (in_array((int) $post->user_id, $blockedUserIds, true)) {
+            return $this->errorResponse('You cannot comment on this discussion.', 403);
+        }
 
         $post->loadMissing('group');
         $isPrivate = $post->visibility === 'private'
@@ -96,6 +109,10 @@ class CommentController extends Controller
 
             if ((int) $parentComment->post_id !== (int) $post->id) {
                 return $this->errorResponse('Invalid parent comment.', 422);
+            }
+
+            if (in_array((int) $parentComment->user_id, $blockedUserIds, true)) {
+                return $this->errorResponse('You cannot reply to this comment.', 403);
             }
         }
 
@@ -233,8 +250,16 @@ class CommentController extends Controller
             }
         }
 
-        $replies = $comment->replies()
-            ->where('status', 'active')
+        $blockedUserIds = $user ? $user->getBlockedUserIds() : [];
+
+        $repliesQuery = $comment->replies()
+            ->where('status', 'active');
+
+        if (!empty($blockedUserIds)) {
+            $repliesQuery->whereNotIn('user_id', $blockedUserIds);
+        }
+
+        $replies = $repliesQuery
             ->with([
                 'user.profile',
                 'likes' => fn ($q) => $user ? $q->where('user_id', $user->id) : $q->whereRaw('1 = 0'),

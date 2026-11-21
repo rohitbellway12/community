@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BannerController;
+use App\Http\Controllers\Api\V1\BlockController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CommentController;
 use App\Http\Controllers\Api\V1\CountryController;
@@ -67,8 +68,14 @@ Route::prefix('v1')->group(function () {
     Route::get('posts/{post}/comments', [CommentController::class, 'index'])->whereNumber('post')->name('api.v1.posts.comments.index');
     Route::get('comments/{comment}/replies', [CommentController::class, 'replies'])->whereNumber('comment')->name('api.v1.comments.replies');
 
+    // Blocked Users (Auth Required - defined before wildcard users/{id_or_username})
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('users/blocked', [BlockController::class, 'index'])->name('api.v1.users.blocked');
+        Route::get('user/blocked', [BlockController::class, 'index'])->name('api.v1.user.blocked');
+    });
+
     // User Profiles (Public)
-    Route::get('users/{id_or_username}', [UserProfileController::class, 'show'])->name('api.v1.users.show');
+    Route::get('users/{id_or_username}', [UserProfileController::class, 'show'])->where('id_or_username', '^(?!blocked$).*$')->name('api.v1.users.show');
     Route::get('users/{id_or_username}/posts', [UserProfileController::class, 'posts'])->name('api.v1.users.posts');
     Route::get('users/{user}/followers', [FollowController::class, 'followers'])->name('api.v1.users.followers');
     Route::get('users/{user}/following', [FollowController::class, 'following'])->name('api.v1.users.following');
@@ -212,6 +219,17 @@ Route::prefix('v1')->group(function () {
         Route::post('users/{user}/follow', [FollowController::class, 'store'])->name('api.v1.users.follow');
         Route::delete('users/{user}/follow', [FollowController::class, 'destroy'])->name('api.v1.users.unfollow');
         Route::delete('users/{follower}/follower/remove', [FollowController::class, 'removeFollower'])->name('api.v1.users.follower.remove');
+    });
+
+    // ============================================================
+    // BLOCK (Auth Required)
+    // ============================================================
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('users/{user}/block/status', [BlockController::class, 'status'])->name('api.v1.users.block.status');
+        Route::post('users/{user}/block', [BlockController::class, 'block'])->name('api.v1.users.block');
+        Route::post('users/{user}/unblock', [BlockController::class, 'unblock'])->name('api.v1.users.unblock');
+        Route::delete('users/{user}/block', [BlockController::class, 'unblock'])->name('api.v1.users.block.delete');
     });
 
     // ============================================================

@@ -352,21 +352,27 @@ class GroupController extends Controller
         | Only active members can see group posts.
         |
         */
+        $blockedUserIds = $user ? $user->getBlockedUserIds() : [];
+
         $posts = $isMember
             ? $group->posts()
+                ->when(!empty($blockedUserIds), fn ($q) => $q->whereNotIn('posts.user_id', $blockedUserIds))
                 ->with([
                     'user',
                     'user.profile.country',
                     'group',
                     'likes',
-                    'comments' => function ($query) {
+                    'comments' => function ($query) use ($blockedUserIds) {
                         $query->whereNull('parent_id')
+                            ->when(!empty($blockedUserIds), fn ($q) => $q->whereNotIn('user_id', $blockedUserIds))
                             ->latest()
                             ->take(4)
                             ->with([
                                 'user.profile',
-                                'replies' => function ($rq) {
-                                    $rq->oldest()->with('user.profile');
+                                'replies' => function ($rq) use ($blockedUserIds) {
+                                    $rq->when(!empty($blockedUserIds), fn ($sub) => $sub->whereNotIn('user_id', $blockedUserIds))
+                                        ->oldest()
+                                        ->with('user.profile');
                                 },
                             ]);
                     },
