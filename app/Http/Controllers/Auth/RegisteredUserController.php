@@ -96,7 +96,7 @@ class RegisteredUserController extends Controller
             'referral_code' => $code,
         ]);
 
-        $username = Str::slug($validated['name']) . '-' . strtolower(Str::random(5));
+        $username = Profile::generateUniqueUsername($validated['name']);
 
         Profile::create([
             'user_id'    => $user->id,

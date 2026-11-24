@@ -75,10 +75,10 @@ Route::prefix('v1')->group(function () {
     });
 
     // User Profiles (Public)
-    Route::get('users/{id_or_username}', [UserProfileController::class, 'show'])->where('id_or_username', '^(?!blocked$).*$')->name('api.v1.users.show');
     Route::get('users/{id_or_username}/posts', [UserProfileController::class, 'posts'])->name('api.v1.users.posts');
     Route::get('users/{user}/followers', [FollowController::class, 'followers'])->name('api.v1.users.followers');
     Route::get('users/{user}/following', [FollowController::class, 'following'])->name('api.v1.users.following');
+    Route::get('users/{id_or_username}', [UserProfileController::class, 'show'])->where('id_or_username', '^(?!blocked$)[^/]+$')->name('api.v1.users.show');
 
     // Groups (Public Read)
     Route::get('groups', [GroupController::class, 'index'])->name('api.v1.groups.index');
@@ -203,6 +203,7 @@ Route::prefix('v1')->group(function () {
         Route::post('profile/update', [UserProfileController::class, 'update'])->name('api.v1.profile.update');
         Route::get('profile/activities', [UserProfileController::class, 'activityProgress'])->name('api.v1.profile.activities');
         Route::get('user/activity', [UserProfileController::class, 'activity'])->name('api.v1.user.activity');
+        Route::get('user/posts', [UserProfileController::class, 'myPosts'])->name('api.v1.user.posts');
 
         // Report Content
         Route::post('reports', [ReportController::class, 'store'])->name('api.v1.reports.store');

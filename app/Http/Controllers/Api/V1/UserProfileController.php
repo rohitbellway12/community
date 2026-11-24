@@ -188,6 +188,21 @@ class UserProfileController extends Controller
     }
 
     /**
+     * Get posts created by the authenticated user directly from Bearer token.
+     *
+     * GET /api/v1/user/posts
+     */
+    public function myPosts(Request $request): JsonResponse
+    {
+        $user = $request->user('sanctum') ?? $request->user();
+        if (!$user) {
+            return $this->errorResponse('Unauthenticated.', 401);
+        }
+
+        return $this->posts($request, (string) $user->id);
+    }
+
+    /**
      * Update the authenticated user's profile.
      *
      * POST /api/v1/profile/update
