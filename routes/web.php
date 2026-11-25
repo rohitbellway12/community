@@ -487,6 +487,7 @@ Route::group([], function () {
             // Questions
             Route::get('/questions/sample-template', [\App\Http\Controllers\Admin\AdminQuestionController::class, 'sampleTemplate'])->name('questions.sampleTemplate');
             Route::post('/questions/import', [\App\Http\Controllers\Admin\AdminQuestionController::class, 'import'])->name('questions.import');
+            Route::post('/questions/bulk-delete', [\App\Http\Controllers\Admin\AdminQuestionController::class, 'bulkDestroy'])->name('questions.bulkDestroy');
             Route::patch('/questions/{question}/status', [\App\Http\Controllers\Admin\AdminQuestionController::class, 'updateStatus'])->name('questions.updateStatus');
             Route::resource('questions', \App\Http\Controllers\Admin\AdminQuestionController::class);
 

@@ -103,8 +103,10 @@ class QuestionImportService
             'Status'
         ];
 
-        // Fetch first level ID or fallback to 1
-        $sampleLevelId = (string)(TestLevel::query()->first()?->id ?? '1');
+        // Fetch first active level ID or fallback
+        $sampleLevel = TestLevel::where('status', 'active')->first() ?? TestLevel::first();
+        $sampleLevelId = (string)($sampleLevel?->id ?? '1');
+        $sampleLevelName = $sampleLevel?->name ?? 'test12';
 
         $data = [
             [

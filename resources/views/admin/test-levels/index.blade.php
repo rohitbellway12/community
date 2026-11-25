@@ -299,8 +299,13 @@
                     <tr>
 
                         {{-- SERIAL NUMBER --}}
-                        <th class="py-3.5 px-4 w-16">
+                        <th class="py-3.5 px-4 w-12 text-center">
                             S.No.
+                        </th>
+
+                        {{-- LEVEL ID --}}
+                        <th class="py-3.5 px-4 w-20">
+                            Level ID
                         </th>
 
                         <th class="py-3.5 px-4">
@@ -342,10 +347,18 @@
 
                         <tr class="hover:bg-slate-50/60 transition">
 
-                            {{-- SERIAL NUMBER (Database ID) --}}
+                            {{-- SERIAL NUMBER (Row Count) --}}
+                            <td class="py-3 px-4 text-center">
+                                <span class="text-xs font-semibold text-slate-400 font-mono">
+                                    {{ $levels->firstItem() ? ($levels->firstItem() + $index) : ($index + 1) }}
+                                </span>
+                            </td>
+
+                            {{-- LEVEL ID (Database ID for Excel Import) --}}
                             <td class="py-3 px-4">
-                                <span class="font-bold text-slate-500 font-mono">
-                                    #{{ $level->id }}
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-extrabold bg-blue-50 text-blue-700 border border-blue-200 font-mono"
+                                      title="Use this ID in Excel import column: Test Level (ID or Name)">
+                                    ID: {{ $level->id }}
                                 </span>
                             </td>
 
@@ -570,7 +583,7 @@
                         <tr>
 
                             <td
-                                colspan="8"
+                                colspan="9"
                                 class="py-8 text-center text-slate-400"
                             >
                                 No test levels found.

@@ -440,7 +440,22 @@
 
         {{-- QUESTIONS --}}
         <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Questions * (select at least 1)</label>
+            <div class="flex items-center justify-between mb-1">
+                <label class="block text-xs font-bold text-slate-700">Questions * (select at least 1)</label>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="selectAllQuestionsBtn"
+                            class="px-2.5 py-1 text-[11px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition flex items-center gap-1 cursor-pointer">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span>Select All Visible (<span id="visibleCount">0</span>)</span>
+                    </button>
+                    <button type="button" id="clearAllQuestionsBtn"
+                            class="px-2.5 py-1 text-[11px] font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition cursor-pointer">
+                        Clear All
+                    </button>
+                </div>
+            </div>
             <div class="flex flex-col sm:flex-row gap-3 mb-3">
                 <select id="levelFilter" class="text-xs px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-reiac-gold focus:outline-none">
                     <option value="all">All Levels</option>
@@ -465,7 +480,9 @@
                 @endforeach
             </div>
             <div class="flex justify-between items-center mt-2">
-                <p class="text-[10px] text-slate-400">Questions will appear in selection order.</p>
+                <p class="text-[10px] text-slate-400">
+                    Questions will appear in selection order. <span class="font-bold text-slate-600">(<span id="selectedCount">0</span> selected)</span>
+                </p>
                 <p class="text-xs font-bold text-slate-700">
                     Total Marks: <span id="autoTotalMarks" class="text-reiac-navy">0</span>
                 </p>
@@ -569,16 +586,23 @@ document.addEventListener('DOMContentLoaded', function () {
     const checkboxes = questionsContainer ? questionsContainer.querySelectorAll('.question-checkbox') : [];
     const totalMarksInput = document.querySelector('input[name="total_marks"]');
     const autoTotalMarks = document.getElementById('autoTotalMarks');
+    const selectAllBtn = document.getElementById('selectAllQuestionsBtn');
+    const clearAllBtn = document.getElementById('clearAllQuestionsBtn');
+    const visibleCountSpan = document.getElementById('visibleCount');
+    const selectedCountSpan = document.getElementById('selectedCount');
 
     function updateTotalMarks() {
         let total = 0;
+        let selectedCount = 0;
         checkboxes.forEach(cb => {
             if (cb.checked) {
+                selectedCount++;
                 const item = cb.closest('.question-item');
                 total += parseInt(item.dataset.marks) || 0;
             }
         });
-        autoTotalMarks.textContent = total;
+        if (autoTotalMarks) autoTotalMarks.textContent = total;
+        if (selectedCountSpan) selectedCountSpan.textContent = selectedCount;
         if (totalMarksInput) {
             totalMarksInput.value = total;
         }
@@ -587,12 +611,35 @@ document.addEventListener('DOMContentLoaded', function () {
     function filterQuestions() {
         const level = levelFilter ? levelFilter.value : 'all';
         const search = questionSearch ? questionSearch.value.toLowerCase() : '';
+        let visibleCount = 0;
         questionItems.forEach(item => {
             const itemLevel = item.dataset.level;
             const text = item.textContent.toLowerCase();
             const showByLevel = (level === 'all' || itemLevel === level);
             const showBySearch = search === '' || text.includes(search);
-            item.style.display = (showByLevel && showBySearch) ? 'flex' : 'none';
+            const isVisible = (showByLevel && showBySearch);
+            item.style.display = isVisible ? 'flex' : 'none';
+            if (isVisible) visibleCount++;
+        });
+        if (visibleCountSpan) visibleCountSpan.textContent = visibleCount;
+    }
+
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', function () {
+            questionItems.forEach(item => {
+                if (item.style.display !== 'none') {
+                    const cb = item.querySelector('.question-checkbox');
+                    if (cb) cb.checked = true;
+                }
+            });
+            updateTotalMarks();
+        });
+    }
+
+    if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', function () {
+            checkboxes.forEach(cb => cb.checked = false);
+            updateTotalMarks();
         });
     }
 
@@ -600,6 +647,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (questionSearch) questionSearch.addEventListener('input', filterQuestions);
     checkboxes.forEach(cb => cb.addEventListener('change', updateTotalMarks));
 
+    filterQuestions();
     updateTotalMarks();
 });
 </script>

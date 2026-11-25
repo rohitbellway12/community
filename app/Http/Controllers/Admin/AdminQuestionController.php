@@ -161,6 +161,27 @@ class AdminQuestionController extends Controller
             ->with('success', 'Question deleted successfully.');
     }
 
+    /**
+     * Bulk delete questions.
+     */
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'question_ids' => 'required|array|min:1',
+            'question_ids.*' => 'integer|exists:questions,id',
+        ]);
+
+        $ids = $validated['question_ids'];
+        $count = count($ids);
+
+        // Delete options first, then questions
+        QuestionOption::whereIn('question_id', $ids)->delete();
+        Question::whereIn('id', $ids)->delete();
+
+        return redirect()->route('admin.questions.index')
+            ->with('success', "{$count} question(s) deleted successfully.");
+    }
+
     public function updateStatus(Request $request, Question $question)
     {
         $newStatus = $question->status === 'active' ? 'inactive' : 'active';
