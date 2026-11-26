@@ -97,8 +97,8 @@
             @endif
         </a>
 
-        {{-- SERVICES & WHATSAPP (Temporarily Commented Out) --}}
-        {{--
+        {{-- SERVICES & WHATSAPP --}}
+        @if(\App\Models\ServicesSetting::isServicesEnabled())
         <a href="{{ route('services.index') }}"
             class="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition {{ request()->routeIs('services.*') || request('tab') === 'services' ? 'bg-[#0c1b33] text-white shadow-xs' : 'text-slate-700 hover:bg-slate-100/70' }} group">
             <div class="flex items-center gap-2.5">
@@ -111,7 +111,7 @@
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> WhatsApp
             </span>
         </a>
-        --}}
+        @endif
 
         {{-- AI RESUME BUILDER --}}
         <a href="{{ route('resume-builder.index') }}"

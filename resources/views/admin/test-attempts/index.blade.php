@@ -11,6 +11,42 @@
          submissionType: '{{ request('submission_type') }}',
          dateFrom: '{{ request('date_from') }}',
          dateTo: '{{ request('date_to') }}',
+         selectedIds: [],
+         allIds: {{ Js::from($attempts->pluck('id')->values()->all()) }},
+         toggleSelectAll() {
+             if (this.selectedIds.length === this.allIds.length) {
+                 this.selectedIds = [];
+             } else {
+                 this.selectedIds = [...this.allIds];
+             }
+         },
+         isAllSelected() {
+             return this.allIds.length > 0 && this.selectedIds.length === this.allIds.length;
+         },
+         confirmBulkDelete() {
+             if (this.selectedIds.length === 0) return;
+             const count = this.selectedIds.length;
+             const msg = `Are you sure you want to delete ${count} selected test submission(s)? This action cannot be undone.`;
+             if (window.Swal) {
+                 Swal.fire({
+                     title: 'Delete Selected Submissions?',
+                     text: msg,
+                     icon: 'warning',
+                     showCancelButton: true,
+                     confirmButtonColor: '#ef4444',
+                     cancelButtonColor: '#64748b',
+                     confirmButtonText: `Yes, delete ${count} submissions`
+                 }).then((result) => {
+                     if (result.isConfirmed) {
+                         document.getElementById('bulkDeleteAttemptsForm').submit();
+                     }
+                 });
+             } else {
+                 if (confirm(msg)) {
+                     document.getElementById('bulkDeleteAttemptsForm').submit();
+                 }
+             }
+         }
      }">
 
     {{-- FLASH MESSAGES --}}
@@ -120,12 +156,54 @@
         </div>
     </div>
 
+    {{-- BULK ACTIONS BAR --}}
+    <div x-show="selectedIds.length > 0"
+         x-cloak
+         x-transition
+         class="bg-rose-50 border border-rose-200 p-3.5 rounded-2xl flex items-center justify-between shadow-xs">
+        <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+            <span class="text-xs font-bold text-rose-900">
+                <span x-text="selectedIds.length"></span> submission(s) selected
+            </span>
+        </div>
+        <div class="flex items-center gap-2">
+            <button type="button"
+                    @click="selectedIds = []"
+                    class="px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white hover:bg-slate-100 rounded-xl border border-slate-200 transition">
+                Deselect All
+            </button>
+            <button type="button"
+                    @click="confirmBulkDelete()"
+                    class="px-4 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Delete Selected (<span x-text="selectedIds.length"></span>)
+            </button>
+        </div>
+    </div>
+
+    {{-- HIDDEN BULK DELETE FORM --}}
+    <form id="bulkDeleteAttemptsForm" action="{{ route('admin.tests.attempts.bulkDestroy') }}" method="POST" class="hidden">
+        @csrf
+        <template x-for="id in selectedIds" :key="'bulk-att-' + id">
+            <input type="hidden" name="attempt_ids[]" :value="id">
+        </template>
+    </form>
+
     {{-- SUBMISSIONS TABLE --}}
     <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs">
                 <thead class="bg-slate-50 border-b border-slate-200 text-slate-400 uppercase font-bold tracking-wider">
                     <tr>
+                        <th class="py-3.5 px-4 w-10 text-center">
+                            <input type="checkbox"
+                                   @click="toggleSelectAll()"
+                                   :checked="isAllSelected()"
+                                   class="w-4 h-4 rounded border-slate-300 text-reiac-navy focus:ring-reiac-navy cursor-pointer">
+                        </th>
                         <th class="py-3.5 px-4 w-16">S.No.</th>
                         <th class="py-3.5 px-4">Student</th>
                         <th class="py-3.5 px-4">Test</th>
@@ -140,7 +218,15 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100 font-medium">
                     @forelse($attempts as $attempt)
-                        <tr class="hover:bg-slate-50/60 transition">
+                        <tr class="hover:bg-slate-50/60 transition"
+                            :class="selectedIds.includes({{ $attempt->id }}) ? 'bg-amber-50/40' : ''">
+                            {{-- Checkbox --}}
+                            <td class="py-3 px-4 text-center">
+                                <input type="checkbox"
+                                       value="{{ $attempt->id }}"
+                                       x-model.number="selectedIds"
+                                       class="w-4 h-4 rounded border-slate-300 text-reiac-navy focus:ring-reiac-navy cursor-pointer">
+                            </td>
                             <td class="py-3 px-4">
                                 <span class="font-bold text-slate-500 font-mono">
                                     #{{ $attempt->id }}
@@ -195,16 +281,39 @@
                             <td class="py-3 px-4 text-slate-500 whitespace-nowrap">
                                 {{ $attempt->submitted_at?->format('M d, Y H:i') ?? 'N/A' }}
                             </td>
-                            <td class="py-3 px-4 text-right">
+                            <td class="py-3 px-4 text-right whitespace-nowrap">
                                 <a href="{{ route('admin.tests.attempts.show', $attempt) }}"
-                                   class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
+                                   class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition mr-1">
                                     View
                                 </a>
+                                <form action="{{ route('admin.tests.attempts.destroy', $attempt) }}" method="POST" class="inline" id="delete-attempt-{{ $attempt->id }}">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button"
+                                            @click="
+                                                Swal.fire({
+                                                    title: 'Delete test submission?',
+                                                    text: 'Are you sure you want to delete submission #{{ $attempt->id }}? This action cannot be undone.',
+                                                    icon: 'warning',
+                                                    showCancelButton: true,
+                                                    confirmButtonText: 'Yes, Delete',
+                                                    cancelButtonText: 'Cancel',
+                                                    confirmButtonColor: '#E11D48',
+                                                    cancelButtonColor: '#64748B',
+                                                    reverseButtons: true
+                                                }).then(result => {
+                                                    if (result.isConfirmed) document.getElementById('delete-attempt-{{ $attempt->id }}').submit();
+                                                });
+                                            "
+                                            class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs transition border border-rose-200">
+                                        Delete
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" class="py-8 text-center text-slate-400">
+                            <td colspan="11" class="py-8 text-center text-slate-400">
                                 No submissions found.
                             </td>
                         </tr>

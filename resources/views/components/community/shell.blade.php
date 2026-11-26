@@ -300,13 +300,13 @@
 
     {{-- MOBILE BOTTOM NAVIGATION BAR --}}
     <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 lg:hidden px-4 py-2 z-40 flex items-center justify-around shadow-lg">
-        <a href="#" class="flex flex-col items-center gap-1 text-slate-500 hover:text-[#0b1329]">
+        <a href="{{ route('community.index') }}" class="flex flex-col items-center gap-1 {{ request()->routeIs('community.index') ? 'text-[#0b1329] font-bold' : 'text-slate-500 hover:text-[#0b1329]' }}">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
             <span class="text-[10px] font-medium">Home</span>
         </a>
-        <a href="#" class="flex flex-col items-center gap-1 text-[#0b1329] font-bold">
-            <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"></path></svg>
-            <span class="text-[10px]">Community</span>
+        <a href="{{ route('community.groups.index') }}" class="flex flex-col items-center gap-1 {{ request()->routeIs('community.groups.*') ? 'text-[#0b1329] font-bold' : 'text-slate-500 hover:text-[#0b1329]' }}">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-4-4h-1" /><path stroke-linecap="round" stroke-linejoin="round" d="M9 20H4v-2a4 4 0 014-4h1" /><circle cx="9" cy="7" r="4" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 3.5a4 4 0 010 7" /></svg>
+            <span class="text-[10px] font-medium">Groups</span>
         </a>
         <a href="#" class="flex flex-col items-center justify-center -mt-5">
             <div class="w-12 h-12 bg-[#0b1329] rounded-full flex items-center justify-center text-white shadow-lg border-4 border-[#f3f4f6]">
@@ -314,12 +314,11 @@
             </div>
             <span class="text-[10px] font-medium text-slate-700 mt-0.5">Create</span>
         </a>
-        <a href="#" class="flex flex-col items-center gap-1 text-slate-500 hover:text-[#0b1329] relative">
+        <a href="{{ route('community.notifications') }}" class="flex flex-col items-center gap-1 {{ request()->routeIs('community.notifications*') ? 'text-[#0b1329] font-bold' : 'text-slate-500 hover:text-[#0b1329]' }} relative">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-            <span class="absolute -top-0.5 right-0.5 bg-red-500 text-white text-[9px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-bold">12</span>
             <span class="text-[10px] font-medium">Notifications</span>
         </a>
-        <a href="#" class="flex flex-col items-center gap-1 text-slate-500 hover:text-[#0b1329]">
+        <a href="{{ route('community.profile.me') }}" class="flex flex-col items-center gap-1 {{ request()->routeIs('community.profile*') ? 'text-[#0b1329] font-bold' : 'text-slate-500 hover:text-[#0b1329]' }}">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
             <span class="text-[10px] font-medium">Profile</span>
         </a>

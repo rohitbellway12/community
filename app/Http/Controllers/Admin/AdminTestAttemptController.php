@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Test;
 use App\Models\TestAttempt;
+use App\Models\AttemptAnswer;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -165,5 +167,35 @@ class AdminTestAttemptController extends Controller
         $attempt->load(['user', 'test', 'test.testLevel', 'answers.question', 'answers.option']);
 
         return view('admin.test-attempts.show', compact('attempt'));
+    }
+
+    /**
+     * Delete a single test attempt.
+     */
+    public function destroy(TestAttempt $attempt): RedirectResponse
+    {
+        AttemptAnswer::where('attempt_id', $attempt->id)->delete();
+        $attempt->delete();
+
+        return back()->with('success', 'Test submission deleted successfully.');
+    }
+
+    /**
+     * Bulk delete test attempts.
+     */
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'attempt_ids' => 'required|array|min:1',
+            'attempt_ids.*' => 'integer|exists:test_attempts,id',
+        ]);
+
+        $ids = $validated['attempt_ids'];
+        $count = count($ids);
+
+        AttemptAnswer::whereIn('attempt_id', $ids)->delete();
+        TestAttempt::whereIn('id', $ids)->delete();
+
+        return back()->with('success', "{$count} test submission(s) deleted successfully.");
     }
 }

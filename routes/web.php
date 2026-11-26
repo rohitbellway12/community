@@ -479,6 +479,7 @@ Route::group([], function () {
             Route::get('/firebase-settings', fn () => redirect()->route('admin.notification-templates.index'))->name('firebase-settings.edit');
 
             // Test Levels
+            Route::post('/test-levels/bulk-delete', [\App\Http\Controllers\Admin\AdminTestLevelController::class, 'bulkDestroy'])->name('test-levels.bulkDestroy');
             Route::patch('/test-levels/{level}/status', [\App\Http\Controllers\Admin\AdminTestLevelController::class, 'updateStatus'])->name('test-levels.updateStatus');
             Route::resource('test-levels', \App\Http\Controllers\Admin\AdminTestLevelController::class)->parameters([
                 'test-levels' => 'level',
@@ -492,6 +493,7 @@ Route::group([], function () {
             Route::resource('questions', \App\Http\Controllers\Admin\AdminQuestionController::class);
 
             // Result Slabs
+            Route::post('/result-slabs/bulk-delete', [\App\Http\Controllers\Admin\AdminResultSlabController::class, 'bulkDestroy'])->name('result-slabs.bulkDestroy');
             Route::patch('/result-slabs/{slab}/status', [\App\Http\Controllers\Admin\AdminResultSlabController::class, 'updateStatus'])->name('result-slabs.updateStatus');
             Route::resource('result-slabs', \App\Http\Controllers\Admin\AdminResultSlabController::class)->parameters([
                 'result-slabs' => 'slab',
@@ -504,6 +506,8 @@ Route::group([], function () {
             Route::prefix('tests')->name('tests.')->group(function () {
                 Route::get('/attempts', [\App\Http\Controllers\Admin\AdminTestAttemptController::class, 'index'])->name('attempts.index');
                 Route::get('/attempts/export', [\App\Http\Controllers\Admin\AdminTestAttemptController::class, 'export'])->name('attempts.export');
+                Route::post('/attempts/bulk-delete', [\App\Http\Controllers\Admin\AdminTestAttemptController::class, 'bulkDestroy'])->name('attempts.bulkDestroy');
+                Route::delete('/attempts/{attempt}', [\App\Http\Controllers\Admin\AdminTestAttemptController::class, 'destroy'])->name('attempts.destroy');
                 Route::get('/attempts/{attempt}', [\App\Http\Controllers\Admin\AdminTestAttemptController::class, 'show'])->name('attempts.show');
             });
 
@@ -515,6 +519,7 @@ Route::group([], function () {
             Route::resource('documents', \App\Http\Controllers\Admin\AdminDocumentController::class);
 
             // Services & WhatsApp Integration
+            Route::patch('/services/toggle-global', [\App\Http\Controllers\Admin\AdminServiceController::class, 'toggleGlobal'])->name('services.toggle-global');
             Route::patch('/services/{service}/status', [\App\Http\Controllers\Admin\AdminServiceController::class, 'updateStatus'])->name('services.update-status');
             Route::patch('/services/{service}/toggle-publish', [\App\Http\Controllers\Admin\AdminServiceController::class, 'togglePublish'])->name('services.toggle-publish');
             Route::post('/services/reorder', [\App\Http\Controllers\Admin\AdminServiceController::class, 'reorder'])->name('services.reorder');

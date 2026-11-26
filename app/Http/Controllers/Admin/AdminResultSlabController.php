@@ -212,4 +212,22 @@ class AdminResultSlabController extends Controller
 
         return back()->with('success', 'Result Slab deleted successfully.');
     }
+
+    /**
+     * Bulk delete result slabs.
+     */
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'slab_ids' => 'required|array|min:1',
+            'slab_ids.*' => 'integer|exists:result_slabs,id',
+        ]);
+
+        $ids = $validated['slab_ids'];
+        $count = count($ids);
+
+        ResultSlab::whereIn('id', $ids)->delete();
+
+        return back()->with('success', "{$count} result slab(s) deleted successfully.");
+    }
 }

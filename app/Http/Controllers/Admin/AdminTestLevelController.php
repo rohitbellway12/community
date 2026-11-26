@@ -184,4 +184,25 @@ class AdminTestLevelController extends Controller
 
         return back()->with('success', $message);
     }
+
+    /**
+     * Bulk delete test levels.
+     */
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'level_ids' => 'required|array|min:1',
+            'level_ids.*' => 'integer|exists:test_levels,id',
+        ]);
+
+        $ids = $validated['level_ids'];
+        $count = count($ids);
+
+        $levels = TestLevel::whereIn('id', $ids)->get();
+        foreach ($levels as $level) {
+            $level->delete();
+        }
+
+        return back()->with('success', "{$count} test level(s) deleted successfully.");
+    }
 }

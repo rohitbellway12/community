@@ -43,6 +43,74 @@
         </div>
 
         <div class="flex items-center gap-2.5">
+            {{-- GLOBAL SERVICES TOGGLE (ON / OFF) --}}
+            <div x-data="{
+                enabled: {{ ($isServicesEnabled ?? true) ? 'true' : 'false' }},
+                loading: false,
+                async toggleGlobal() {
+                    if (this.loading) return;
+                    this.loading = true;
+                    const prev = this.enabled;
+                    this.enabled = !this.enabled;
+                    try {
+                        const res = await fetch('{{ route('admin.services.toggle-global') }}', {
+                            method: 'PATCH',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        const data = await res.json();
+                        if (!res.ok || !data.success) {
+                            this.enabled = prev;
+                            if (window.Swal) {
+                                Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'Failed to toggle status.' });
+                            }
+                        } else {
+                            if (window.Swal) {
+                                Swal.fire({
+                                    toast: true,
+                                    position: 'top-end',
+                                    icon: 'success',
+                                    title: data.message,
+                                    showConfirmButton: false,
+                                    timer: 3000
+                                });
+                            }
+                        }
+                    } catch (e) {
+                        this.enabled = prev;
+                        if (window.Swal) {
+                            Swal.fire({ icon: 'error', title: 'Network Error', text: e.message });
+                        }
+                    } finally {
+                        this.loading = false;
+                    }
+                }
+            }" class="flex items-center gap-2 px-3.5 py-2 rounded-xl border transition shadow-xs"
+               :class="enabled ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-100 border-slate-200'">
+                <div class="flex flex-col text-left">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Website Visibility</span>
+                    <span class="text-xs font-black" :class="enabled ? 'text-emerald-700' : 'text-slate-500'"
+                          x-text="loading ? 'Updating...' : (enabled ? 'Services: ON' : 'Services: OFF')">
+                        {{ ($isServicesEnabled ?? true) ? 'Services: ON' : 'Services: OFF' }}
+                    </span>
+                </div>
+                <button type="button"
+                        @click="toggleGlobal()"
+                        :disabled="loading"
+                        class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-1"
+                        :class="enabled ? 'bg-emerald-500' : 'bg-slate-300'"
+                        :title="enabled ? 'Click to Turn OFF Services across website' : 'Click to Turn ON Services across website'">
+                    <span class="sr-only">Toggle Global Services</span>
+                    <span aria-hidden="true"
+                          class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out"
+                          :class="enabled ? 'translate-x-5' : 'translate-x-0'">
+                    </span>
+                </button>
+            </div>
+
             <a
                 href="{{ route('admin.service-categories.index') }}"
                 class="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-xs transition flex items-center gap-2 shrink-0"

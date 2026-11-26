@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Service;
 use App\Models\ServiceCategory;
+use App\Models\ServicesSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -75,6 +76,7 @@ class AdminServiceController extends Controller
         $draftCount = $inactiveCount;
         $totalCategories = ServiceCategory::count();
         $totalClicks = Service::sum('click_count');
+        $isServicesEnabled = ServicesSetting::isServicesEnabled();
 
         $categories = ServiceCategory::orderBy('sort_order', 'asc')->orderBy('name', 'asc')->get();
 
@@ -88,7 +90,8 @@ class AdminServiceController extends Controller
             'publishedCount',
             'draftCount',
             'totalCategories',
-            'totalClicks'
+            'totalClicks',
+            'isServicesEnabled'
         ));
     }
 
@@ -338,5 +341,26 @@ class AdminServiceController extends Controller
         }
 
         return response()->json(['success' => true, 'message' => 'Order updated successfully.']);
+    }
+
+    /**
+     * Toggle global services visibility across website
+     */
+    public function toggleGlobal(Request $request)
+    {
+        $newState = ServicesSetting::toggle();
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'is_enabled' => $newState,
+                'message' => $newState ? 'Services are now VISIBLE across website.' : 'Services are now HIDDEN from website.',
+            ]);
+        }
+
+        return redirect()->back()->with(
+            'success',
+            $newState ? 'Services are now VISIBLE across website.' : 'Services are now HIDDEN from website.'
+        );
     }
 }

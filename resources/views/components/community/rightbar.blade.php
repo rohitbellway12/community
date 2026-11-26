@@ -258,6 +258,7 @@
     </div>
 
     {{-- EXPERT SERVICES WIDGET --}}
+    @if(\App\Models\ServicesSetting::isServicesEnabled())
     @php
         $sidebarServices = \App\Models\Service::published()->with('category')->ordered()->take(3)->get();
     @endphp
@@ -291,6 +292,7 @@
                 @endforeach
             </div>
         </div>
+    @endif
     @endif
 
     {{-- Community Guidelines Card --}}
