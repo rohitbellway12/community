@@ -612,7 +612,8 @@
                             @endif
                         </a>
 
-                        {{-- SERVICES & WHATSAPP TAB --}}
+                        {{-- SERVICES & WHATSAPP TAB (Temporarily Commented Out) --}}
+                        {{--
                         @php
                             $servicesTotalCount = \App\Models\Service::published()->count();
                         @endphp
@@ -624,6 +625,7 @@
                                 <span class="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">{{ $servicesTotalCount }}</span>
                             @endif
                         </a>
+                        --}}
 
                     </div>
 
@@ -633,12 +635,13 @@
             @if(request('tab') === 'documents')
                 {{-- DOCUMENTS VIEW --}}
                 @include('community.partials.documents-feed', ['documents' => $documents, 'documentCategories' => $documentCategories ?? collect()])
+            {{--
             @elseif(request('tab') === 'services')
-                {{-- SERVICES VIEW --}}
                 @include('community.partials.services-feed')
+            --}}
             @else
-                {{-- FEATURED SERVICES SHOWCASE STRIP --}}
-                @include('community.partials.featured-services-strip', ['featuredServices' => $featuredServices ?? collect()])
+                {{-- FEATURED SERVICES SHOWCASE STRIP (Temporarily Commented Out) --}}
+                {{-- @include('community.partials.featured-services-strip', ['featuredServices' => $featuredServices ?? collect()]) --}}
 
                 {{-- POSTS --}}
             @php

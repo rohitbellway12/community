@@ -52,8 +52,7 @@ class StudentTestController extends Controller
             $query->where('test_level_id', $request->integer('test_level_id'));
         }
 
-        $tests = $query->orderBy('open_date', 'asc')
-            ->orderByDesc('created_at')
+        $tests = $query->orderByDesc('id')
             ->get();
 
         $userAttempts = collect();

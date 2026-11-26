@@ -40,8 +40,7 @@ class StudentTestController extends Controller
                           });
                   });
             })
-            ->orderBy('open_date', 'asc')
-            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->get();
 
         $userAttempts = collect();

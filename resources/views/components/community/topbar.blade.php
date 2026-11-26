@@ -296,7 +296,8 @@
                         @endif
                     </a>
 
-                    {{-- Services --}}
+                    {{-- Services (Temporarily Commented Out) --}}
+                    {{--
                     <div
                         x-data="{ servicesOpen: false }"
                         class="relative"
@@ -371,6 +372,7 @@
                             </div>
                         </div>
                     </div>
+                    --}}
 
                     {{-- Groups --}}
                     <a
@@ -1325,7 +1327,8 @@
                 @endif
             </a>
 
-            {{-- Services --}}
+            {{-- Services (Temporarily Commented Out) --}}
+            {{--
             <div x-data="{ mobileServicesOpen: false }">
 
                 <button
@@ -1386,6 +1389,7 @@
                     </a>
                 </div>
             </div>
+            --}}
 
             {{-- Groups --}}
             <a
